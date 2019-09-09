@@ -7,17 +7,6 @@ import (
         "time"
 )
 
-/*import (
-	"bytes"
-	"fmt"
-        "time"
-
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/lib/common/crypt"
-
-	"golang.org/x/crypto/bcrypt"
-)*/
-
 // PlatformTcb struct is the database schema of a PlatformTcbs table
 type PlatformTcb struct {
 	QeId 		string     `json:"-" gorm:"primary_key"`

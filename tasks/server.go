@@ -42,15 +42,10 @@ func (s Server) Run(c setup.Context) error {
 	s.Config.AuthDefender.IntervalMins = constants.DefaultAuthDefendIntervalMins
 	s.Config.AuthDefender.LockoutDurationMins = constants.DefaultAuthDefendLockoutMins
 
-	authServiceUrl, err := c.GetenvString("AAS_BASE_URL", "AuthService URL")
-	if err != nil {
-		authServiceUrl = ""
-	}
-	s.Config.AuthServiceUrl = authServiceUrl
-
 	cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
 	if err != nil {
-		cmsBaseUrl = ""
+		fmt.Fprintf(s.ConsoleWriter, "CMS Url not provided\n")
+		return err
 	}
 	s.Config.CMSBaseUrl = cmsBaseUrl
 

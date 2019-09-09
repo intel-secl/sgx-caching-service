@@ -5,9 +5,6 @@
 package postgres
 
 import (
-	//"fmt"
-//	"intel/isecl/sgx-caching-service/repository"
-
 	"intel/isecl/sgx-caching-service/types"
 
 	"github.com/jinzhu/gorm"
@@ -60,9 +57,6 @@ func (r *PostgresPlatformTcbRepository) Update(u types.PlatformTcb) error {
 }
 
 func (r *PostgresPlatformTcbRepository) Delete(u types.PlatformTcb) error {
-	if err := r.db.Model(&u).Association("Roles").Clear().Error; err != nil {
-		return err
-	}
 	return r.db.Delete(&u).Error
 }
 

@@ -8,6 +8,7 @@ echo "Setting up SGXAGENT Related roles and user in AAS Database"
 unset https_proxy
 unset http_proxy
 
+IPADDR=10.1.68.223
 #Get the value of AAS IP address and port. Default vlue is also provided.
 aas_hostname=${AAS_URL:-"https://10.1.68.223:8443"}
 CURL_OPTS="-s --insecure"
@@ -100,7 +101,7 @@ echo "$role_id"
 
 create_roles() {
 
-		local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=SGXAGENT TLS Certificate;SAN=127.0.0.1;CERTTYPE=TLS" ) #get roleid
+		local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=SGXAGENT TLS Certificate;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
 		#local sgxagent_rm_rid=$( create_user_roles "SGXAGENT" "RoleManager" ) #Get roleid
 		#local sgxagent_um_rid=$( create_user_roles "SGXAGENT" "UserManager" ) #Get roleid
 		#local sgxagent_urm_rid=$( create_user_roles "SGXAGENT" "UserRoleManager" ) #Get roleid

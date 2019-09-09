@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"flag"
 	"fmt"
@@ -206,7 +207,6 @@ func (a *App) Run(args []string) error {
 		os.Exit(1)
 	}
 
-	//bin := args[0]
 	cmd := args[1]
 	switch cmd {
 	default:
@@ -218,18 +218,6 @@ func (a *App) Run(args []string) error {
 			os.Exit(1)
 		}
 		return a.PrintDirFileContents(args[2])
-	case "token":
-		if err := a.TestTokenAuth(); err != nil {
-			fmt.Printf("jwt token test create and validate test error: %v ", err)
-			return err
-		}
-		return nil
-	case "certreq":
-		if err := a.GenerateCertRequest(); err != nil {
-			fmt.Printf("certificat request error: %v ", err)
-			return err
-		}
-		return nil
 	case "run":
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
@@ -272,16 +260,23 @@ func (a *App) Run(args []string) error {
 			args[2] != "database" &&
 			args[2] != "server" &&
 			args[2] != "all" &&
-			args[2] != "tls" &&
-			args[2] != "jwt" {
+			args[2] != "tls" {
 			a.printUsage()
 			return errors.New("No such setup task")
 		}
 
-		valid_err := validateSetupArgs(args[2], args[3:])
-		if valid_err != nil {
-			return valid_err
+		err := validateSetupArgs(args[2], args[3:])
+		if err != nil {
+			return err
 		}
+
+		a.Config = config.Global()
+		var context setup.Context
+		err = a.Config.SaveConfiguration(context)
+                if err != nil {
+                        fmt.Println("Error saving configuration: " + err.Error())
+		        return errors.New("Configuration save ends with error")
+                }
 
 		task := strings.ToLower(args[2])
 		flags := args[3:]
@@ -289,16 +284,24 @@ func (a *App) Run(args []string) error {
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
 					Flags:         args,
+					CmsBaseURL:    a.Config.CMSBaseUrl,
 					CaCertDirPath: constants.TrustedCAsStoreDir,
 					ConsoleWriter: os.Stdout,
 				},
 				setup.Download_Cert{
 					Flags:              args,
+					CmsBaseURL:    	    a.Config.CMSBaseUrl,
 					KeyFile:            path.Join(a.configDir(), constants.TLSKeyFile),
 					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
-					CommonName:         constants.DefaultScsTlsCn,
+					Subject: pkix.Name{
+                                                Country:      []string{a.Config.Subject.Country},
+                                                Organization: []string{a.Config.Subject.Organization},
+                                                Locality:     []string{a.Config.Subject.Locality},
+                                                Province:     []string{a.Config.Subject.Province},
+                                                CommonName:   a.Config.Subject.TLSCertCommonName,
+                                        },
 					SanList:            constants.DefaultScsTlsSan,
 					CertType:           "TLS",
 					CaCertsDir:         constants.TrustedCAsStoreDir,
@@ -335,15 +338,10 @@ func (a *App) Run(args []string) error {
                                         Config:           a.configuration(),
                                 },
 
-				/*tasks.JWT{
-					Flags:         flags,
-					Config:        a.configuration(),
-					ConsoleWriter: os.Stdout,
-				},*/
 			},
 			AskInput: false,
 		}
-		var err error
+		//var err error
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
@@ -364,7 +362,6 @@ func (a *App) retrieveJWTSigningCerts() error {
         url := c.AuthServiceUrl + "noauth/jwt-certificates"
         req, _ := http.NewRequest("GET", url, nil)
         req.Header.Add("accept", "application/x-pem-file")
-	req.Header.Add("accept", "application/x-pem-file")
         rootCaCertPems, err := cos.GetDirFileContents(constants.RootCADirPath, "*.pem" )
         if err != nil {
                 return err
@@ -384,7 +381,7 @@ func (a *App) retrieveJWTSigningCerts() error {
         httpClient := &http.Client{
                                 Transport: &http.Transport{
                                         TLSClientConfig: &tls.Config{
-                                                InsecureSkipVerify: true,
+                                                InsecureSkipVerify: false,
                                                 RootCAs: rootCAs,
                                                 },
                                         },
@@ -690,32 +687,24 @@ func validateSetupArgs(cmd string, args []string) error {
 		if len(args) != 0 {
 			return errors.New("Please setup the arguments with env")
 		}
-
-	case "jwt":
-		return nil
 	}
 
 	return nil
 }
-
-//TODO : Debug code to be removed. Added for testing database query functions
-/*func (a *App) TestNewDBFunctions() error {
-*	fmt.Println("Test New DB functions")
-*	db, err := a.DatabaseFactory()
-*	if err != nil {
-*		log.WithError(err).Error("failed to open database")
-*		return err
-*	}
-*	users, err := db.UserRepository().GetRoles(types.User{Name: "admin"}, nil, []string{}, true)
-*	if err != nil {
-*		fmt.Println(err)
-*		return err
-*	}
-*	fmt.Printf("User: %v", users)
-*
-*	defer db.Close()
-*	return nil
-}*/
+func (a* App) PrintDirFileContents(dir string) error {
+        if dir == "" {
+                return fmt.Errorf("PrintDirFileContents needs a directory path to look for files")
+        }
+        data, err := cos.GetDirFileContents(dir, "")
+        if err != nil {
+                return err
+        }
+        for i, fileData := range data {
+                fmt.Println("File :", i)
+                fmt.Printf("%s",fileData)
+        }
+        return nil
+}
 
 func (a *App) DatabaseFactory() (repository.SCSDatabase, error) {
 	pg := &a.configuration().Postgres

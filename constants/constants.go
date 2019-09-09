@@ -18,9 +18,6 @@ const (
 	ConfigFile                    = "config.yml"
 	TLSCertFile                   = "cert.pem"
 	TLSKeyFile                    = "key.pem"
-	TokenSignKeysAndCertDir       = ConfigDir + "certs/tokensign/"
-	TokenSignKeyFile              = TokenSignKeysAndCertDir + "jwt.key"
-	TokenSignCertFile             = TokenSignKeysAndCertDir + "jwtsigncert.pem"
 	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
 	RootCADirPath                 = ConfigDir + "certs/cms-root-ca/"
@@ -39,9 +36,6 @@ const (
 	DefaultHttpPort               = 9443
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
-	DefaultScsTlsSan              = "127.0.0.1,localhost"
-	DefaultScsTlsCn               = "SCS TLS Certificate"
-	DefaultScsJwtCn               = "SCS JWT Signing Certificate"
 	DefaultIntelProvServerURL     = "https://sbx.api.trustedservices.intel.com/sgx/certification/v1/"
 	EncPPID_Key		      = "encrypted_ppid"
 	CpuSvn_Key		      = "cpu_svn"
@@ -52,6 +46,13 @@ const (
 	Ca_Processor		      = "processor"
 	Ca_Platform		      = "platform"
 	Fmspc_Key		      = "fmspc"
+	DefaultScsTlsSan              = "127.0.0.1,localhost"
+        DefaultScsTlsCn               = "SCS TLS Certificate"
+        DefaultScsCertOrganization    = "INTEL"
+        DefaultScsCertCountry         = "US"
+        DefaultScsCertProvince        = "SF"
+        DefaultScsCertLocality        = "SC"
+
 
 )
 
@@ -65,6 +66,3 @@ const (
 	Running State = true
 )
 
-func GetDefaultAdministratorRoles() []string {
-	return []string{"RoleManager", "UserManager", "UserRoleManager"}
-}

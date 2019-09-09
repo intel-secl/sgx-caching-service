@@ -5,11 +5,7 @@
 package postgres
 
 import (
-	//"fmt"
-	//"intel/isecl/sgx-caching-service/repository"
-
 	"intel/isecl/sgx-caching-service/types"
-
 	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
 )
@@ -48,9 +44,6 @@ func (r *PostgresPckCertRepository) Update(u types.PckCert) error {
 }
 
 func (r *PostgresPckCertRepository) Delete(u types.PckCert) error {
-	if err := r.db.Model(&u).Association("Roles").Clear().Error; err != nil {
-		return err
-	}
 	return r.db.Delete(&u).Error
 }
 

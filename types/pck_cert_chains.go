@@ -7,17 +7,6 @@ import (
         "time"
 )
 
-/*import (
-	"bytes"
-	"fmt"
-        "time"
-
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/lib/common/crypt"
-
-	"golang.org/x/crypto/bcrypt"
-)*/
-
 // PckCertChain struct is the database schema of a PckCertChains table
 type PckCertChain struct {
 	Id 		uint     `json:"-" gorm:"primary_key;auto_increment"`

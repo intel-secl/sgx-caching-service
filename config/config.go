@@ -10,13 +10,12 @@ import (
 	"os"
 	"path"
 	"sync"
-	//"fmt"
-
+	"intel/isecl/lib/common/setup"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
-// should move this into lib common, as its duplicated across AAS and AAS
+// should move this into lib common, as its duplicated across SCS and SCS
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
@@ -52,6 +51,13 @@ type Configuration struct {
 		ApiSubscriptionkey string 
 	}
 	ProxyUrl string
+	Subject    struct {
+                TLSCertCommonName string
+                Organization      string
+                Country           string
+                Province          string
+                Locality          string
+        }
 }
 
 var mu sync.Mutex
@@ -88,6 +94,63 @@ func (c *Configuration) Save() error {
 	}
 	defer file.Close()
 	return yaml.NewEncoder(file).Encode(c)
+}
+
+func (conf *Configuration) SaveConfiguration(c setup.Context) error {
+        var err error = nil
+
+        cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
+        if err == nil && cmsBaseUrl != "" {
+                conf.CMSBaseUrl = cmsBaseUrl
+        } else if conf.CMSBaseUrl == "" {
+                    log.Error("CMS_BASE_URL is not defined in environment")
+        }
+
+        aasBaseUrl, err := c.GetenvString("AAS_BASE_URL", "AAS Base URL")
+        if err == nil && aasBaseUrl != "" {
+                conf.AuthServiceUrl = aasBaseUrl
+        } else if conf.AuthServiceUrl == "" {
+                    log.Error("AAS_BASE_URL is not defined in environment")
+        }
+
+
+        tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
+        if err == nil && tlsCertCN != "" {
+                conf.Subject.TLSCertCommonName = tlsCertCN
+        } else if conf.Subject.TLSCertCommonName == "" {
+                        conf.Subject.TLSCertCommonName = constants.DefaultScsTlsCn
+        }
+
+        certOrg, err := c.GetenvString("SCS_CERT_ORG", "SCS Certificate Organization")
+        if err == nil && certOrg != "" {
+                conf.Subject.Organization = certOrg
+        } else if conf.Subject.Organization == "" {
+                        conf.Subject.Organization = constants.DefaultScsCertOrganization
+        }
+
+        certCountry, err := c.GetenvString("SCS_CERT_COUNTRY", "SCS Certificate Country")
+        if err == nil &&  certCountry != "" {
+                conf.Subject.Country = certCountry
+        } else if conf.Subject.Country == "" {
+                        conf.Subject.Country = constants.DefaultScsCertCountry
+        }
+
+        certProvince, err := c.GetenvString("SCS_CERT_PROVINCE", "SCS Certificate Province")
+        if err == nil && certProvince != "" {
+                conf.Subject.Province = certProvince
+        } else if err != nil || conf.Subject.Province == "" {
+                        conf.Subject.Province = constants.DefaultScsCertProvince
+        }
+
+        certLocality, err := c.GetenvString("SCS_CERT_LOCALITY", "SCS Certificate Locality")
+        if err == nil && certLocality != "" {
+                conf.Subject.Locality = certLocality
+        } else if conf.Subject.Locality == "" {
+                        conf.Subject.Locality = constants.DefaultScsCertLocality
+        }
+
+        return conf.Save()
+
 }
 
 func Load(path string) *Configuration {

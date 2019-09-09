@@ -11,6 +11,9 @@ unset http_proxy
 #Get the value of AAS IP address and port. Default vlue is also provided.
 aas_hostname=${AAS_URL:-"https://10.1.68.223:8443"}
 CURL_OPTS="-s --insecure"
+IPADDR="10.1.68.223,127.0.0.1,localhost"
+#CN="SCS TLS Certificate,O=INTEL,L=SC,ST=SF,C=US"
+CN="SCS TLS Certificate"
 
 mkdir -p /tmp/setup/scs
 tmpdir=$(mktemp -d -p /tmp/setup/scs)
@@ -100,7 +103,7 @@ echo "$role_id"
 
 create_roles() {
 
-		local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=SCS TLS Certificate;SAN=127.0.0.1;CERTTYPE=TLS" ) #get roleid
+		local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
 		#local scs_rm_rid=$( create_user_roles "SCS" "RoleManager" ) #Get roleid
 		#local scs_um_rid=$( create_user_roles "SCS" "UserManager" ) #Get roleid
 		#local scs_urm_rid=$( create_user_roles "SCS" "UserRoleManager" ) #Get roleid
