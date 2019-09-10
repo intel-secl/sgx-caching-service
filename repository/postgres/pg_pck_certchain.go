@@ -14,39 +14,39 @@ type PostgresPckCertChainRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresPckCertChainRepository) Create(u types.PckCertChain) (*types.PckCertChain, error) {
+func (r *PostgresPckCertChainRepository) Create(certchain types.PckCertChain) (*types.PckCertChain, error) {
 
-	err := r.db.Create(&u).Error
-	return &u, err
+	err := r.db.Create(&certchain).Error
+	return &certchain, err
 }
 
-func (r *PostgresPckCertChainRepository) Retrieve(u types.PckCertChain) (*types.PckCertChain, error) {
-	err := r.db.Where(&u).First(&u).Error
+func (r *PostgresPckCertChainRepository) Retrieve(certchain types.PckCertChain) (*types.PckCertChain, error) {
+	err := r.db.Where(&certchain).First(&certchain).Error
 	if err != nil {
 		return nil, err
 	}
-	return &u, nil
+	return &certchain, nil
 }
 
-func (r *PostgresPckCertChainRepository) RetrieveAll(u types.PckCertChain) (types.PckCertChains, error) {
-	var users types.PckCertChains
-	err := r.db.Where(&u).Find(&users).Error
+func (r *PostgresPckCertChainRepository) RetrieveAll(certchain types.PckCertChain) (types.PckCertChains, error) {
+	var certchains types.PckCertChains
+	err := r.db.Where(&certchain).Find(&certchains).Error
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("db users", users).Trace("RetrieveAll")
-	return users, err
+	log.WithField("db users", certchains).Trace("RetrieveAll")
+	return certchains, err
 }
 
-func (r *PostgresPckCertChainRepository) Update(u types.PckCertChain) error {
-	return r.db.Save(&u).Error
+func (r *PostgresPckCertChainRepository) Update(certchain types.PckCertChain) error {
+	return r.db.Save(&certchain).Error
 }
 
-func (r *PostgresPckCertChainRepository) Delete(u types.PckCertChain) error {
-	if err := r.db.Model(&u).Association("PckCert").Clear().Error; err != nil {
+func (r *PostgresPckCertChainRepository) Delete(certchain types.PckCertChain) error {
+	if err := r.db.Model(&certchain).Association("PckCert").Clear().Error; err != nil {
 		return err
 	}
-	return r.db.Delete(&u).Error
+	return r.db.Delete(&certchain).Error
 }
 

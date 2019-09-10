@@ -13,11 +13,9 @@ import (
 
 type PostgresPlatformTcbRepository struct {
 	db *gorm.DB
-	
 }
 
 func (r *PostgresPlatformTcbRepository) Create(p types.PlatformTcb) (*types.PlatformTcb, error) {
-
 	err := r.db.Create(&p).Error
 	return &p, err
 }
@@ -31,15 +29,6 @@ func (r *PostgresPlatformTcbRepository) Retrieve(p types.PlatformTcb) (*types.Pl
 	return &p, nil
 }
 
-/*
-func (r *PostgresPlatformTcbRepository)  RetriveCachedPlatormInfo(p types.PlatformTcb)(*types.PlatformTcb, *types.PckCert, *types.PckCertChain, error) {
-	var count int
-	pinto, err := Retrieve(p)
-	if err != nil {
-		return nil,nil, nil, err
-	}
-	return nil,nil,nil,err
-}*/
 
 func (r *PostgresPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.PlatformTcbs, error) {
 	var platforminfo types.PlatformTcbs
@@ -51,6 +40,18 @@ func (r *PostgresPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.
 	log.WithField("db platforminfo", platforminfo).Trace("RetrieveAll")
 	return platforminfo, err
 }
+
+func (r *PostgresPlatformTcbRepository) RetrieveAllPlatformInfo() (types.PlatformTcbs, error) {
+        var p types.PlatformTcbs
+        err := r.db.Find(&p).Error
+        if err != nil {
+                return nil, err
+        }
+
+        log.WithField("db PlatformInfo", p).Trace("RetrieveAll")
+        return p, err
+}
+
 
 func (r *PostgresPlatformTcbRepository) Update(u types.PlatformTcb) error {
 	return r.db.Save(&u).Error

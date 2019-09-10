@@ -5,10 +5,9 @@
 package resource
 
 import (
-	//"fmt"
+	"fmt"
 	"encoding/json"
 	"errors"
-	//"intel/isecl/lib/common/context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -149,7 +148,8 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 
 
 	if resp.StatusCode != 200 {
-		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
+		dump, _ := httputil.DumpResponse(resp, true)
+		log.WithField("Status Code", resp.StatusCode).Error(string(dump))
 		return errors.New("Invalid response from Intel SGX Provisioning Server for PCKCert")
 	}
 
@@ -296,20 +296,33 @@ func FetchQEIdentityInfo( in *SgxData ) (error){
 }
 
 func CachePckCertInfo( db repository.SCSDatabase, data *SgxData )( error ){
+
+	var err error
 	data.PckCert = &types.PckCert {
 					PceId: data.PlatformInfo.PceId, 
 					QeId: data.PlatformInfo.QeId, 
 					Tcbm: data.PckCertInfo.Tcbm,
 					Fmspc: data.PckCertInfo.Fmspc, 
 					PckCert: data.PckCertInfo.PckCert,
-					CertChainId: data.PckCertChain.Id,
-					CreatedTime: time.Now(), 
-					UpdatedTime: time.Now()}
-	var err error
-	data.PckCert, err = db.PckCertRepository().Create(*data.PckCert)
-	if err != nil {
-		log.WithError(err).Error("PckCert Info Insertion failed")
-		return err
+					CertChainId: data.PckCertChain.Id,}
+
+	existingPckCert, err := db.PckCertRepository().Retrieve(*data.PckCert)
+	if existingPckCert != nil {
+		data.PckCert.UpdatedTime = time.Now()
+		data.PckCert.CreatedTime = existingPckCert.CreatedTime
+		err = db.PckCertRepository().Update(*data.PckCert)
+		if err != nil {
+			log.WithError(err).Error("PckCert Info Insertion failed")
+			return err
+		}
+	}else{
+		data.PckCert.CreatedTime = time.Now()
+		data.PckCert.UpdatedTime = time.Now()
+		data.PckCert, err = db.PckCertRepository().Create(*data.PckCert)
+		if err != nil {
+			log.WithError(err).Error("PckCert Info Insertion failed")
+			return err
+		}
 	}
 	return nil
 }
@@ -332,15 +345,29 @@ func CacheQEIdentityInfo( db repository.SCSDatabase, data *SgxData )( error ){
 }
 
 func CachePckCertChainInfo( db repository.SCSDatabase, data *SgxData )( error ){
-	data.PckCertChain = &types.PckCertChain{	
-					CertChain: data.PckCertChainInfo.PckCertChain,
-					CreatedTime: time.Now(), 
-					UpdatedTime: time.Now()}
+
 	var err error
-	data.PckCertChain, err = db.PckCertChainRepository().Create(*data.PckCertChain)
-	if err != nil {
-		log.WithError(err).Error("PckCertChain Info Insertion failed")
-		return err
+	data.PckCertChain = &types.PckCertChain{	
+					CertChain: data.PckCertChainInfo.PckCertChain,}
+	existingPckCertChain, err := db.PckCertChainRepository().Retrieve(*data.PckCertChain)
+	log.Debug("Existing Pck Cert Chain", existingPckCertChain)
+	if existingPckCertChain != nil {
+		data.PckCertChain.Id = existingPckCertChain.Id
+		data.PckCertChain.CreatedTime = existingPckCertChain.CreatedTime
+		data.PckCertChain.UpdatedTime = time.Now()
+		err = db.PckCertChainRepository().Update(*data.PckCertChain)
+		if err != nil {
+			log.WithError(err).Error("PckCertChain Info Updation failed")
+			return err
+		}
+	}else{
+		data.PckCertChain.UpdatedTime = time.Now()
+		data.PckCertChain.CreatedTime = time.Now()
+		data.PckCertChain, err = db.PckCertChainRepository().Create(*data.PckCertChain)
+		if err != nil {
+			log.WithError(err).Error("PckCertChain Info Insertion failed")
+			return err
+		}
 	}
 	log.WithField("PCK Cert Chain ID", data.PckCertChain.Id).Debug("Db value")
 	return nil
@@ -365,14 +392,25 @@ func CacheFmspcTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
 }
 
 func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
-	data.PlatformTcb.CreatedTime = time.Now()
-	data.PlatformTcb.UpdatedTime = time.Now()
 
 	var err error
-	data.PlatformTcb, err = db.PlatformTcbRepository().Create(*data.PlatformTcb)
-	if err != nil {
-			log.WithError(err).Error("Platform Info Insertion failed")
-			return err
+	existingPlaformData, err := db.PlatformTcbRepository().Retrieve(*data.PlatformTcb)
+        if  existingPlaformData != nil {
+		data.PlatformTcb.CreatedTime = existingPlaformData.CreatedTime
+		data.PlatformTcb.UpdatedTime = time.Now()
+		err = db.PlatformTcbRepository().Update(*data.PlatformTcb)
+		if err != nil {
+				log.WithError(err).Error("Platform Info Updation failed")
+				return err
+		}
+        }else {
+		data.PlatformTcb.UpdatedTime = time.Now()
+		data.PlatformTcb.CreatedTime = time.Now()
+		data.PlatformTcb, err = db.PlatformTcbRepository().Create(*data.PlatformTcb)
+		if err != nil {
+				log.WithError(err).Error("Platform Info Insertion failed")
+				return err
+		}
 	}
 	return nil
 }
@@ -516,11 +554,87 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 
+func RefreshPckCerts(db repository.SCSDatabase) error {
+
+	existingPlaformData, err := db.PlatformTcbRepository().RetrieveAllPlatformInfo()
+        if  len(existingPlaformData) == 0 {
+                return errors.New("Cached PCK Cert count is 0, cannot perform refresh operation")
+        }
+
+	log.Debug("Existing Platform info count:", len(existingPlaformData))
+	var data SgxData
+	for n := 0; n < len(existingPlaformData); n++ {
+		
+		tmp := existingPlaformData[n]
+		data.PlatformInfo.EncryptedPPID = tmp.Encppid
+	 	data.PlatformInfo.CpuSvn = tmp.CpuSvn 
+	 	data.PlatformInfo.PceSvn = tmp.PceSvn
+		data.PlatformInfo.PceId = tmp.PceId
+		data.PlatformInfo.QeId = tmp.QeId 
+
+		log.Debug("Existing Platform Data:", existingPlaformData[n])
+
+		err = FetchPCKCertInfo(&data)
+                if err != nil {
+                        return errors.New(fmt.Sprintf("Error in Refresh Pck Cert Info: %s", string(err.Error())))
+                }
+
+
+		data.PlatformTcb = &types.PlatformTcb{
+						Encppid: data.PlatformInfo.EncryptedPPID, 
+						CpuSvn: data.PlatformInfo.CpuSvn, 
+						PceSvn:data.PlatformInfo.PceSvn, 
+						PceId: data.PlatformInfo.PceId, 
+						QeId: data.PlatformInfo.QeId, 
+		}
+
+		err = CachePlatformTcbInfo(db, &data) 
+		if err != nil {
+                        return errors.New(fmt.Sprintf("Error in Cache Platform Tcb Cert Info: %s", err.Error()))
+		}
+
+		err = CachePckCertChainInfo(db, &data) 
+                if err != nil {
+                        return errors.New(fmt.Sprintf("Error in Cache Pck Cert Chain Info: %s", err.Error()))
+		}
+
+		err = CachePckCertInfo(db, &data) 
+                if err != nil {
+                        return errors.New(fmt.Sprintf("Error in Cache Pck Cert Info: %s", err.Error()))
+		}
+    	}	
+	 
+	return nil
+}
+
+func RefreshTcbInfos(db repository.SCSDatabase) error {
+	return nil
+}
+
 
 //Admin Call
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		log.Debug("Calling PushPlatformInfoCB")
+		log.Debug("Calling RefreshPlatformInfoCB", r.URL.Query())
+		if  r.URL.Query()!= nil {
+                	Type,_ := r.URL.Query()["type"]
+                        if !ValidateInputString(constants.Type_Key, Type[0]) {
+                        	return &resourceError{Message: "Invalid query Param Data type", StatusCode: http.StatusBadRequest}
+			}
+
+			err := RefreshPckCerts(db)
+			if err != nil{
+                        	return &resourceError{Message: "Error in Refresh Pck Certificates", 
+							StatusCode: http.StatusInternalServerError}
+			}
+			return nil
+		}
+
+		err := RefreshTcbInfos(db)
+		if err != nil{
+                       	return &resourceError{Message: "Error in Refresh Pck Certificates", 
+						StatusCode: http.StatusInternalServerError}
+		}
 		return nil
 	}
 }

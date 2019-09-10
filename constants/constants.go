@@ -43,6 +43,7 @@ const (
 	PceId_Key		      = "pce_id"
 	QeId_Key		      = "qe_id"
 	Ca_Key		      	      = "ca"
+	Type_Key		      = "type"
 	Ca_Processor		      = "processor"
 	Ca_Platform		      = "platform"
 	Fmspc_Key		      = "fmspc"
