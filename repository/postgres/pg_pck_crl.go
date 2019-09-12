@@ -39,6 +39,20 @@ func (r *PostgresPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls,
 	return crls, err
 }
 
+
+func (r *PostgresPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
+
+	var crls types.PckCrls
+        err := r.db.Find(&crls).Error
+        if err != nil {
+                return nil, err
+        }
+
+        log.WithField("DB Crls", crls).Trace("RetrieveAll")
+        return crls, err
+}
+
+
 func (r *PostgresPckCrlRepository) Update(crl types.PckCrl) error {
 	return r.db.Save(&crl).Error
 }

@@ -15,7 +15,6 @@ type PostgresPckCertChainRepository struct {
 }
 
 func (r *PostgresPckCertChainRepository) Create(certchain types.PckCertChain) (*types.PckCertChain, error) {
-
 	err := r.db.Create(&certchain).Error
 	return &certchain, err
 }

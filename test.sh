@@ -24,10 +24,13 @@ v_qeid="D475493A08E576404388A928DA23EA15"
 v_ca="processor"
 v_fmspc="10906ec10000"
 
+hostname="127.0.0.1"
+port=9443
+
 #v_ca="platform"
 
 if [ "$op" = "pckcert" ] && [ "$env" = "scs" ]; then
-	curl -X GET -vvv --tlsv1.2 "https://10.1.68.223:9443/scs/sgx/certification/v1/pckcert?encrypted_ppid=$v_encppid&cpusvn=$v_cpusvn&pcesvn=$v_pcesvn&pceid=$v_pceid&qeid=$v_qeid" -s --insecure
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/pckcert?encrypted_ppid=$v_encppid&cpusvn=$v_cpusvn&pcesvn=$v_pcesvn&pceid=$v_pceid&qeid=$v_qeid" -s --insecure
 
 elif [ "$op" = "pckcert" ] && [ "$env" = "intel" ]; then
 
@@ -41,7 +44,7 @@ fi
 
 
 if [ "$op" = "pckcrl" ] && [ "$env" = "scs" ]; then
-	curl -X GET -vvv --tlsv1.2 "https://10.1.68.223:9443/scs/sgx/certification/v1/pckcrl?ca=$v_ca" -s --insecure
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/pckcrl?ca=$v_ca" -s --insecure
 elif [ "$op" = "pckcrl" ] && [ "$env" = "intel" ]; then
 	export http_proxy=http://proxy-us.intel.com:911/
 	export https_proxy=http://proxy-us.intel.com:911/
@@ -52,7 +55,7 @@ fi
 
 
 if [ "$op" = "qe" ] && [ "$env" = "scs" ]; then
-	curl -X GET -vvv --tlsv1.2 "https://10.1.68.223:9443/scs/sgx/certification/v1/qe/identity" -s --insecure
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/qe/identity" -s --insecure
 
 elif [ "$op" = "qe" ] && [ "$env" = "intel" ]; then
 	export http_proxy=http://proxy-us.intel.com:911/
@@ -61,12 +64,12 @@ elif [ "$op" = "qe" ] && [ "$env" = "intel" ]; then
 	unset http_proxy
 	unset https_proxy
 elif [ "$op" = "qe" ] && [ "$env" = "nodejs" ]; then
-	curl -X GET -vvv --tlsv1.2 "https://10.1.68.223:8081/sgx/certification/v1/qe/identity" -s --insecure
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:8081/sgx/certification/v1/qe/identity" -s --insecure
 fi
 
 
 if [ "$op" = "fmspc" ] && [ "$env" = "scs" ]; then
-	curl -X GET -vvv --tlsv1.2 "https://10.1.68.223:9443/scs/sgx/certification/v1/tcb?fmspc=$v_fmspc" -s --insecure
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/tcb?fmspc=$v_fmspc" -s --insecure
 
 elif [ "$op" = "fmspc" ] && [ "$env" = "intel" ]; then
 	export http_proxy=http://proxy-us.intel.com:911/
@@ -89,7 +92,16 @@ printf "{
 \"qe_id\": \"$v_qeid\"
 }" > $PF_CREATE_JSON_FILE 
 
-	curl -X POST -vvv --tlsv1.2 "https://10.1.68.223:9443/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
+	curl -X POST -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
 
 fi
-#curl -X GET -vvv --tlsv1.2 https://10.1.68.223:9443/scs/test/jwt -s --insecure
+
+
+
+
+
+if [[ "$op" = "refresh" ]]; then
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/refresh?type=certs" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}"  -s --insecure
+
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/refresh" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}"  -s --insecure
+fi

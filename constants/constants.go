@@ -59,6 +59,12 @@ const (
 
 // State represents whether or not a daemon is running or not
 type State bool
+type CacheType int
+
+const (
+	CacheInsert = iota + 1
+	CacheRefresh
+)
 
 const (
 	// Stopped is the default nil value, indicating not running

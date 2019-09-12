@@ -14,36 +14,47 @@ type PostgresFmspcTcbInfoRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Create(u types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
+func (r *PostgresFmspcTcbInfoRepository) Create(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
 
-	err := r.db.Create(&u).Error
-	return &u, err
+	err := r.db.Create(&tcb ).Error
+	return &tcb , err
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Retrieve(u types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
-	err := r.db.Where(&u).First(&u).Error
+func (r *PostgresFmspcTcbInfoRepository) Retrieve(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
+	err := r.db.Where(&tcb ).First(&tcb ).Error
 	if err != nil {
 		return nil, err
 	}
-	return &u, nil
+	return &tcb , nil
 }
 
-func (r *PostgresFmspcTcbInfoRepository) RetrieveAll(u types.FmspcTcbInfo) (types.FmspcTcbInfos, error) {
-	var users types.FmspcTcbInfos
-	err := r.db.Where(&u).Find(&users).Error
+func (r *PostgresFmspcTcbInfoRepository) RetrieveAll(tcb types.FmspcTcbInfo) (types.FmspcTcbInfos, error) {
+	var tcbs types.FmspcTcbInfos
+	err := r.db.Where(&tcb).Find(&tcbs).Error
 	if err != nil {
 		return nil, err
 	}
 
-	log.WithField("db users", users).Trace("RetrieveAll")
-	return users, err
+	log.WithField("db Fmspc", tcbs).Trace("RetrieveAll")
+	return tcbs, err
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Update(u types.FmspcTcbInfo) error {
-	return r.db.Save(&u).Error
+func (r *PostgresFmspcTcbInfoRepository) RetrieveAllFmspcTcbInfos() (types.FmspcTcbInfos, error) {
+	var tcbs types.FmspcTcbInfos
+	err := r.db.Find(&tcbs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	log.WithField("db Tcbs", tcbs).Trace("RetrieveAll")
+	return tcbs, err
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Delete(u types.FmspcTcbInfo) error {
-	return r.db.Delete(&u).Error
+func (r *PostgresFmspcTcbInfoRepository) Update(tcb types.FmspcTcbInfo) error {
+	return r.db.Save(&tcb ).Error
+}
+
+func (r *PostgresFmspcTcbInfoRepository) Delete(tcb types.FmspcTcbInfo) error {
+	return r.db.Delete(&tcb ).Error
 }
 

@@ -10,6 +10,7 @@ type PckCrlRepository interface {
 	Create(types.PckCrl) (*types.PckCrl, error)
 	Retrieve(types.PckCrl) (*types.PckCrl, error)
 	RetrieveAll(user types.PckCrl) (types.PckCrls, error)
+	RetrieveAllPckCrls() (types.PckCrls, error)
 	Update(types.PckCrl) error
 	Delete(types.PckCrl) error
 }
