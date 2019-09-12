@@ -45,6 +45,7 @@ type Configuration struct {
 	}
 	CMSBaseUrl string
 	AuthServiceUrl string
+	RefreshHours int
 
 	ProvServerInfo struct {
 		ProvServerUrl string
@@ -147,6 +148,13 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
                 conf.Subject.Locality = certLocality
         } else if conf.Subject.Locality == "" {
                         conf.Subject.Locality = constants.DefaultScsCertLocality
+        }
+
+        refreshHours, err := c.GetenvInt("SCS_REFRESH_HOURS", "SCS Automatic Refresh of SGX Data")
+        if err == nil && refreshHours < 1  {
+                conf.RefreshHours = refreshHours
+        } else if err != nil || conf.RefreshHours < 1 {
+                        conf.RefreshHours = constants.DefaultScsRefreshHours
         }
 
         return conf.Save()

@@ -404,6 +404,32 @@ func (a *App) retrieveJWTSigningCerts() error {
         return nil
 }
 
+func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
+
+	go func() {
+		done := make(chan os.Signal)
+    		signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+
+		//ticker := time.NewTicker(time.Second*30)
+		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
+		defer ticker.Stop()
+		for {
+		      select {
+		       	case <-done:
+		       	   fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
+		           return 
+		       	case t := <-ticker.C:
+			   log.Debug("Timer started", t)
+			   err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
+			   if err != nil {
+				fmt.Fprintln(os.Stderr, "Error: RefreshCB ends with error:%s", err.Error())
+				done <- syscall.SIGTERM
+			   }
+		      }
+		}
+	}()
+	return nil	
+}
 func (a *App) startServer() error {
 	c := a.configuration()
 
@@ -454,6 +480,14 @@ func (a *App) startServer() error {
 	}(resource.SetTestJwt)
 
 
+
+	// Setup signal handlers to gracefully handle termination
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
+ 	err = a.initRefreshRoutine(scsDB)
+	
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -461,10 +495,7 @@ func (a *App) startServer() error {
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
 	}
-	// Setup signal handlers to gracefully handle termination
-	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
+
 	h := &http.Server{
 		Addr:      fmt.Sprintf(":%d", c.Port),
 		Handler:   handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),

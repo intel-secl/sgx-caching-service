@@ -5,6 +5,7 @@
 package resource
 
 import (
+	"strings"
 	"fmt"
 	"encoding/json"
 	"errors"
@@ -758,7 +759,27 @@ func RefreshTcbInfos(db repository.SCSDatabase) error {
 	return nil
 }
 
+func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
 
+	log.Debug("Timer CB: RefreshPlatformInfoTimerCB, started")
+	var err error
+	if strings.Compare(rtype ,constants.Type_Refresh_Cert) == 0 {
+		err = RefreshPckCerts(db)
+		if err != nil{
+			log.WithError(err).Error("Error in Refresh Pck Certificates")
+			return err
+		}
+	} else if strings.Compare(rtype, constants.Type_Refresh_Tcb) == 0  {
+		err = RefreshTcbInfos(db)
+		if err != nil{
+			log.WithError(err).Error("Error in Refresh Tcb Infos")
+			return err
+		}
+	}
+	log.Debug("Timer CB: RefreshPlatformInfoTimerCB, completed")
+	return nil
+
+}
 //Admin Call
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {

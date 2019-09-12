@@ -53,7 +53,9 @@ const (
         DefaultScsCertCountry         = "US"
         DefaultScsCertProvince        = "SF"
         DefaultScsCertLocality        = "SC"
-
+	DefaultScsRefreshHours	      = 24
+	Type_Refresh_Cert 	      = "certs"
+	Type_Refresh_Tcb	      = "tcbs"
 
 )
 
