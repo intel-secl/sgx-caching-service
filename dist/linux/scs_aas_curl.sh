@@ -9,9 +9,9 @@ unset https_proxy
 unset http_proxy
 
 #Get the value of AAS IP address and port. Default vlue is also provided.
-aas_hostname=${AAS_URL:-"https://10.1.68.223:8443"}
+aas_hostname=${AAS_URL:-"https://10.105.168.90:8443"}
 CURL_OPTS="-s --insecure"
-IPADDR="10.1.68.223,127.0.0.1,localhost"
+IPADDR="10.105.168.90,127.0.0.1,localhost"
 #CN="SCS TLS Certificate,O=INTEL,L=SC,ST=SF,C=US"
 CN="SCS TLS Certificate"
 

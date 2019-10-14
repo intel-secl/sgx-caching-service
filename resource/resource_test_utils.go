@@ -5,12 +5,14 @@
 package resource
 import ( 
 
+	"time"
         "testing"
 	"github.com/gorilla/mux"
 	"net/http/httptest"
 	"github.com/stretchr/testify/assert"
 	"intel/isecl/lib/common/middleware"
 	"intel/isecl/sgx-caching-service/repository"
+	"intel/isecl/sgx-caching-service/constants"
 )
 
 
@@ -31,7 +33,6 @@ func mockRetrieveJWTSigningCerts() error{
 }
 
 
-
 func setupRouter(t *testing.T) *mux.Router {
 
         r := mux.NewRouter()
@@ -43,7 +44,7 @@ func setupRouter(t *testing.T) *mux.Router {
         }(QuoteProviderOps)
 
         sr = r.PathPrefix("/scs/sgx/test/platforminfo/").Subrouter()
-        sr.Use(middleware.NewTokenAuth("test_resources", "test_resources", mockRetrieveJWTSigningCerts))
+        sr.Use(middleware.NewTokenAuth("test_resources", "test_resources", mockRetrieveJWTSigningCerts, time.Minute*constants.DefaultJwtValidateCacheKeyMins))
         func(setters ...func(*mux.Router, repository.SCSDatabase)) {
                 for _, s := range setters {
                         s(sr, nil)

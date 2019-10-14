@@ -54,9 +54,9 @@ const (
         DefaultScsCertProvince        = "SF"
         DefaultScsCertLocality        = "SC"
 	DefaultScsRefreshHours	      = 24
+	DefaultJwtValidateCacheKeyMins = 60
 	Type_Refresh_Cert 	      = "certs"
 	Type_Refresh_Tcb	      = "tcbs"
-
 )
 
 // State represents whether or not a daemon is running or not
