@@ -8,9 +8,9 @@ echo "Setting up SGXAGENT Related roles and user in AAS Database"
 unset https_proxy
 unset http_proxy
 
-IPADDR=10.1.68.223
+IPADDR=10.105.168.90
 #Get the value of AAS IP address and port. Default vlue is also provided.
-aas_hostname=${AAS_URL:-"https://10.1.68.223:8443"}
+aas_hostname=${AAS_URL:-"https://10.105.168.90:8443"}
 CURL_OPTS="-s --insecure"
 
 mkdir -p /tmp/setup/sgxagent
