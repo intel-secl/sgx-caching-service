@@ -410,7 +410,6 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 		done := make(chan os.Signal)
     		signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 
-		//ticker := time.NewTicker(time.Second*30)
 		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
 		defer ticker.Stop()
 		for {
@@ -422,7 +421,12 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 			   log.Debug("Timer started", t)
 			   err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
 			   if err != nil {
-				fmt.Fprintln(os.Stderr, "Error: RefreshCB ends with error:%s", err.Error())
+				fmt.Fprintln(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
+				done <- syscall.SIGTERM
+			   }
+			   err = resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Tcb)
+			   if err != nil {
+				fmt.Fprintln(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
 				done <- syscall.SIGTERM
 			   }
 		      }
