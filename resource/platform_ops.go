@@ -715,6 +715,7 @@ func RefreshAllTcbInfo(db repository.SCSDatabase) error{
 	log.Debug("RefreshAllTcbInfo completed successfully")
 	return nil
 }
+
 func RefreshAllQE(db repository.SCSDatabase) error{
 
 	existingQEData, err := db.QEIdentityRepository().RetrieveAll()
@@ -817,4 +818,3 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		return nil
 	}
 }
-
