@@ -59,6 +59,7 @@ type Configuration struct {
                 Province          string
                 Locality          string
         }
+	CachingModel	int
 }
 
 var mu sync.Mutex
@@ -156,6 +157,15 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
         } else if err != nil || conf.RefreshHours < 1 {
                         conf.RefreshHours = constants.DefaultScsRefreshHours
         }
+
+        model, err := c.GetenvInt("CACHING_MODEL", "Caching Model of SGX Data")
+	if err == nil && model != 0 &&  model != 1 && model != 2 {
+		return errors.New("Invalid CACHING_MODEL")	
+        } else if err != nil ||  model == 0 {
+		conf.CachingModel = constants.DefaultCachingModel
+	} else {
+               conf.CachingModel = model
+	}
 
         return conf.Save()
 
