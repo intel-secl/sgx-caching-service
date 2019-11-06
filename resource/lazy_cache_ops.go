@@ -5,16 +5,17 @@
 package resource
 
 import (
-        "errors"
 
         "intel/isecl/sgx-caching-service/config"
         "intel/isecl/sgx-caching-service/repository"
         "intel/isecl/sgx-caching-service/types"
-        log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType string, cpuSvnType string, 
 			PceSvnType string, pceIdType string, qeIdType string) (*types.PlatformTcb, error ) {
+	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Entering")
+	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Leaving")
 
 	var data SgxData
 	data.PlatformInfo.EncryptedPPID = encryptedPPIDType
@@ -50,6 +51,8 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 
 
 func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *types.FmspcTcbInfo, error ) {
+	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Entering")
+	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Leaving")
 
 	var data SgxData
 	data.FmspcTcbInfo.Fmspc = fmspcType
@@ -69,6 +72,8 @@ func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *ty
 }
 
 func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) ( *types.PckCrl, error ) {
+	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Entering")
+	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Leaving")
 
 	var data SgxData
 	data.PlatformInfo.Ca = CaType
@@ -88,6 +93,8 @@ func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) ( *types.PckCr
 }
 
 func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) ( types.QEIdentities, error ) {
+	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheQEIdentityInfo() Entering")
+	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCacheQEIdentityInfo() Leaving")
 
 	var data SgxData
 
@@ -111,6 +118,8 @@ func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) ( types.QEIdentities,
 }
 
 func GetCacheModel() ( int, error ) {
+	log.Trace("resource/lazy_cache_ops.go:GetCacheModel() Entering")
+	defer log.Trace("resource/lazy_cache_ops.go:GetCacheModel() Leaving")
 
 	conf := config.Global()
 	if conf == nil {

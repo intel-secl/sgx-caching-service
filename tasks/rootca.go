@@ -5,18 +5,16 @@
  package tasks
 
  import (
-	 "errors"
-	 "fmt"
 	 "intel/isecl/lib/common/setup"
 	 "intel/isecl/sgx-caching-service/constants"
 	 "intel/isecl/lib/common/crypt"
 	 "intel/isecl/sgx-caching-service/config"
+	 "github.com/pkg/errors"
 	 "crypto/tls"
 	 "io"
 	 "os"
 	 "io/ioutil"
 	 "net/http"
-	 log "github.com/sirupsen/logrus"
  )
  
  type Root_Ca struct {
@@ -26,7 +24,10 @@
  }
 
  func (ca Root_Ca) Run(c setup.Context) error {
-        log.WithField("CMS", ca.Config.CMSBaseUrl).Debug("URL dump")
+	log.Trace("tasks/rootca:Run() Entering")
+	defer log.Trace("tasks/rootca:Run() Leaving")
+
+        //log.WithField("CMS", ca.Config.CMSBaseUrl).Debug("URL dump")
         url := ca.Config.CMSBaseUrl + "ca-certificates"
         req, _ := http.NewRequest("GET", url, nil)
         req.Header.Add("accept", "application/x-pem-file")
@@ -40,25 +41,26 @@
 
         res, err := httpClient.Do(req)
         if err != nil {
-        	log.WithError(err).Debug("Could not retrieve Root CA Certificate from CMS")
-                return fmt.Errorf("Could not retrieve Root CA certificate from CMS")
+		return errors.Wrapf(err, "tasks/rootca:Run() Could not get response from http client")
         }
         defer res.Body.Close()
         body, _ := ioutil.ReadAll(res.Body)
         err = crypt.SavePemCertWithShortSha1FileName(body, constants.RootCADirPath)
         if err != nil {
-                fmt.Println("Could not store Certificate")
-                return fmt.Errorf("Certificate setup: %v", err)
+		return errors.Wrapf(err, "tasks/rootca:Run() Could not store Certificate")
         }
 
-        log.WithField("Retrieve Root CA cert", "compledted").Debug("successfully")
+        //log.WithField("Retrieve Root CA cert", "compledted").Debug("successfully")
         return nil
  }
  
  func (ca Root_Ca) Validate(c setup.Context) error {
+	log.Trace("tasks/rootca:Validate() Entering")
+	defer log.Trace("tasks/rootca:Validate() Leaving")
+
 	 _, err := os.Stat(constants.RootCADirPath)	 
 	 if os.IsNotExist(err) {
-		 return errors.New("RootCACertFile is not configured")
+		 return errors.Wrapf(err, "tasks/rootca:validate() RootCACertFile is not configured")
 	 }
 	 return nil
  }
