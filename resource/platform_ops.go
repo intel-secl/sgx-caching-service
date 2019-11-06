@@ -24,7 +24,8 @@ import (
 	"intel/isecl/sgx-caching-service/types"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+//	log "github.com/sirupsen/logrus"
+
 )
 
 type Response struct{
@@ -92,11 +93,16 @@ type SgxData struct {
 
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
+	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
+	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
+
 	r.Handle("/push", handlers.ContentTypeHandler( PushPlatformInfoCB(db), "application/json")).Methods("POST") 
 	r.Handle("/refresh", handlers.ContentTypeHandler( RefreshPlatformInfoCB(db), "application/json")).Methods("GET") 
 }
 
 func GetFmspcVal( CertBuf *pem.Block )(string, error){
+	log.Trace("resource/platform_ops.go: GetFmspcVal() Entering")
+	defer log.Trace("resource/platform_ops.go: GetFmspcVal() Leaving")
 
         var fmspcHex string
         cert, err := x509.ParseCertificate(CertBuf.Bytes)
@@ -110,8 +116,6 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
 
         for i:=0; i< len(cert.Extensions); i++ {
                 ext=cert.Extensions[i]
-                //fmt.Println("Ext val:", ext.Value)
-                //fmt.Println("Ext Id:", ext.Value)
                 if SgxExtensionsOid.Equal(ext.Id) == true {
 
                         var asn1Extensions []asn1.RawValue
@@ -146,6 +150,8 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
 
 
 func FetchPCKCertInfo( in *SgxData ) (error){
+	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
+	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
 
 	resp, err := GetPCKCertFromProvServer(in.PlatformInfo.EncryptedPPID, 
 							in.PlatformInfo.CpuSvn, 
@@ -199,6 +205,8 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 }
 
 func FetchPCKCRLInfo( in *SgxData ) (error){
+	log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Leaving")
 
 	in.PckCRLInfo.Ca = in.PlatformInfo.Ca
 	resp, err := GetPCKCRLFromProvServer(in.PckCRLInfo.Ca)
@@ -238,6 +246,8 @@ func FetchPCKCRLInfo( in *SgxData ) (error){
 
 
 func FetchFmspcTcbInfo( in *SgxData ) (error){
+	log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Leaving")
 
 	resp, err := GetFmspcTcbInfoFromProvServer(in.FmspcTcbInfo.Fmspc)
         if err != nil {
@@ -271,6 +281,8 @@ func FetchFmspcTcbInfo( in *SgxData ) (error){
 }
 
 func FetchQEIdentityInfo( in *SgxData ) (error){
+	log.Trace("resource/platform_ops.go: FetchQEIdentityInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: FetchQEIdentityInfo() Leaving")
 
 	resp, err := GetQEInfoFromProvServer()
         if err != nil {
@@ -304,6 +316,8 @@ func FetchQEIdentityInfo( in *SgxData ) (error){
 }
 
 func CachePckCertInfo( db repository.SCSDatabase, data *SgxData )( error ){
+	log.Trace("resource/platform_ops.go: CachePckCertInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CachePckCertInfo() Leaving")
 
 	var err error
 	data.PckCert = &types.PckCert {
@@ -341,6 +355,8 @@ func CacheQEIdentityInfo( db repository.SCSDatabase, data *SgxData )( error ){
 					QeIdentityIssuerChain: data.QEInfo.QEIssuerChain,
 					CreatedTime: time.Now(), 
 					UpdatedTime: time.Now()}
+	log.Trace("resource/platform_ops.go: CacheQEIdentityInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CacheQEIdentityInfo() Leaving")
 	var err error
         if  data.Type == constants.CacheRefresh {
 		data.QEIdentity.UpdatedTime = time.Now()
@@ -365,6 +381,8 @@ func CacheQEIdentityInfo( db repository.SCSDatabase, data *SgxData )( error ){
 }
 
 func CachePckCertChainInfo( db repository.SCSDatabase, data *SgxData )( error ){
+	log.Trace("resource/platform_ops.go: CachePckCertChainInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CachePckCertChainInfo() Leaving")
 
 	var err error
 	data.PckCertChain = &types.PckCertChain{	
@@ -394,6 +412,9 @@ func CachePckCertChainInfo( db repository.SCSDatabase, data *SgxData )( error ){
 
 
 func CacheFmspcTcbInfo( db repository.SCSDatabase, data *SgxData)( error ){
+	log.Trace("resource/platform_ops.go: CacheFmspcTcbInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CacheFmspcTcbInfo() Leaving")
+
 	data.FmspcTcb = &types.FmspcTcbInfo{	
 					Fmspc: data.FmspcTcbInfo.Fmspc,
 					TcbInfo: data.FmspcTcbInfo.TcbInfo,
@@ -422,6 +443,8 @@ func CacheFmspcTcbInfo( db repository.SCSDatabase, data *SgxData)( error ){
 }
 
 func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
+	log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Leaving")
 
 	if data.PlatformTcb == nil {
 		data.PlatformTcb = &types.PlatformTcb{
@@ -455,6 +478,9 @@ func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
 }
 
 func CachePckCRLInfo( db repository.SCSDatabase, data *SgxData )( error ){
+	log.Trace("resource/platform_ops.go: CachePckCRLInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CachePckCRLInfo() Leaving")
+
 	data.PckCrl = &types.PckCrl{	
 					Ca: data.PckCRLInfo.Ca,
 					PckCrl: data.PckCRLInfo.PckCRL,
@@ -473,9 +499,10 @@ func CachePckCRLInfo( db repository.SCSDatabase, data *SgxData )( error ){
 		data.PckCrl.UpdatedTime = time.Now()
 		data.PckCrl, err = db.PckCrlRepository().Create(*data.PckCrl)
 		if err != nil {
-			log.WithError(err).Error("PckCrl Info Insertion failed")
+			slog.WithError(err).Error("PckCrl Info Insertion failed")
 			return err
 		}
+		slog.WithError(err).Error("PckCrl Info Insertion failed")
 	}
 	log.WithField("PCK CRL", data.PckCrl).Debug("insertion completed")
 	return nil
@@ -606,6 +633,8 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 
 func RefreshPckCerts(db repository.SCSDatabase) error {
+	log.Trace("resource/platform_ops.go: RefreshPckCerts() Entering")
+	defer log.Trace("resource/platform_ops.go: RefreshPckCerts() Leaving")
 
 	existingPlaformData, err := db.PlatformTcbRepository().RetrieveAllPlatformInfo()
         if  len(existingPlaformData) == 0 {
@@ -664,6 +693,9 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 }
 
 func RefreshAllPckCrl(db repository.SCSDatabase) error{
+	log.Trace("resource/platform_ops.go: RefreshAllPckCrl() Entering")
+	defer log.Trace("resource/platform_ops.go: RefreshAllPckCrl() Leaving")
+
 	existingPckCrlData, err := db.PckCrlRepository().RetrieveAllPckCrls()
         if  len(existingPckCrlData) == 0 {
                 return errors.New("Cached PCK Crl count is 0, cannot perform refresh operation")
@@ -690,6 +722,8 @@ func RefreshAllPckCrl(db repository.SCSDatabase) error{
 	return nil
 }
 func RefreshAllTcbInfo(db repository.SCSDatabase) error{
+	log.Trace("resource/platform_ops.go: RefreshAllTcbInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: RefreshAllTcbInfo() Leaving")
 
 	existingTcbInfoData, err := db.FmspcTcbInfoRepository().RetrieveAllFmspcTcbInfos()
         if  len(existingTcbInfoData) == 0 {
@@ -717,6 +751,8 @@ func RefreshAllTcbInfo(db repository.SCSDatabase) error{
 }
 
 func RefreshAllQE(db repository.SCSDatabase) error{
+	log.Trace("resource/platform_ops.go: RefreshAllQE() Entering")
+	defer log.Trace("resource/platform_ops.go: RefreshAllQE() Leaving")
 
 	existingQEData, err := db.QEIdentityRepository().RetrieveAll()
         if  len(existingQEData) == 0 {
@@ -743,6 +779,9 @@ func RefreshAllQE(db repository.SCSDatabase) error{
 }
 
 func RefreshTcbInfos(db repository.SCSDatabase) error {
+	log.Trace("resource/platform_ops.go: RefreshTcbInfos() Entering")
+	defer log.Trace("resource/platform_ops.go: RefreshTcbInfos() Leaving")
+
 	err := RefreshAllPckCrl(db)
 	if err != nil{
 		return nil
@@ -761,6 +800,8 @@ func RefreshTcbInfos(db repository.SCSDatabase) error {
 }
 
 func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
+	log.Trace("resource/platform_ops.go: RefreshPlatformInfoTimerCB() Entering")
+	defer log.Trace("resource/platform_ops.go: RefreshPlatformInfoTimerCB() Leaving")
 
 	log.Debug("Timer CB: RefreshPlatformInfoTimerCB, started")
 	var err error

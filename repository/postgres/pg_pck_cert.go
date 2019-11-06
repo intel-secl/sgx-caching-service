@@ -7,7 +7,7 @@ package postgres
 import (
 	"intel/isecl/sgx-caching-service/types"
 	"github.com/jinzhu/gorm"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 type PostgresPckCertRepository struct {
@@ -15,35 +15,56 @@ type PostgresPckCertRepository struct {
 }
 
 func (r *PostgresPckCertRepository) Create(u types.PckCert) (*types.PckCert, error) {
+	log.Trace("repository/postgres/pg_pck_cert: Create() Entering")
+	defer log.Trace("repository/postgres/pg_pck_cert: Create() Leaving")
+
 	err := r.db.Create(&u).Error
-	return &u, err
+	return &u, errors.Wrap(err, "Create: failed to create PckCert")
 }
 
 func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckCert, error) {
-	log.WithField("PckCert", pckcert).Debug("Retrieve Call")
+	log.Trace("repository/postgres/pg_pck_cert: Retrieve() Entering")
+	defer log.Trace("repository/postgres/pg_pck_cert: Retrieve() Leaving")
+
+	slog.WithField("PckCert", pckcert).Debug("Retrieve Call")
 	err := r.db.Where("qe_id = ? AND pce_id >= ?",pckcert.QeId, pckcert.PceId).First(&pckcert).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Retrieve: failed to Retrieve PckCert")
 	}
 	return &pckcert, nil
 }
 
 func (r *PostgresPckCertRepository) RetrieveAll(u types.PckCert) (types.PckCerts, error) {
+	log.Trace("repository/postgres/pg_pck_cert: RetrieveAll() Entering")
+	defer log.Trace("repository/postgres/pg_pck_cert: RetrieveAll() Leaving")
+
 	var pckcerts types.PckCerts
 	err := r.db.Where(&u).Find(&pckcerts).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RetrieveAll: failed to RetrieveAll PckCert")
 	}
 
-	log.WithField("db pckcerts", pckcerts).Trace("RetrieveAll")
-	return pckcerts, err
+	slog.WithField("db pckcerts", pckcerts).Trace("RetrieveAll")
+	return pckcerts, errors.Wrap(err, "RetrieveAll: failed to RetrieveAll PckCert")
 }
 
 func (r *PostgresPckCertRepository) Update(u types.PckCert) error {
-	return r.db.Save(&u).Error
+	log.Trace("repository/postgres/pg_pck_cert: Update() Entering")
+	defer log.Trace("repository/postgres/pg_pck_cert: Update() Leaving")
+
+	if err := r.db.Save(&u).Error; err != nil {
+		return errors.Wrap(err, "Update: failed to update PckCert")
+	}
+	return nil
 }
 
 func (r *PostgresPckCertRepository) Delete(u types.PckCert) error {
-	return r.db.Delete(&u).Error
+	log.Trace("repository/postgres/pg_pck_cert: Delete() Entering")
+	defer log.Trace("repository/postgres/pg_pck_cert: Delete() Leaving")
+
+	if err := r.db.Delete(&u).Error; err != nil {
+		return errors.Wrap(err, "Delete: failed to delete PckCert")
+	}
+	return nil
 }
 

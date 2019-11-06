@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"errors"
 	"flag"
 	"fmt"
 	"intel/isecl/sgx-caching-service/config"
@@ -36,9 +35,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+	commLog "intel/isecl/lib/common/log"
+	commLogInt "intel/isecl/lib/common/log/setup"
 	stdlog "log"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -190,25 +190,62 @@ func (a *App) runDirPath() string {
 	return constants.RunDirPath
 }
 
-func (a *App) configureLogs() {
-	log.SetOutput(io.MultiWriter(os.Stderr, a.logWriter()))
-	log.SetLevel(a.configuration().LogLevel)
+var log = commLog.GetDefaultLogger()
+var slog = commLog.GetSecurityLogger()
 
-	// override golang logger
-	w := log.StandardLogger().WriterLevel(a.configuration().LogLevel)
-	stdlog.SetOutput(w)
+var secLogFile *os.File
+var defaultLogFile *os.File
+
+func (a *App) configureLogs(isStdOut bool, isFileOut bool) {
+        var ioWriterDefault io.Writer
+        ioWriterDefault = defaultLogFile
+        if isStdOut && isFileOut {
+                ioWriterDefault = io.MultiWriter(os.Stdout, defaultLogFile)
+        } else if isStdOut && !isFileOut {
+                ioWriterDefault = os.Stdout
+        }
+
+        ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
+        commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, nil, ioWriterDefault, false)
+        commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, nil, ioWriterSecurity, false)
+
+        slog.Trace("sec log initiated")
+        log.Trace("loggers setup finished")
 }
 
 func (a *App) Run(args []string) error {
-	a.configureLogs()
 
 	if len(args) < 2 {
 		a.printUsage()
 		os.Exit(1)
 	}
+        var err error
+        secLogFile, err = os.OpenFile(constants.SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
+        if err != nil {
+                log.Errorf("Could not open Security log file"+ err.Error())
+		return err
+        }
+        os.Chmod(constants.SecurityLogFile, 0664)
+        defaultLogFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
+        if err != nil {
+                log.Errorf("Could not open default log file"+ err.Error())
+		return err
+        }
+        os.Chmod(constants.LogFile, 0664)
 
-	cmd := args[1]
-	switch cmd {
+        defer secLogFile.Close()
+        defer defaultLogFile.Close()
+
+        isStdOut := false
+        isSCSConsoleEnabled := os.Getenv("SCS_ENABLE_CONSOLE_LOG")
+        if isSCSConsoleEnabled == "true" {
+                isStdOut = true
+        }
+
+        //bin := args[0]
+	a.configureLogs(isStdOut, true)
+        cmd := args[1]
+        switch cmd {
 	default:
 		a.printUsage()
 		return errors.New("Unrecognized command: " + args[1])
@@ -223,7 +260,7 @@ func (a *App) Run(args []string) error {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
 			time.Sleep(10 * time.Millisecond)
-			return err
+			return errors.Wrap(err, "app:Run() Error starting sgx-caching-service service")
 		}
 	case "-help":
 		fallthrough
@@ -244,6 +281,7 @@ func (a *App) Run(args []string) error {
 		flag.CommandLine.BoolVar(&keepConfig, "keep-config", false, "keep config when uninstalling")
 		flag.CommandLine.Parse(args[2:])
 		a.uninstall(keepConfig)
+		log.Info("app:Run() Uninstalled SGX Caching Service")
 		os.Exit(0)
 	case "version":
 		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\n", version.Version, version.GitHash)
@@ -251,6 +289,7 @@ func (a *App) Run(args []string) error {
 
 		if len(args) <= 2 {
 			a.printUsage()
+			log.Error("app:Run() Invalid command")
 			os.Exit(1)
 		}
 
@@ -267,7 +306,7 @@ func (a *App) Run(args []string) error {
 
 		err := validateSetupArgs(args[2], args[3:])
 		if err != nil {
-			return err
+			return errors.Wrap(err, "app:Run() Invalid setup task arguments")
 		}
 
 		a.Config = config.Global()
@@ -341,22 +380,23 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
-		//var err error
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
 			err = setupRunner.RunTasks(task)
 		}
 		if err != nil {
-			log.WithError(err).Error("Error running setup")
 			fmt.Println("Error running setup: ", err)
-			return err
-	        }	
+			return errors.Wrap(err, "app:Run() Error running setup")
+	        }
 	}
 	return nil
 }
 
 func (a *App) retrieveJWTSigningCerts() error {
+	log.Trace("app:retrieveJWTSigningCerts() Entering")
+	defer log.Trace("app:retrieveJWTSigningCerts() Leaving")
+
         c := a.configuration()
         log.WithField("AuthServiceUrl", c.AuthServiceUrl).Debug("URL dump")
         url := c.AuthServiceUrl + "noauth/jwt-certificates"
@@ -405,6 +445,8 @@ func (a *App) retrieveJWTSigningCerts() error {
 }
 
 func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
+	log.Trace("app:initRefreshRoutine() Entering")
+	defer log.Trace("app:initRefreshRoutine() Leaving")
 
 	go func() {
 		done := make(chan os.Signal)
@@ -421,12 +463,12 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 			   log.Debug("Timer started", t)
 			   err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
 			   if err != nil {
-				fmt.Fprintln(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
+				fmt.Fprintf(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
 				done <- syscall.SIGTERM
 			   }
 			   err = resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Tcb)
 			   if err != nil {
-				fmt.Fprintln(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
+				fmt.Fprintf(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
 				done <- syscall.SIGTERM
 			   }
 		      }
@@ -434,7 +476,11 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 	}()
 	return nil	
 }
+
 func (a *App) startServer() error {
+	log.Trace("app:startServer() Entering")
+	defer log.Trace("app:startServer() Leaving")
+
 	c := a.configuration()
 
 	// verify the database connection. If this does not succeed then we want to exit right here
@@ -518,46 +564,58 @@ func (a *App) startServer() error {
 		}
 	}()
 
+	log.Info("app:startServer() SGX Caching Service is running")
 	fmt.Fprintln(a.consoleWriter(), "SGX Caching Service is running")
 	// TODO dispatch Service status checker goroutine
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := h.Shutdown(ctx); err != nil {
-		log.WithError(err).Info("Failed to gracefully shutdown webserver")
-		return err
+		return errors.Wrap(err, "app:startServer() Failed to gracefully shutdown webserver")
 	}
 	return nil
 }
 
 func (a *App) start() error {
+	log.Trace("app:start() Entering")
+	defer log.Trace("app:start() Leaving")
+
 	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-caching-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "app:start() Could not locate systemctl to start application service")
 	}
 	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-caching-service"}, os.Environ())
 }
 
 func (a *App) stop() error {
+	log.Trace("app:stop() Entering")
+	defer log.Trace("app:stop() Leaving")
+
 	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-caching-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "app:stop() Could not locate systemctl to stop application service")
 	}
 	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-caching-service"}, os.Environ())
 }
 
 func (a *App) status() error {
+	log.Trace("app:status() Entering")
+	defer log.Trace("app:status() Leaving")
+
 	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-caching-service"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "app:status() Could not locate systemctl to check status of application service")
 	}
 	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-caching-service"}, os.Environ())
 }
 
 func (a *App) uninstall(keepConfig bool) {
+	log.Trace("app:uninstall() Entering")
+	defer log.Trace("app:uninstall() Leaving")
+
 	fmt.Println("Uninstalling SGX Caching Service")
 	removeService()
 
@@ -598,7 +656,11 @@ func (a *App) uninstall(keepConfig bool) {
 	fmt.Fprintln(a.consoleWriter(), "SGX Caching Service uninstalled")
 	a.stop()
 }
+
 func removeService() {
+	log.Trace("app:removeService() Entering")
+	defer log.Trace("app:removeService() Leaving")
+
 	_, _, err := e.RunCommandWithTimeout(constants.ServiceRemoveCmd, 5)
 	if err != nil {
 		fmt.Println("Could not remove SGX Caching Service")
@@ -607,6 +669,8 @@ func removeService() {
 }
 
 func validateCmdAndEnv(env_names_cmd_opts map[string]string, flags *flag.FlagSet) error {
+	log.Trace("app:validateCmdAndEnv() Entering")
+	defer log.Trace("app:validateCmdAndEnv() Leaving")
 
 	env_names := make([]string, 0)
 	for k, _ := range env_names_cmd_opts {
@@ -617,7 +681,7 @@ func validateCmdAndEnv(env_names_cmd_opts map[string]string, flags *flag.FlagSet
 	if valid_err != nil && missing != nil {
 		for _, m := range missing {
 			if cmd_f := flags.Lookup(env_names_cmd_opts[m]); cmd_f == nil {
-				return errors.New("Insufficient arguments")
+				return errors.Wrap(valid_err, "app:validateCmdAndEnv() Insufficient arguments")
 			}
 		}
 	}
@@ -625,6 +689,8 @@ func validateCmdAndEnv(env_names_cmd_opts map[string]string, flags *flag.FlagSet
 }
 
 func validateSetupArgs(cmd string, args []string) error {
+	log.Trace("app:validateSetupArgs() Entering")
+	defer log.Trace("app:validateSetupArgs() Leaving")
 
 	var fs *flag.FlagSet
 
@@ -679,7 +745,7 @@ func validateSetupArgs(cmd string, args []string) error {
 
 		err := fs.Parse(args)
 		if err != nil {
-			return fmt.Errorf("Fail to parse arguments: %s", err.Error())
+			return errors.Wrap(err, "app:validateCmdAndEnv() Fail to parse arguments")
 		}
 		return validateCmdAndEnv(env_names_cmd_opts, fs)
 
@@ -721,13 +787,16 @@ func validateSetupArgs(cmd string, args []string) error {
 
 	case "all":
 		if len(args) != 0 {
-			return errors.New("Please setup the arguments with env")
+			return errors.New("app:validateCmdAndEnv() Please setup the arguments with env")
 		}
 	}
 
 	return nil
 }
 func (a* App) PrintDirFileContents(dir string) error {
+	log.Trace("app:PrintDirFileContents() Entering")
+	defer log.Trace("app:PrintDirFileContents() Leaving")
+
         if dir == "" {
                 return fmt.Errorf("PrintDirFileContents needs a directory path to look for files")
         }
@@ -743,6 +812,9 @@ func (a* App) PrintDirFileContents(dir string) error {
 }
 
 func (a *App) DatabaseFactory() (repository.SCSDatabase, error) {
+	log.Trace("app:DatabaseFactory() Entering")
+	defer log.Trace("app:DatabaseFactory() Leaving")
+
 	pg := &a.configuration().Postgres
 	p, err := postgres.Open(pg.Hostname, pg.Port, pg.DBName, pg.Username, pg.Password, pg.SSLMode, pg.SSLCert)
 	if err != nil {

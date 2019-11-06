@@ -8,37 +8,52 @@ import (
 	"fmt"
 	"intel/isecl/sgx-caching-service/repository"
 	"intel/isecl/sgx-caching-service/types"
+	 commLog "intel/isecl/lib/common/log"
 	"io/ioutil"
 	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
+
+var log = commLog.GetDefaultLogger()
+var slog = commLog.GetSecurityLogger()
 
 type PostgresDatabase struct {
 	DB *gorm.DB
 }
 
 func (pd *PostgresDatabase) ExecuteSql(sql *string) error {
-	return pd.DB.Exec(*sql).Error
-}
+	log.Trace("repository/postgres/pg_database: ExecuteSql() Entering")
+	defer log.Trace("repository/postgres/pg_database: ExecuteSql() Leaving")
 
-func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
-	c, err := ioutil.ReadFile(file)
+	err := pd.DB.Exec(*sql).Error
 	if err != nil {
-		return fmt.Errorf("could not read sql file - %s, error : %s", file, err.Error())
-	}
-	sql := string(c)
-	if err := pd.ExecuteSql(&sql); err != nil {
-		return fmt.Errorf(" could not execute contents of sql file %s, error :%s", file, err.Error())
+		return errors.Wrap(err, "ExecuteSql: failed to execute sql")
 	}
 	return nil
 }
 
+func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
+	log.Trace("repository/postgres/pg_database: ExecuteSqlFile() Entering")
+	defer log.Trace("repository/postgres/pg_database: ExecuteSqlFile() Leaving")
 
+	c, err := ioutil.ReadFile(file)
+	if err != nil {
+		return errors.Wrapf(err, "could not read sql file - %s", file)
+	}
+	sql := string(c)
+	if err := pd.ExecuteSql(&sql); err != nil {
+		return errors.Wrapf(err, "could not execute contents of sql file %s", file)
+	}
+	return nil
+}
 
 func (pd *PostgresDatabase) Migrate() error {
+	log.Trace("repository/postgres/pg_database: Migrate() Entering")
+	defer log.Trace("repository/postgres/pg_database: Migrate() Leaving")
+
 	pd.DB.AutoMigrate(types.PlatformTcb{})
 	pd.DB.AutoMigrate(types.PckCertChain{})
 	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
@@ -79,6 +94,8 @@ func (pd *PostgresDatabase) Close() {
 }
 
 func Open(host string, port int, dbname, user, password, sslMode, sslCert string) (*PostgresDatabase, error) {
+	log.Trace("repository/postgres/pg_database: Open() Entering")
+	defer log.Trace("repository/postgres/pg_database: Open() Leaving")
 
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
@@ -106,12 +123,14 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	}
 	if dbErr != nil {
 		log.WithError(dbErr).Infof("Failed to connect to db after %d attempts\n", numAttempts)
-		return nil, dbErr
+		return nil, errors.Wrapf(dbErr, "Failed to connect to db after %d attempts", numAttempts)
 	}
 	return &PostgresDatabase{DB: db}, nil
 }
 
 func VerifyConnection(host string, port int, dbname, user, password, sslMode, sslCert string) error {
+	log.Trace("repository/postgres/pg_database: VerifyConnection() Entering")
+	defer log.Trace("repository/postgres/pg_database: VerifyConnection() Leaving")
 
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
@@ -127,7 +146,7 @@ func VerifyConnection(host string, port int, dbname, user, password, sslMode, ss
 		host, port, user, dbname, password, sslMode, sslCertParams))
 
 	if dbErr != nil {
-		return fmt.Errorf("could not connect to database - error : %s", dbErr.Error())
+		return errors.Wrap(dbErr, "could not connect to database")
 	}
 	db.Close()
 	return nil

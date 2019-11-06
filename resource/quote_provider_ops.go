@@ -12,7 +12,7 @@ import (
 	"intel/isecl/sgx-caching-service/repository"
 	"intel/isecl/sgx-caching-service/types"
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
 )
 
 func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {

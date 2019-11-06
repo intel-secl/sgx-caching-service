@@ -7,7 +7,7 @@ package postgres
 import (
 	"intel/isecl/sgx-caching-service/types"
 	"github.com/jinzhu/gorm"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 type PostgresPckCertChainRepository struct {
@@ -15,37 +15,55 @@ type PostgresPckCertChainRepository struct {
 }
 
 func (r *PostgresPckCertChainRepository) Create(certchain types.PckCertChain) (*types.PckCertChain, error) {
+	log.Trace("repository/postgres/pg_pck_certchain.go: Create() Entering")
+	defer log.Trace("repository/postgres/pg_pck_certchain.go: Create() Leaving")
+
 	err := r.db.Create(&certchain).Error
-	return &certchain, err
+	return &certchain, errors.Wrap(err, "create: Failed to create PckCertChain")
 }
 
 func (r *PostgresPckCertChainRepository) Retrieve(certchain types.PckCertChain) (*types.PckCertChain, error) {
+	log.Trace("repository/postgres/pg_pck_certchain.go: Retrieve() Entering")
+	defer log.Trace("repository/postgres/pg_pck_certchain.go: Retrieve() Leaving")
+
 	err := r.db.Where(&certchain).First(&certchain).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Retrieve: Failed to Retrive PckCertChain")
 	}
 	return &certchain, nil
 }
 
 func (r *PostgresPckCertChainRepository) RetrieveAll(certchain types.PckCertChain) (types.PckCertChains, error) {
+	log.Trace("repository/postgres/pg_pck_certchain.go: RetrieveAll() Entering")
+	defer log.Trace("repository/postgres/pg_pck_certchain.go: RetrieveAll() Leaving")
+
 	var certchains types.PckCertChains
 	err := r.db.Where(&certchain).Find(&certchains).Error
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "RetrieveAll: Failed to RetriveAll PckCertChain")
 	}
 
-	log.WithField("db users", certchains).Trace("RetrieveAll")
-	return certchains, err
+	slog.WithField("db users", certchains).Trace("RetrieveAll")
+	return certchains, errors.Wrap(err, "RetrieveAll: Failed to RetriveAll PckCertChain")
 }
 
 func (r *PostgresPckCertChainRepository) Update(certchain types.PckCertChain) error {
-	return r.db.Save(&certchain).Error
+	log.Trace("repository/postgres/pg_pck_certchain.go: Update() Entering")
+	defer log.Trace("repository/postgres/pg_pck_certchain.go: Update() Leaving")
+
+	if err := r.db.Save(&certchain).Error; err != nil {
+		return errors.Wrap(err, "Update: Failed to Update PckCertChain")
+	}
+	return nil
 }
 
 func (r *PostgresPckCertChainRepository) Delete(certchain types.PckCertChain) error {
+	log.Trace("repository/postgres/pg_pck_certchain.go: Delete() Entering")
+	defer log.Trace("repository/postgres/pg_pck_certchain.go: Delete() Leaving")
+
 	if err := r.db.Model(&certchain).Association("PckCert").Clear().Error; err != nil {
-		return err
+		return errors.Wrap(err, "Delete: Failed to Delete PckCertChain")
 	}
-	return r.db.Delete(&certchain).Error
+	return nil
 }
 
