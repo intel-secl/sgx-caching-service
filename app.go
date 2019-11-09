@@ -11,19 +11,6 @@ import (
 	"crypto/x509/pkix"
 	"flag"
 	"fmt"
-	"intel/isecl/sgx-caching-service/config"
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/sgx-caching-service/repository/postgres"
-	"intel/isecl/sgx-caching-service/repository"
-	"intel/isecl/sgx-caching-service/resource"
-	"intel/isecl/sgx-caching-service/tasks"
-	"intel/isecl/sgx-caching-service/version" 
-	"intel/isecl/lib/common/crypt"
-	e "intel/isecl/lib/common/exec"
-	cmw "intel/isecl/lib/common/middleware"
-	"intel/isecl/lib/common/setup"
-	"intel/isecl/lib/common/validation"
-	cos "intel/isecl/lib/common/os"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -34,19 +21,32 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	stdlog "log"
 
-	"github.com/pkg/errors"
+	"intel/isecl/lib/common/proc"
+	"intel/isecl/sgx-caching-service/config"
+	"intel/isecl/sgx-caching-service/constants"
+	"intel/isecl/sgx-caching-service/repository/postgres"
+	"intel/isecl/sgx-caching-service/repository"
+	"intel/isecl/sgx-caching-service/resource"
+	"intel/isecl/sgx-caching-service/tasks"
+	"intel/isecl/sgx-caching-service/version"
+	"intel/isecl/lib/common/crypt"
+	"intel/isecl/lib/common/setup"
+	"intel/isecl/lib/common/validation"
+	e "intel/isecl/lib/common/exec"
+	cos "intel/isecl/lib/common/os"
+	cmw "intel/isecl/lib/common/middleware"
 	commLog "intel/isecl/lib/common/log"
 	commLogInt "intel/isecl/lib/common/log/setup"
-	stdlog "log"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	// Import driver for GORM
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 
-	//"intel/isecl/sgx-caching-service/types"
 )
 
 type App struct {
@@ -448,15 +448,14 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 	log.Trace("app:initRefreshRoutine() Entering")
 	defer log.Trace("app:initRefreshRoutine() Leaving")
 
+	sc := proc.AddTask()
 	go func() {
-		done := make(chan os.Signal)
-    		signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-
+		defer proc.TaskDone()
 		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
 		defer ticker.Stop()
 		for {
 		      select {
-		       	case <-done:
+			case <-sc:
 		       	   fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
 		           return 
 		       	case t := <-ticker.C:
@@ -464,12 +463,10 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 			   err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
 			   if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
-				done <- syscall.SIGTERM
 			   }
 			   err = resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Tcb)
 			   if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
-				done <- syscall.SIGTERM
 			   }
 		      }
 		}
@@ -554,25 +551,33 @@ func (a *App) startServer() error {
 		TLSConfig: tlsconfig,
 	}
 
-	// dispatch web server go routine
+	proc.AddTask()
 	go func() {
-		tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
-		tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
-		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
-			log.WithError(err).Info("Failed to start HTTPS server")
-			stop <- syscall.SIGTERM
-		}
-	}()
+		defer proc.TaskDone()
+		proc.AddTask()
 
-	log.Info("app:startServer() SGX Caching Service is running")
-	fmt.Fprintln(a.consoleWriter(), "SGX Caching Service is running")
-	// TODO dispatch Service status checker goroutine
-	<-stop
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := h.Shutdown(ctx); err != nil {
-		return errors.Wrap(err, "app:startServer() Failed to gracefully shutdown webserver")
-	}
+		// dispatch web server go routine
+		go func() {
+			defer proc.TaskDone()
+			tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
+			tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
+			if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
+				proc.SetError(fmt.Errorf("HTTPS server error : %v", err))
+				proc.EndProcess()
+			}
+		}()
+		log.Info("app:startServer() SGX Caching Service is running")
+		fmt.Fprintln(a.consoleWriter(), "SGX Caching Service is running")
+
+		<-proc.QuitChan
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := h.Shutdown(ctx); err != nil {
+			errors.Wrap(err, "app:startServer() Failed to gracefully shutdown webserver")
+		}
+		time.Sleep(time.Millisecond*200)
+	}()
+	proc.WaitForQuitAndCleanup(10 * time.Second)
 	return nil
 }
 
