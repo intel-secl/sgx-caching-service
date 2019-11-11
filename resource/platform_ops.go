@@ -24,8 +24,6 @@ import (
 	"intel/isecl/sgx-caching-service/types"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-//	log "github.com/sirupsen/logrus"
-
 )
 
 type Response struct{
