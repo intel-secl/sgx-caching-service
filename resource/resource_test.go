@@ -28,12 +28,17 @@ type TestData struct {
 	PostData []byte
 }
 
-func mockRetrieveJWTSigningCerts() error{
+func mockRetrieveJWTSigningCerts() error {
+        log.Trace("resource/resource_test:mockRetrieveJWTSigningCerts() Entering")
+        defer log.Trace("resource/resource_test:mockRetrieveJWTSigningCerts() Leaving")
+
 	return nil
 }
 
 
 func setupRouter(t *testing.T) *mux.Router {
+	log.Trace("resource/resource_test:setupRouter() Entering")
+	defer log.Trace("resource/resource_test:setupRouter() Leaving")
 
         r := mux.NewRouter()
         sr := r.PathPrefix("/scs/sgx/certification/v1/").Subrouter()
