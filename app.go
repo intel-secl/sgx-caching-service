@@ -23,7 +23,6 @@ import (
 	"time"
 	stdlog "log"
 
-	"intel/isecl/lib/common/proc"
 	"intel/isecl/sgx-caching-service/config"
 	"intel/isecl/sgx-caching-service/constants"
 	"intel/isecl/sgx-caching-service/repository/postgres"
@@ -219,33 +218,15 @@ func (a *App) Run(args []string) error {
 		a.printUsage()
 		os.Exit(1)
 	}
-        var err error
-        secLogFile, err = os.OpenFile(constants.SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-        if err != nil {
-                log.Errorf("Could not open Security log file"+ err.Error())
-		return err
-        }
-        os.Chmod(constants.SecurityLogFile, 0664)
-        defaultLogFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-        if err != nil {
-                log.Errorf("Could not open default log file"+ err.Error())
-		return err
-        }
-        os.Chmod(constants.LogFile, 0664)
 
-        defer secLogFile.Close()
-        defer defaultLogFile.Close()
+	secLogFile, _ := os.OpenFile(constants.SecurityLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	defaultLogFile, _ := os.OpenFile(constants.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
 
-        isStdOut := false
-        isSCSConsoleEnabled := os.Getenv("SCS_ENABLE_CONSOLE_LOG")
-        if isSCSConsoleEnabled == "true" {
-                isStdOut = true
-        }
+	defer secLogFile.Close()
+	defer defaultLogFile.Close()
 
-        //bin := args[0]
-	a.configureLogs(isStdOut, true)
-        cmd := args[1]
-        switch cmd {
+	cmd := args[1]
+	switch cmd {
 	default:
 		a.printUsage()
 		return errors.New("Unrecognized command: " + args[1])
@@ -255,7 +236,17 @@ func (a *App) Run(args []string) error {
 			os.Exit(1)
 		}
 		return a.PrintDirFileContents(args[2])
+	case "tlscertsha384":
+		a.configureLogs(true, false)
+		hash, err := crypt.GetCertHexSha384(path.Join(a.configDir(), constants.TLSCertFile))
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+		fmt.Println(hash)
+		return nil
 	case "run":
+		a.configureLogs(true, true)
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
@@ -273,8 +264,10 @@ func (a *App) Run(args []string) error {
 	case "start":
 		return a.start()
 	case "stop":
+		a.configureLogs(true, false)
 		return a.stop()
 	case "status":
+		a.configureLogs(true, false)
 		return a.status()
 	case "uninstall":
 		var keepConfig bool
@@ -286,7 +279,8 @@ func (a *App) Run(args []string) error {
 	case "version":
 		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\n", version.Version, version.GitHash)
 	case "setup":
-
+		a.configureLogs(false, true)
+		var context setup.Context
 		if len(args) <= 2 {
 			a.printUsage()
 			log.Error("app:Run() Invalid command")
@@ -310,7 +304,6 @@ func (a *App) Run(args []string) error {
 		}
 
 		a.Config = config.Global()
-		var context setup.Context
 		err = a.Config.SaveConfiguration(context)
                 if err != nil {
                         fmt.Println("Error saving configuration: " + err.Error())
@@ -319,33 +312,39 @@ func (a *App) Run(args []string) error {
 
 		task := strings.ToLower(args[2])
 		flags := args[3:]
+		if args[2] == "download_cert" && len(args) > 3 {
+			flags = args[4:]
+		}
+
+		a.Config = config.Global()
+
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
-					Flags:         args,
+					Flags:         flags,
 					CmsBaseURL:    a.Config.CMSBaseUrl,
 					CaCertDirPath: constants.TrustedCAsStoreDir,
 					ConsoleWriter: os.Stdout,
 				},
 				setup.Download_Cert{
-					Flags:              args,
-					CmsBaseURL:    	    a.Config.CMSBaseUrl,
+					Flags:              flags,
 					KeyFile:            path.Join(a.configDir(), constants.TLSKeyFile),
 					CertFile:           path.Join(a.configDir(), constants.TLSCertFile),
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
+					CmsBaseURL:         a.Config.CMSBaseUrl,
 					Subject: pkix.Name{
-                                                Country:      []string{a.Config.Subject.Country},
-                                                Organization: []string{a.Config.Subject.Organization},
-                                                Locality:     []string{a.Config.Subject.Locality},
-                                                Province:     []string{a.Config.Subject.Province},
-                                                CommonName:   a.Config.Subject.TLSCertCommonName,
-                                        },
-					SanList:            constants.DefaultScsTlsSan,
-					CertType:           "TLS",
-					CaCertsDir:         constants.TrustedCAsStoreDir,
-					BearerToken:        "",
-					ConsoleWriter:      os.Stdout,
+						Country:      []string{a.Config.Subject.Country},
+						Organization: []string{a.Config.Subject.Organization},
+						Locality:     []string{a.Config.Subject.Locality},
+						Province:     []string{a.Config.Subject.Province},
+						CommonName:   a.Config.Subject.TLSCertCommonName,
+					},
+					SanList:       constants.DefaultScsTlsSan,
+					CertType:      "TLS",
+					CaCertsDir:    constants.TrustedCAsStoreDir,
+					BearerToken:   "",
+					ConsoleWriter: os.Stdout,
 				},
 				tasks.Database{
 					Flags:         flags,
@@ -380,6 +379,7 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
+		a.configureLogs(true, true)
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
@@ -448,14 +448,14 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 	log.Trace("app:initRefreshRoutine() Entering")
 	defer log.Trace("app:initRefreshRoutine() Leaving")
 
-	sc := proc.AddTask()
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		defer proc.TaskDone()
 		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
 		defer ticker.Stop()
 		for {
 		      select {
-			case <-sc:
+			case <-stop:
 		       	   fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
 		           return 
 		       	case t := <-ticker.C:
@@ -528,14 +528,6 @@ func (a *App) startServer() error {
 	}(resource.SetTestJwt)
 
 
-
-	// Setup signal handlers to gracefully handle termination
-	stop := make(chan os.Signal)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-
-	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
- 	err = a.initRefreshRoutine(scsDB)
-	
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -543,7 +535,15 @@ func (a *App) startServer() error {
 			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
 	}
-
+	// Setup signal handlers to gracefully handle termination
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
+	err = a.initRefreshRoutine(scsDB)
+	if err != nil {
+		log.WithError(err).Info("Refresh Routine Init failed")
+		return err
+	}
 	h := &http.Server{
 		Addr:      fmt.Sprintf(":%d", c.Port),
 		Handler:   handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
@@ -551,33 +551,25 @@ func (a *App) startServer() error {
 		TLSConfig: tlsconfig,
 	}
 
-	proc.AddTask()
+	// dispatch web server go routine
 	go func() {
-		defer proc.TaskDone()
-		proc.AddTask()
-
-		// dispatch web server go routine
-		go func() {
-			defer proc.TaskDone()
-			tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
-			tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
-			if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
-				proc.SetError(fmt.Errorf("HTTPS server error : %v", err))
-				proc.EndProcess()
-			}
-		}()
-		log.Info("app:startServer() SGX Caching Service is running")
-		fmt.Fprintln(a.consoleWriter(), "SGX Caching Service is running")
-
-		<-proc.QuitChan
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := h.Shutdown(ctx); err != nil {
-			errors.Wrap(err, "app:startServer() Failed to gracefully shutdown webserver")
+		tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
+		tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
+		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
+			log.WithError(err).Info("Failed to start HTTPS server")
+			stop <- syscall.SIGTERM
 		}
-		time.Sleep(time.Millisecond*200)
 	}()
-	proc.WaitForQuitAndCleanup(10 * time.Second)
+
+	fmt.Fprintln(a.consoleWriter(), "Auth Service is running")
+	// TODO dispatch Service status checker goroutine
+	<-stop
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := h.Shutdown(ctx); err != nil {
+		log.WithError(err).Info("Failed to gracefully shutdown webserver")
+		return err
+	}
 	return nil
 }
 
