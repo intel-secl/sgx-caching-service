@@ -10,7 +10,7 @@ import (
 // PckCert struct is the database schema of a PckCerts table
 type PckCert struct {
 	QeId 		string     `json:"-" gorm:"primary_key"`
-	PceId       	string     `json:"-" gorm:"primary_key"`
+	PceId       	string     `json:"-"`
 	Tcbm      	string     `json:"-"` //removed primary key
 	Fmspc      	string     `json:"-"`
 	PckCert     	[]byte	   `json:"-" gorm:"type:bytea;not null`

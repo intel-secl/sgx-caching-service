@@ -570,6 +570,11 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 
 		for i:=0; i<len(CaArray); i++ {	
+			pckCrl := types.PckCrl{Ca: CaArray[0]}
+			existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
+                	if  existingPckCrl != nil {
+				break;
+			}
 			data.PlatformInfo.Ca=CaArray[i]
 			err = FetchPCKCRLInfo(&data)
 			if err != nil {
@@ -582,16 +587,19 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
+		TcbInfo := types.FmspcTcbInfo{ Fmspc: data.PckCertInfo.Fmspc }
+                existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
+		if existingFmspc == nil {
+			data.FmspcTcbInfo.Fmspc = data.PckCertInfo.Fmspc
+			err = FetchFmspcTcbInfo(&data)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
 
-		data.FmspcTcbInfo.Fmspc = data.PckCertInfo.Fmspc
-		err = FetchFmspcTcbInfo(&data)
-		if err != nil {
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
-		}
-
-		err = CacheFmspcTcbInfo(db, &data) 
-		if err != nil {
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			err = CacheFmspcTcbInfo(db, &data) 
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
 		}
 
 		existingQEData, err := db.QEIdentityRepository().RetrieveAll()

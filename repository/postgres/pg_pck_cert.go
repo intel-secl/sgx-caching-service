@@ -26,12 +26,14 @@ func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckC
 	log.Trace("repository/postgres/pg_pck_cert: Retrieve() Entering")
 	defer log.Trace("repository/postgres/pg_pck_cert: Retrieve() Leaving")
 
+	var p types.PckCert
 	slog.WithField("PckCert", pckcert).Debug("Retrieve Call")
-	err := r.db.Where("qe_id = ? AND pce_id >= ?",pckcert.QeId, pckcert.PceId).First(&pckcert).Error
+	err := r.db.Where("qe_id = ? AND pce_id = ?",pckcert.QeId, pckcert.PceId).First(&p).Error
 	if err != nil {
+		log.Trace("Error in fetch records Entering")
 		return nil, errors.Wrap(err, "Retrieve: failed to Retrieve PckCert")
 	}
-	return &pckcert, nil
+	return &p, nil
 }
 
 func (r *PostgresPckCertRepository) RetrieveAll(u types.PckCert) (types.PckCerts, error) {
