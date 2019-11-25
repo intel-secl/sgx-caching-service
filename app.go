@@ -219,11 +219,29 @@ func (a *App) Run(args []string) error {
 		os.Exit(1)
 	}
 
-	secLogFile, _ := os.OpenFile(constants.SecurityLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
-	defaultLogFile, _ := os.OpenFile(constants.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0755)
+	var err error
+	secLogFile, err = os.OpenFile(constants.SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
+	if err != nil {
+		log.Errorf("Could not open Security log file"+ err.Error())
+		return err
+	}
+	os.Chmod(constants.SecurityLogFile, 0664)
+	defaultLogFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
+	if err != nil {
+		log.Errorf("Could not open default log file"+ err.Error())
+		return err
+	}
+	os.Chmod(constants.LogFile, 0664)
 
 	defer secLogFile.Close()
 	defer defaultLogFile.Close()
+
+	isStdOut := false
+	isSCSConsoleEnabled := os.Getenv("SCS_ENABLE_CONSOLE_LOG")
+	if isSCSConsoleEnabled == "true" {
+		isStdOut = true
+	}
+	a.configureLogs(isStdOut, true)
 
 	cmd := args[1]
 	switch cmd {
