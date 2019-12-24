@@ -194,7 +194,7 @@ func Load(path string) *Configuration {
 		c.LogLevel = log.ErrorLevel
 	}
 
-	c.LogLevel = log.InfoLevel
+	c.LogLevel = log.DebugLevel
 	c.configFile = path
 	return &c
 }

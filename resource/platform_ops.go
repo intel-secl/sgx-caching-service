@@ -544,7 +544,15 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		}
 		existingPlaformData, err := db.PlatformTcbRepository().Retrieve(*data.PlatformTcb)
                 if  existingPlaformData != nil {
-                        return &resourceError{Message: "Platform Info Already exist", StatusCode: http.StatusBadRequest}
+			w.Header().Set("Content-Type", "application/json")
+                	w.WriteHeader(http.StatusOK) // HTTP 200
+                	res := Response{ Status:"Success", Message: "Platform Info Already exist, Nothing to push"}
+                	js, err := json.Marshal(res)
+                	if err != nil {
+                        	return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+                	}
+                	w.Write(js)
+			return nil
                 }
 
 		data.Type = constants.CacheInsert
