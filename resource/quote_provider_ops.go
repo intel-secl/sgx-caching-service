@@ -5,8 +5,9 @@
 package resource
 
 import (
-	"encoding/pem"
+	"strings"
 	"net/http"
+	"encoding/pem"
 
 	"intel/isecl/sgx-caching-service/constants"
 	"intel/isecl/sgx-caching-service/repository"
@@ -50,10 +51,10 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		log.WithField("Encrypted PPID", EncryptedPPID).Debug("QueryParams")
 
 		pinfo := types.PlatformTcb{	
-						CpuSvn: CpuSvn[0], 
-						PceSvn:PceSvn[0], 
-						PceId: PceId[0], 
-						QeId: QeId[0],}
+						CpuSvn: strings.ToLower(CpuSvn[0]), 
+						PceSvn:strings.ToLower(PceSvn[0]), 
+						PceId: strings.ToLower(PceId[0]), 
+						QeId: strings.ToLower(QeId[0]),}
 		existingPinfo, err := db.PlatformTcbRepository().Retrieve(pinfo)
 		model, err := GetCacheModel()
 		if err != nil {
@@ -64,8 +65,11 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
                         return &resourceError{Message: "GetPCKCertificateCB: Platform Data not cached", 
 									StatusCode: http.StatusNotFound}
                 } else if model == constants.LazyCachingModel && existingPinfo == nil {
-                        existingPinfo, err = GetLazyCachePlatformInfo(db, EncryptedPPID[0], CpuSvn[0], 
-									PceSvn[0], PceId[0], QeId[0])
+                        existingPinfo, err = GetLazyCachePlatformInfo(db, strings.ToLower(EncryptedPPID[0]), 
+										strings.ToLower(CpuSvn[0]), 
+										strings.ToLower(PceSvn[0]), 
+										strings.ToLower(PceId[0]), 
+										strings.ToLower(QeId[0]))
                         if err != nil {
                                 return &resourceError{ Message: "GetPCKCertificateCB: Lazy Cache error: "+err.Error(), 
 							StatusCode: http.StatusInternalServerError}
@@ -73,7 +77,7 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 
 		pck_cert := types.PckCert{ 
-						QeId: QeId[0], 
+						QeId: strings.ToLower(QeId[0]), 
 						PceId:PceId[0],}
 		existingPckCert, err := db.PckCertRepository().Retrieve(pck_cert)
 		if err != nil {
@@ -225,7 +229,7 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		log.WithField("Fmspc", Fmspc[0]).Debug("Value")
 
 
-		TcbInfo := types.FmspcTcbInfo{ Fmspc: Fmspc[0]}
+		TcbInfo := types.FmspcTcbInfo{ Fmspc: strings.ToLower(Fmspc[0])}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		model, err := GetCacheModel()
 		if err != nil {
@@ -236,7 +240,7 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                         return &resourceError{Message: "GetTCBInfoCB: Tcb Info Data not cached", 
 									StatusCode: http.StatusNotFound}
                 } else if model == constants.LazyCachingModel && existingFmspc == nil{
-                        existingFmspc, err = GetLazyCacheFmspcTcbInfo(db, Fmspc[0])
+                        existingFmspc, err = GetLazyCacheFmspcTcbInfo(db, strings.ToLower(Fmspc[0]))
                         if err != nil {
                                 return &resourceError{ Message: "GetTCBInfoCB: Lazy Cache error: "+err.Error(), 
 							StatusCode: http.StatusInternalServerError}
