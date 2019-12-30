@@ -35,7 +35,7 @@ import (
 	"intel/isecl/lib/common/validation"
 	e "intel/isecl/lib/common/exec"
 	cos "intel/isecl/lib/common/os"
-	cmw "intel/isecl/lib/common/middleware"
+	//cmw "intel/isecl/lib/common/middleware"
 	commLog "intel/isecl/lib/common/log"
 	commLogInt "intel/isecl/lib/common/log/setup"
 
@@ -528,8 +528,8 @@ func (a *App) startServer() error {
 
 
 	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
-	sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts, 
-						time.Minute*constants.DefaultJwtValidateCacheKeyMins))
+	//sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts, 
+	//					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)

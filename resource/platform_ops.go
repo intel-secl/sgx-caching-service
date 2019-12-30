@@ -320,9 +320,9 @@ func CachePckCertInfo( db repository.SCSDatabase, data *SgxData )( error ){
 	var err error
 	data.PckCert = &types.PckCert {
 					PceId: data.PlatformInfo.PceId, 
-					QeId: data.PlatformInfo.QeId, 
+					QeId: strings.ToLower(data.PlatformInfo.QeId), 
 					Tcbm: data.PckCertInfo.Tcbm,
-					Fmspc: data.PckCertInfo.Fmspc, 
+					Fmspc: strings.ToLower(data.PckCertInfo.Fmspc), 
 					PckCert: data.PckCertInfo.PckCert,
 					CertChainId: data.PckCertChain.Id,}
 
@@ -414,7 +414,7 @@ func CacheFmspcTcbInfo( db repository.SCSDatabase, data *SgxData)( error ){
 	defer log.Trace("resource/platform_ops.go: CacheFmspcTcbInfo() Leaving")
 
 	data.FmspcTcb = &types.FmspcTcbInfo{	
-					Fmspc: data.FmspcTcbInfo.Fmspc,
+					Fmspc: strings.ToLower(data.FmspcTcbInfo.Fmspc),
 					TcbInfo: data.FmspcTcbInfo.TcbInfo,
 					TcbInfoIssuerChain: data.FmspcTcbInfo.TcbInfoIssuerChain,}
 	var err error
@@ -446,11 +446,11 @@ func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
 
 	if data.PlatformTcb == nil {
 		data.PlatformTcb = &types.PlatformTcb{
-						Encppid: data.PlatformInfo.EncryptedPPID, 
-						CpuSvn: data.PlatformInfo.CpuSvn, 
-						PceSvn:data.PlatformInfo.PceSvn, 
-						PceId: data.PlatformInfo.PceId, 
-						QeId: data.PlatformInfo.QeId, 
+						Encppid: strings.ToLower(data.PlatformInfo.EncryptedPPID), 
+						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn), 
+						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn), 
+						PceId: strings.ToLower(data.PlatformInfo.PceId), 
+						QeId: strings.ToLower(data.PlatformInfo.QeId), 
 		}
 	}
 
@@ -536,15 +536,23 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 
 		data.PlatformTcb = &types.PlatformTcb{	
-						Encppid: data.PlatformInfo.EncryptedPPID, 
-						CpuSvn: data.PlatformInfo.CpuSvn, 
-						PceSvn:data.PlatformInfo.PceSvn, 
-						PceId: data.PlatformInfo.PceId, 
-						QeId: data.PlatformInfo.QeId, 
+						Encppid: strings.ToLower(data.PlatformInfo.EncryptedPPID), 
+						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn), 
+						PceSvn: strings.ToLower(data.PlatformInfo.PceSvn), 
+						PceId: strings.ToLower(data.PlatformInfo.PceId), 
+						QeId: strings.ToLower(data.PlatformInfo.QeId), 
 		}
 		existingPlaformData, err := db.PlatformTcbRepository().Retrieve(*data.PlatformTcb)
                 if  existingPlaformData != nil {
-                        return &resourceError{Message: "Platform Info Already exist", StatusCode: http.StatusBadRequest}
+			w.Header().Set("Content-Type", "application/json")
+                	w.WriteHeader(http.StatusOK) // HTTP 200
+                	res := Response{ Status:"Success", Message: "Platform Info Already exist, Nothing to push"}
+                	js, err := json.Marshal(res)
+                	if err != nil {
+                        	return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+                	}
+                	w.Write(js)
+			return nil
                 }
 
 		data.Type = constants.CacheInsert
@@ -587,7 +595,7 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{ Fmspc: data.PckCertInfo.Fmspc }
+		TcbInfo := types.FmspcTcbInfo{ Fmspc: strings.ToLower(data.PckCertInfo.Fmspc) }
                 existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
 			data.FmspcTcbInfo.Fmspc = data.PckCertInfo.Fmspc
