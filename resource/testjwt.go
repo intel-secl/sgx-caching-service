@@ -5,12 +5,9 @@
 package resource
 
 import (
-	//"encoding/json"
-	//"intel/isecl/lib/common/context"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	//log "github.com/sirupsen/logrus"
 )
 
 func SetTestJwt(r *mux.Router) {

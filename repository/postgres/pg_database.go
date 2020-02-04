@@ -86,7 +86,6 @@ func (pd *PostgresDatabase) QEIdentityRepository() repository.QEIdentityReposito
 	return &PostgresQEIdentityRepository{db: pd.DB}
 }
 
-
 func (pd *PostgresDatabase) Close() {
 	if pd.DB != nil {
 		pd.DB.Close()

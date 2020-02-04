@@ -22,7 +22,6 @@ const (
 	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
 	RootCADirPath                 = ConfigDir + "certs/cms-root-ca/"
-	//RootCACertPath                = RootCADirPath + "root-ca-cert.pem"
 	PIDFile                       = "sgx-caching-service.pid"
 	ServiceRemoveCmd              = "systemctl disable sgx-caching-service"
 	HashingAlgorithm              = crypto.SHA384
@@ -37,7 +36,7 @@ const (
 	DefaultHttpPort               = 9443
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
-	DefaultIntelProvServerURL     = "https://sbx.api.trustedservices.intel.com/sgx/certification/v1/"
+	DefaultIntelProvServerURL     = "https://api.trustedservices.intel.com/sgx/certification/v2/"
 	EncPPID_Key		      = "encrypted_ppid"
 	CpuSvn_Key		      = "cpu_svn"
 	PceSvn_Key		      = "pce_svn"
@@ -78,4 +77,3 @@ const (
 	// Running means the daemon is active
 	Running State = true
 )
-

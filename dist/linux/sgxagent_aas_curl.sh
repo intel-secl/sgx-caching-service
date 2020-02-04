@@ -5,8 +5,6 @@
 #to customize, export the correct values before running the script
 
 echo "Setting up SGXAGENT Related roles and user in AAS Database"
-unset https_proxy
-unset http_proxy
 
 IPADDR=10.105.168.90
 #Get the value of AAS IP address and port. Default vlue is also provided.
@@ -28,7 +26,6 @@ curl_output=`curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Acc
 
 Bearer_token=`echo $curl_output | rev | cut -c 4- | rev`
 response_status=`echo "${curl_output: -3}"`
-#sgxagent config aasAdmin.bearer.token $Bearer_token >/dev/null
 
 if rpm -q jq; then
 	echo "JQ package installed"
@@ -48,7 +45,6 @@ EOF
 
 curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/user.json -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/aas/users > $tmpdir/createsgxagentuser-response.status
 
-
 local actual_status=$(cat $tmpdir/createsgxagentuser-response.status)
 if [ $actual_status -ne 201 ]; then
 	local response_mesage=$(cat $tmpdir/user_response.json)
@@ -59,7 +55,6 @@ if [ $actual_status -ne 201 ]; then
 fi
 
 if [ -s $tmpdir/user_response.json ]; then
-	#jq < $tmpdir/user_response.json
 	user_id=$(jq -r '.user_id' < $tmpdir/user_response.json)
 	if [ -n "$user_id" ]; then
 		echo "Created user id: $user_id"
@@ -71,7 +66,6 @@ fi
 #Add SGXAGENT roles
 #cms role(sgxagent will create these roles where CN=SGXAGENT), getroles(api in aas that is to be map with), keyTransfer, keyCrud
 create_user_roles() {
-
 
 cat > $tmpdir/roles.json << EOF
 {
@@ -102,12 +96,6 @@ echo "$role_id"
 create_roles() {
 
 		local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=SGXAGENT TLS Certificate;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
-		#local sgxagent_rm_rid=$( create_user_roles "SGXAGENT" "RoleManager" ) #Get roleid
-		#local sgxagent_um_rid=$( create_user_roles "SGXAGENT" "UserManager" ) #Get roleid
-		#local sgxagent_urm_rid=$( create_user_roles "SGXAGENT" "UserRoleManager" ) #Get roleid
-		#local aas_role_id=$( create_user_roles "CMS" "CertApprover" "CN=SGXAGENT JWT Signing Certificate; SAN=127.0.0.1,localhost;CERTTYPE=JWT-Signing" )
-		#ROLE_ID_TO_MAP=`echo "\"$cms_role_id""\",\"""$sgxagent_um_rid""\",\"""$sgxagent_rm_rid""\",\"""$sgxagent_urm_rid""\",\"""$aas_role_id\""`
-		#ROLE_ID_TO_MAP=`echo "\"$cms_role_id""\",\"abce7532-60ef-40f5-a1ad-677987ed9508\""`
 		ROLE_ID_TO_MAP=`echo \"$cms_role_id\"`
 		echo $ROLE_ID_TO_MAP
 }
@@ -129,7 +117,6 @@ fi
 }
 
 SGXAGENT_SETUP_API="create_sgxagent_user create_roles mapUser_to_role"
-#SGXAGENT_SETUP_API="mapUser_to_role"
 
 status=
 for api in $SGXAGENT_SETUP_API
@@ -155,13 +142,8 @@ curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: applicat
 
 status=$(cat $tmpdir/getsgxagentusertoken-response.status)
 if [ $status -ne 200 ]; then
-	#sgxagent config aas.bearer.token $tmpdir/sgxagent_token-response.json 
 	echo "Couldn't get bearer token"
 else
 	export BEARER_TOKEN=`cat $tmpdir/sgxagent_token-response.json`
 	echo $BEARER_TOKEN
-	#sgxagent config aas.bearer.token $BEARER_TOKEN >/dev/null
 fi
-
-# cleanup
-#rm -rf $tmpdir

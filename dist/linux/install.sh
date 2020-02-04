@@ -31,7 +31,6 @@ id -u $SERVICE_USERNAME 2> /dev/null || useradd $SERVICE_USERNAME
 
 echo "Installing SGX Caching Service..."
 
-
 COMPONENT_NAME=sgx-caching-service
 PRODUCT_HOME=/opt/$COMPONENT_NAME
 BIN_PATH=$PRODUCT_HOME/bin
@@ -54,9 +53,7 @@ for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $C
   chown -R $SERVICE_USERNAME:$SERVICE_USERNAME $directory
   chmod 700 $directory
   chmod g+s $directory
-
 done
-
 
 cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_PATH/*
 chmod 700 $BIN_PATH/*
@@ -85,7 +82,6 @@ auto_install() {
   # detect available package management tools. start with the less likely ones to differentiate.
   yum -y install $yum_packages
 }
-
 
 # SCRIPT EXECUTION
 logRotate_clear() {
@@ -138,7 +134,6 @@ if [ ! -a /etc/logrotate.d/sgx-caching-service ]; then
         $LOG_COPYTRUNCATE
 }" > /etc/logrotate.d/sgx-caching-service
 fi
-
 
 # check if SCS_NOSETUP is defined
 if [ "${SCS_NOSETUP,,}" == "true" ]; then

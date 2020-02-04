@@ -20,4 +20,3 @@ type PckCert struct {
 }
 
 type PckCerts []PckCert
-

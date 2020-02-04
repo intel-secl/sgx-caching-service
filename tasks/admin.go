@@ -10,7 +10,6 @@ import (
 	"intel/isecl/sgx-caching-service/repository"
 	"intel/isecl/lib/common/setup"
 	"io"
-
 	commLog "intel/isecl/lib/common/log"
 	"github.com/pkg/errors"
 )

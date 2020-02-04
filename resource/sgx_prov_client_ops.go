@@ -9,7 +9,6 @@ import (
 	"intel/isecl/sgx-caching-service/config"
 )
 
-
 func GetProvClientObj()(*http.Client, *config.Configuration, error){
 	log.Trace("resource/sgx_prov_client_ops: GetProvClientObj() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: GetProvClientObj() Leaving")

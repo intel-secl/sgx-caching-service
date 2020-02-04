@@ -35,7 +35,6 @@ import (
 	"intel/isecl/lib/common/validation"
 	e "intel/isecl/lib/common/exec"
 	cos "intel/isecl/lib/common/os"
-	//cmw "intel/isecl/lib/common/middleware"
 	commLog "intel/isecl/lib/common/log"
 	commLogInt "intel/isecl/lib/common/log/setup"
 
@@ -45,7 +44,6 @@ import (
 
 	// Import driver for GORM
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-
 )
 
 type App struct {
@@ -207,9 +205,8 @@ func (a *App) configureLogs(isStdOut bool, isFileOut bool) {
         ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
         commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, nil, ioWriterDefault, false)
         commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, nil, ioWriterSecurity, false)
-
-        slog.Trace("sec log initiated")
-        log.Trace("loggers setup finished")
+	slog.Trace("sec log initiated")
+	log.Trace("loggers setup finished")
 }
 
 func (a *App) Run(args []string) error {
@@ -271,13 +268,7 @@ func (a *App) Run(args []string) error {
 			time.Sleep(10 * time.Millisecond)
 			return errors.Wrap(err, "app:Run() Error starting sgx-caching-service service")
 		}
-	case "-help":
-		fallthrough
-	case "--h":
-		fallthrough
-	case "--help":
-		fallthrough
-	case "help":
+	case "-h", "--help":
 		a.printUsage()
 	case "start":
 		return a.start()
@@ -288,13 +279,13 @@ func (a *App) Run(args []string) error {
 		a.configureLogs(true, false)
 		return a.status()
 	case "uninstall":
-		var keepConfig bool
-		flag.CommandLine.BoolVar(&keepConfig, "keep-config", false, "keep config when uninstalling")
+		var purge bool
+		flag.CommandLine.BoolVar(&purge, "purge", false, "purge config when uninstalling")
 		flag.CommandLine.Parse(args[2:])
-		a.uninstall(keepConfig)
+		a.uninstall(purge)
 		log.Info("app:Run() Uninstalled SGX Caching Service")
 		os.Exit(0)
-	case "version":
+	case "--version", "-v":
 		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\n", version.Version, version.GitHash)
 	case "setup":
 		a.configureLogs(false, true)
@@ -536,7 +527,6 @@ func (a *App) startServer() error {
 		}
 	}(resource.PlatformInfoOps)
 
-
 	sr = r.PathPrefix("/scs/test/").Subrouter()
 	//sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))
 	func(setters ...func(*mux.Router)) {
@@ -544,7 +534,6 @@ func (a *App) startServer() error {
 			setter(sr)
 		}
 	}(resource.SetTestJwt)
-
 
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -574,7 +563,7 @@ func (a *App) startServer() error {
 		tlsCert := path.Join(a.configDir(), constants.TLSCertFile)
 		tlsKey := path.Join(a.configDir(), constants.TLSKeyFile)
 		if err := h.ListenAndServeTLS(tlsCert, tlsKey); err != nil {
-			log.WithError(err).Info("Failed to start HTTPS server")
+			log.WithError(err).Fatal("Failed to start HTTPS server")
 			stop <- syscall.SIGTERM
 		}
 	}()
@@ -585,8 +574,7 @@ func (a *App) startServer() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := h.Shutdown(ctx); err != nil {
-		log.WithError(err).Info("Failed to gracefully shutdown webserver")
-		return err
+		return errors.Wrap(err, "app:startServer() Failed to gracefully shutdown webserver")
 	}
 	return nil
 }
@@ -627,7 +615,7 @@ func (a *App) status() error {
 	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-caching-service"}, os.Environ())
 }
 
-func (a *App) uninstall(keepConfig bool) {
+func (a *App) uninstall(purge bool) {
 	log.Trace("app:uninstall() Entering")
 	defer log.Trace("app:uninstall() Leaving")
 
@@ -651,7 +639,7 @@ func (a *App) uninstall(keepConfig bool) {
 		log.WithError(err).Error("error removing ", a.execLinkPath())
 	}
 
-	if !keepConfig {
+	if purge {
 		fmt.Println("removing : ", a.configDir())
 		err = os.RemoveAll(a.configDir())
 		if err != nil {
@@ -748,7 +736,6 @@ func validateSetupArgs(cmd string, args []string) error {
 		return validateCmdAndEnv(env_names_cmd_opts, fs)
 
 	case "admin":
-
 		env_names_cmd_opts := map[string]string{
 			"SCS_ADMIN_USERNAME": "user",
 			"SCS_ADMIN_PASSWORD": "pass",
@@ -765,7 +752,6 @@ func validateSetupArgs(cmd string, args []string) error {
 		return validateCmdAndEnv(env_names_cmd_opts, fs)
 
 	case "reghost":
-
 		env_names_cmd_opts := map[string]string{
 			"SCS_REG_HOST_USERNAME": "user",
 			"SCS_REG_HOST_PASSWORD": "pass",
@@ -786,7 +772,6 @@ func validateSetupArgs(cmd string, args []string) error {
 		return nil
 
 	case "tls":
-
 		env_names_cmd_opts := map[string]string{
 			"SCS_TLS_HOST_NAMES": "host_names",
 		}

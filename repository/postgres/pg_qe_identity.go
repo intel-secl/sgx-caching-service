@@ -67,4 +67,3 @@ func (r *PostgresQEIdentityRepository) Delete(u types.QEIdentity) error {
 	}
 	return nil
 }
-

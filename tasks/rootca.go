@@ -27,7 +27,6 @@
 	log.Trace("tasks/rootca:Run() Entering")
 	defer log.Trace("tasks/rootca:Run() Leaving")
 
-        //log.WithField("CMS", ca.Config.CMSBaseUrl).Debug("URL dump")
         url := ca.Config.CMSBaseUrl + "ca-certificates"
         req, _ := http.NewRequest("GET", url, nil)
         req.Header.Add("accept", "application/x-pem-file")
@@ -50,7 +49,6 @@
 		return errors.Wrapf(err, "tasks/rootca:Run() Could not store Certificate")
         }
 
-        //log.WithField("Retrieve Root CA cert", "compledted").Debug("successfully")
         return nil
  }
  
@@ -64,4 +62,3 @@
 	 }
 	 return nil
  }
- 

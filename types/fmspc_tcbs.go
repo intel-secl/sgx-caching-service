@@ -17,4 +17,3 @@ type FmspcTcbInfo struct {
 }
 
 type FmspcTcbInfos []FmspcTcbInfo
-

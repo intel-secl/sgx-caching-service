@@ -15,7 +15,6 @@ import (
 
 // Need to move these to lib common
 
-// CheckPidFile checks if /var/run/threat-detection/tdagent.pid exists
 func CheckPidFile(path string) (pid int, err error) {
 	pidData, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -30,7 +29,6 @@ func CheckPidFile(path string) (pid int, err error) {
 	return pid, nil
 }
 
-// WritePidFile writes the specified pid to /var/run/threat-detection/tdagent.pid,
 // creating it if it doesnt exist
 func WritePidFile(path string, pid int) error {
 	log.WithField("pid", pid).Debug("writing pid file")

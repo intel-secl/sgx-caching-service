@@ -7,7 +7,6 @@ import (
         "time"
 )
 
-
 //QEIdentity struct is the database schema of a QEIdentities table
 type QEIdentity struct {
 	Id			uint    `json:"-" gorm:"primary_key;auto_increment"`
@@ -18,4 +17,3 @@ type QEIdentity struct {
 }
 
 type QEIdentities []QEIdentity
-

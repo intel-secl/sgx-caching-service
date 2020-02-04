@@ -8,9 +8,7 @@ import (
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/sgx-caching-service/config"
 	"os"
-
 	"testing"
-
 	"github.com/stretchr/testify/assert"
 )
 

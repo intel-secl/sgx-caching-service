@@ -22,7 +22,8 @@ func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {
 	r.Handle("/qe/identity", GetQEIdentityInfoCB(db)).Methods("GET")
 }
 
-//QutoProvider call
+// Invoked by DCAP Quote Provider Library to fetch PCK certificate
+// as part of ECDSA Quote Generation
 func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		log.WithField("GetPCKCertificateCB", ":").Debug("Invoked")
@@ -77,8 +78,8 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 
 		pck_cert := types.PckCert{ 
-						QeId: strings.ToLower(QeId[0]), 
-						PceId:PceId[0],}
+					QeId: strings.ToLower(QeId[0]), 
+					PceId:PceId[0],}
 		existingPckCert, err := db.PckCertRepository().Retrieve(pck_cert)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -117,7 +118,6 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-
 //QutoProvider call
 func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -133,7 +133,6 @@ func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
                 if  	!ValidateInputString(constants.Ca_Key, Ca[0]) {
                         return &resourceError{Message: "GetPCKCRLCB: Invalid query Param Data", StatusCode: http.StatusBadRequest}
                 }
-
 
 		pckCrl := types.PckCrl{Ca: Ca[0]}
 		model, err := GetCacheModel()
@@ -172,7 +171,6 @@ func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-
 //QutoProvider call
 func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -210,7 +208,6 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-
 //QutoProvider call
 func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -221,7 +218,7 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 									StatusCode: http.StatusBadRequest}
                 }
 
-		Fmspc,_		:= r.URL.Query()["fmspc"]
+		Fmspc, _ := r.URL.Query()["fmspc"]
 
                 if  	!ValidateInputString(constants.Fmspc_Key, Fmspc[0]) {
                         return &resourceError{Message: "Invalid query Param Data", StatusCode: http.StatusBadRequest}
@@ -254,4 +251,3 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		return nil
 	}
 }
-

@@ -46,9 +46,7 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 	
 	log.Debug("GetLazyCachePlatformInfo fetch and cache operation completed successfully")
 	return data.PlatformTcb, nil
-
 }
-
 
 func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *types.FmspcTcbInfo, error ) {
 	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Entering")
