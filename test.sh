@@ -11,13 +11,13 @@ echo "Operation:$op, Environment:$env"
 
 subscription_key=ec73a0f55ca348cb9f02371f2b9ca614
 
-v_encppid="974F57D49D60914F44C0A7B897035FA0114A4C3659316FF56354B122896AD4CEBE559031095010553998054A578578CC979A84C62337DD17AB96BAAA00DCD252B806EDC8CA405341214522C498A996CF73106E2A91A45F4E5710360DD32240F3D869479A408166E470A033DBA4B6241E8E7497F33F44BF885BFB87975D6AB769C4EDE1FBAC5840EE612CC54674CC5CF9DCE0CD5302340555D0EC1670D73C0500B38201143AD379FB8776202856681623C2D3F062E781D04FB0A513B48AC9A416CAB5448795205302F5A020A2DACBA7351A56F6DE92745D9AD49D11C62BA4579C377BCCB6F717D9A6CC20DB2E3765C1CF5E87111EB492ED1CE70DC4E2D22BA396BB8648CF315022A2A066323269D2E79B17CCB13BCEFDEA7A3E428DCC98FD14006D9DE187FC245A6D9EECE97C2D14BE8750EA25732854A84541B5B868164A0AAEE776BC98699CDD69169994A0B303F950491EA7B0F620FC0F1492553697D30701030CA9C9F70295845F8876A0B90E72889927BA29AA5BC32B3D340D4B7F6A0156"
+v_encppid="c6d80271c121b1ff45c7a917aa65c23d096544c1c26c93d068fdd1f53b7b083f91f84b10d5efb30d146d934143966fc1194a7025854afe65edf3ea177d2ba538d6350eb7aa06f5eb34bcb23b8efb546bc97bb90356454d9ecbe143c3742e8cd43e9d66850578f2ee4fcfe2473a99eb300a960044ee5142c41fe90b1d7804c3a218a272b509975eba9b66556b33b406c2b5771e1a8f7223f96bcd922252c1e96385082bdc52d3f91a06e8d27eecf087966c5396d38510dd0b6fc941261d3f3bbe6cb9dd6025f6e80cab274bf5275c570e390d33cf64db7fbbbdd402665165ab5c29a7d5ddee84a688fa62eedd70871fc15f226419aecff733bc7fd72a5a039b2ae518a03611e7461700e5228607d3b1012bc265c5df23cf2434e37e79f8eabadb5fcbe9b9b7b741848c1022a02fa8e968d3c4f5db72a993326345d5f473669b2a97abe5b7b630f39f05592a8cb4a3333e71c09731b521e315fbfd22632981f7c3d6bedb0cbdc55307c9f75a0b0150731028ceb1951daa550b0bccc82b45b5f1ef"
 
 Bearer_token="eyJhbGciOiJSUzM4NCIsImtpZCI6Ijc1NmVlMWU5ZjdiM2M3MzRlM2I4MzgxZTBhNjgwZWM2NmFlOWIyYmQiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0QXBwcm92ZXIiLCJjb250ZXh0IjoiQ049U0dYQUdFTlQgVExTIENlcnRpZmljYXRlO1NBTj0xMC4xLjY4LjIyMztDRVJUVFlQRT1UTFMifV0sImV4cCI6MTcyNTcwNzAyNywiaWF0IjoxNTY4MDI3MDI3LCJpc3MiOiJBQVMgSldUIElzc3VlciIsInN1YiI6InVzZXIxQHNneGFnZW50In0.Eqr_BQmmWOFiQzU8Y57iwvzi4t_lwJoiG9KXek5FlrM_Vw3fB-MhVw3xhjD8ZfXJF7qQL2CWT4plL9-T2L5kVH01iERIGnzVYXQEWm0QfXKWMCezRqPp3pXXaIZMfdSGJImVURJMs39eTBEkdzGRIl7CYEjUmml4gZT6nz_iM1DpW_nTHz2UgopEFrLzKQpFcoZgGjp99Yuv8r38XebEIu7SYQmaiUnzPki7Q1NvBwaNh_we75jElhxIN7LJKzNicH1KnAkTKTqGUl8a67x8ygHqp-VwRCoxiya8r49LT3rmEkIBWDi6eRyJbJRN05NyF1OiksH0hTadMWEXMyZ2Z8yUmF8H-jJQFvXoSCtmxEDVqtGNOcKfGIHkrF-Mw-za3EQOYBHghKq6lg0nTBhaGLdPNrHlNWFQuA4KaNyIgiANmUI33EcWsRzJUggJMrfdRJj19nD224GFGEKb3tyVjJmlUxr0hVtWvRO-Hkpv7a0QGVKn5E5ckGtBecRz4uqE"
-v_cpusvn="02030205FF8000000000000000000000"
-v_pcesvn="0700"
+v_cpusvn="0202ffffff8002000000000000000000"
+v_pcesvn="0900"
 v_pceid="0000"
-v_qeid="D475493A08E576404388A928DA23EA15"
+v_qeid="0f16dfa4033e66e642af8fe358c18751"
 v_ca="processor"
 v_fmspc="10906ec10000"
 
@@ -28,20 +28,20 @@ if [ "$op" = "pckcert" ] && [ "$env" = "scs" ]; then
 	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/pckcert?encrypted_ppid=$v_encppid&cpusvn=$v_cpusvn&pcesvn=$v_pcesvn&pceid=$v_pceid&qeid=$v_qeid" -s --insecure
 
 elif [ "$op" = "pckcert" ] && [ "$env" = "intel" ]; then
-	curl -X GET -vvv -H "Ocp-Apim-Subscription-Key: $subscription_key"  "https://api.trustedservices.intel.com/sgx/certification/v1/pckcert?encrypted_ppid=$v_encppid&cpusvn=$v_cpusvn&pcesvn=$v_pcesvn&pceid=$v_pceid" 
+	curl -X GET -vvv -H "Ocp-Apim-Subscription-Key: $subscription_key" "https://api.trustedservices.intel.com/sgx/certification/v2/pckcerts?encrypted_ppid=$v_encppid&pceid=$v_pceid"
 fi
 
 if [ "$op" = "pckcrl" ] && [ "$env" = "scs" ]; then
 	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/pckcrl?ca=$v_ca" -s --insecure
 elif [ "$op" = "pckcrl" ] && [ "$env" = "intel" ]; then
-	curl -X GET -vvv "https://api.trustedservices.intel.com/sgx/certification/v1/pckcrl?ca=$v_ca" 
+	curl -X GET -vvv "https://api.trustedservices.intel.com/sgx/certification/v2/pckcrl?ca=$v_ca"
 fi
 
 if [ "$op" = "qe" ] && [ "$env" = "scs" ]; then
 	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/qe/identity" -s --insecure
 
 elif [ "$op" = "qe" ] && [ "$env" = "intel" ]; then
-	curl -X GET -vvv "https://api.trustedservices.intel.com/sgx/certification/v1/qe/identity" 
+	curl -X GET -vvv "https://api.trustedservices.intel.com/sgx/certification/v2/qe/identity"
 elif [ "$op" = "qe" ] && [ "$env" = "nodejs" ]; then
 	curl -X GET -vvv --tlsv1.2 "https://$hostname:8081/sgx/certification/v1/qe/identity" -s --insecure
 fi
@@ -50,7 +50,7 @@ if [ "$op" = "fmspc" ] && [ "$env" = "scs" ]; then
 	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/tcb?fmspc=$v_fmspc" -s --insecure
 
 elif [ "$op" = "fmspc" ] && [ "$env" = "intel" ]; then
-	curl -X GET -vvv "https://api.trustedservices.intel.com/sgx/certification/v1/tcb?fmspc=$v_fmspc" 
+	curl -X GET -vvv "https://api.trustedservices.intel.com/sgx/certification/v2/tcb?fmspc=$v_fmspc"
 fi
 
 if [[ "$op" = "push" ]]; then
@@ -61,7 +61,7 @@ printf "{
 \"pce_svn\": \"$v_pcesvn\",
 \"pce_id\": \"$v_pceid\",
 \"qe_id\": \"$v_qeid\"
-}" > $PF_CREATE_JSON_FILE 
+}" > $PF_CREATE_JSON_FILE
 
 	curl -X POST -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
 fi

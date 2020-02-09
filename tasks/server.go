@@ -52,13 +52,11 @@ func (s Server) Run(c setup.Context) error {
 	}
 	s.Config.CMSBaseUrl = cmsBaseUrl
 
-
 	intelProvUrl, err := c.GetenvString("INTEL_PROVISIONING_SERVER", "Intel ECDSA Provisioning Server URL")
 	if err != nil {
 		intelProvUrl = constants.DefaultIntelProvServerURL
 	}
 	s.Config.ProvServerInfo.ProvServerUrl = intelProvUrl
-
 
 	intelProvApiKey, err := c.GetenvString("INTEL_PROVISIONING_SERVER_API_KEY", "Intel ECDSA Provisioning Server API Subscription key")
 	if err != nil {

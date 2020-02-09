@@ -42,7 +42,7 @@ func GetPCKCertFromProvServer(EncryptedPPID string, CpuSvn string, PceSvn string
 	if err != nil {
 		return nil, errors.Wrap(err, "GetPCKCertFromProvServer: Cannot get provclient Object")
 	}
-	url := fmt.Sprintf("%s/pckcert", conf.ProvServerInfo.ProvServerUrl)
+	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerUrl)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: GET http request Failed")
@@ -51,15 +51,13 @@ func GetPCKCertFromProvServer(EncryptedPPID string, CpuSvn string, PceSvn string
 	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.ApiSubscriptionkey)
 	q := req.URL.Query()
 	q.Add("encrypted_ppid", EncryptedPPID)
-	q.Add("cpusvn", CpuSvn)
-	q.Add("pcesvn", PceSvn)
 	q.Add("pceid", PceId)
 
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do( req )
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: Cannot get client req")
+	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: GET pckcerts call to PCS failed")
 	}
 	return resp, nil
 }

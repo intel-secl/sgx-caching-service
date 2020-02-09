@@ -40,17 +40,20 @@ type PlatformInfo struct {
 	Ca 		string `json:"ca"`
 	CreatedTime 	time.Time
 }
+
 type PckCertChainInfo struct {
 	Id 		uint
 	CreatedTime 	time.Time
 	PckCertChain 	[]byte
 }
+
 type PckCRLInfo struct {
 	PckCRL 		[]byte
 	PckCRLCertChain []byte
 	Ca 		string
 	CreatedTime 	time.Time
 }
+
 type PckCertInfo struct {
 	PckCert         []byte
 	Tcbm      	string     
@@ -179,8 +182,16 @@ func FetchPCKCertInfo( in *SgxData ) (error){
             	return err
         }
 
-	in.PckCertInfo.PckCert	= []byte(body)
-	CertBuf, _ := pem.Decode([]byte(body))
+//	in.PckCertInfo.PckCert	= []byte(body)
+	var  pckCerts []PckCertInfo
+	err = json.Unmarshal([]byte(body), &pckCerts)
+        if err != nil {
+                log.WithError(err).Error("Could not decode the pckCerts json response")
+                return err
+        }
+
+	//CertBuf, _ := pem.Decode([]byte(body))
+	CertBuf, _ := pem.Decode(pckCerts[0].PckCert)
 	if CertBuf == nil {
 		return errors.New("Failed to parse PEM block ")
 	}
