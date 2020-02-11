@@ -19,7 +19,7 @@ v_pcesvn="0900"
 v_pceid="0000"
 v_qeid="0f16dfa4033e66e642af8fe358c18751"
 v_ca="processor"
-v_fmspc="10906ec10000"
+v_fmspc="00906ed50000"
 
 hostname="127.0.0.1"
 port=9443
@@ -63,7 +63,7 @@ printf "{
 \"qe_id\": \"$v_qeid\"
 }" > $PF_CREATE_JSON_FILE
 
-	curl -X POST -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
+#	curl -X POST -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
 fi
 
 if [[ "$op" = "refresh" ]]; then

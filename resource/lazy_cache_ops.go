@@ -13,7 +13,7 @@ import (
 )
 
 func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType string, cpuSvnType string, 
-			PceSvnType string, pceIdType string, qeIdType string) (*types.PlatformTcb, error ) {
+			PceSvnType string, pceIdType string, qeIdType string) (*types.Platform, error ) {
 	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Leaving")
 
@@ -29,9 +29,9 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 		return nil, errors.New("FetchPCKCertInfo:" + err.Error())
 	}
 
-	err = CachePlatformTcbInfo(db, &data)
+	err = CachePlatformInfo(db, &data)
 	if err != nil {
-		return nil, errors.New("CachePlatformTcbInfo:" + err.Error())
+		return nil, errors.New("CachePlatformInfo:" + err.Error())
 	}
 
 	err = CachePckCertChainInfo(db, &data)
@@ -45,7 +45,7 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 	}
 	
 	log.Debug("GetLazyCachePlatformInfo fetch and cache operation completed successfully")
-	return data.PlatformTcb, nil
+	return data.Platform, nil
 }
 
 func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *types.FmspcTcbInfo, error ) {

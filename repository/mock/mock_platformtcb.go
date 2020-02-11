@@ -9,8 +9,8 @@ import (
 )
 
 type MockPlatformTcbRepository struct {
-	CreateFunc      func(types.PlatformTcb) (*types.PlatformTcb, error)
-	RetrieveFunc    func(types.PlatformTcb) (*types.PlatformTcb, error)
+	CreateFunc      func(types.PlatformTcb) (*types.PlatformTcbs, error)
+	RetrieveFunc    func(types.PlatformTcb) (*types.PlatformTcbs, error)
 	RetrieveAllFunc func(types.PlatformTcb) (types.PlatformTcbs, error)
 	UpdateFunc      func(types.PlatformTcb) error
 	DeleteFunc      func(types.PlatformTcb) error

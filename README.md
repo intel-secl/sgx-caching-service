@@ -1,10 +1,10 @@
 # SGX Caching Service
 
-`SGX Caching Service` is a web service whose purpose is to manage all Certificates in ecosystem
+`SGX Caching Service` is a web service whose purpose is to fetch and cache all the SGX Platform collaterals from Intel PCS Server
 
 ## Key features
-- Provides self signed Root CA
-- Sign rest of the certificates in ecosystem by Root CA
+- Fetch and cache PCK Certificates for a platform
+- Fetch and cache TCBInfo for a platform
 - RESTful APIs for easy and versatile access to above features
 
 ## System Requirements
@@ -49,28 +49,22 @@ make all
 
 ### Deploy
 ```console
-> ./cms-*.bin
-```
-
-OR
-
-```console
-> docker-compose -f dist/docker/docker-compose.yml up
+> ./sgx-caching-service-*.bin
 ```
 
 ### Manage service
 * Start service
-    * cms start
+    * sgx-caching-service start
 * Stop service
-    * cms stop
+    * sgx-caching-service stop
 * Restart service
-    * cms restart
+    * sgx-caching-service restart
 * Status of service
-    * cms status
+    * sgx-caching-service status
 
 # Third Party Dependencies
 
-## Certificate Management Service
+## Sgx Caching Service
 
 ### Direct dependencies
 
@@ -80,7 +74,6 @@ OR
 | handlers    | github.com/gorilla/handlers | v1.4.0                             |
 | mux         | github.com/gorilla/mux      | v1.7.0                             |
 | gorm        | github.com/jinzhu/gorm      | v1.9.2                             |
-| logrus      | github.com/sirupsen/logrus  | v1.3.0                             |
 | testify     | github.com/stretchr/testify | v1.3.0                             |
 | crypto      | golang.org/x/crypto         | v0.0.0-20190219172222-a4c6cb3142f2 |
 | yaml.v2     | gopkg.in/yaml.v2            | v2.2.2                             |
@@ -88,14 +81,4 @@ OR
 | authservice | intel/isecl/authservice     | v0.0.0	                         |
 | common      | intel/isecl/lib/common      | v1.0.0-Beta                        |
 
-### Indirect Dependencies
-
-| Repo URL                     | Minimum version required           |
-| -----------------------------| :--------------------------------: |
-| github.com/jinzhu/inflection | v0.0.0-20180308033659-04140366298a |
-| github.com/lib/pq            | v1.0.0                             |
-
 *Note: All dependencies are listed in go.mod*
-
-# Links
-https://01.org/intel-secl/cms

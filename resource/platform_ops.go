@@ -41,6 +41,14 @@ type PlatformInfo struct {
 	CreatedTime 	time.Time
 }
 
+type PlatformTcbInfo struct {
+	CpuSvn 		string `json:"cpu_svn"`
+	PceSvn 		string `json:"pce_svn"`
+	PceId 		string `json:"pce_id"`
+	QeId 		string `json:"qe_id"`
+	Fmspc 		string `json:"fmspc"`
+	CreatedTime 	time.Time
+}
 type PckCertChainInfo struct {
 	Id 		uint
 	CreatedTime 	time.Time
@@ -76,14 +84,41 @@ type QEInfo struct {
 	CreatedTime 	time.Time
 }
 
+type tcbinfo struct {
+	tcbcomp01 uint `json:"sgxtcbcomp01svn"`
+	tcbcomp02 uint `json:"sgxtcbcomp02svn"`
+	tcbcomp03 uint `json:"sgxtcbcomp03svn"`
+	tcbcomp04 uint `json:"sgxtcbcomp04svn"`
+	tcbcomp05 uint `json:"sgxtcbcomp05svn"`
+	tcbcomp06 uint `json:"sgxtcbcomp06svn"`
+	tcbcomp07 uint `json:"sgxtcbcomp07svn"`
+	tcbcomp08 uint `json:"sgxtcbcomp08svn"`
+	tcbcomp09 uint `json:"sgxtcbcomp09svn"`
+	tcbcomp10 uint `json:"sgxtcbcomp10svn"`
+	tcbcomp11 uint `json:"sgxtcbcomp11svn"`
+	tcbcomp12 uint `json:"sgxtcbcomp12svn"`
+	tcbcomp13 uint `json:"sgxtcbcomp13svn"`
+	tcbcomp14 uint `json:"sgxtcbcomp14svn"`
+	tcbcomp15 uint `json:"sgxtcbcomp15svn"`
+	tcbcomp16 uint `json:"sgxtcbcomp16svn"`
+}
+
+type PckCertsInfo struct {
+	Tcb tcbinfo `json:"tcb"`
+	Tcbm string `json:"tcbm"`
+	Cert string `json:"cert"`
+}
+
 type SgxData struct {
 	Type constants.CacheType
 	PlatformInfo 
+	PlatformTcbInfo 
 	PckCertChainInfo 
 	PckCertInfo 
 	PckCRLInfo
 	FmspcTcbInfo
 	QEInfo
+	Platform *types.Platform
 	PlatformTcb *types.PlatformTcb
 	PckCert *types.PckCert
 	PckCertChain *types.PckCertChain
@@ -151,6 +186,7 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 							in.PlatformInfo.CpuSvn, 
 							in.PlatformInfo.PceSvn, 
 							in.PlatformInfo.PceId)
+
         if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPCKCerts curl failed")
 		return err;
@@ -164,11 +200,9 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 
 	headers := resp.Header
 	in.PckCertChainInfo.PckCertChain = []byte(headers["Sgx-Pck-Certificate-Issuer-Chain"][0])
-	in.PckCertInfo.Tcbm = headers["Sgx-Tcbm"][0] 
 	DateVal := headers["Date"][0]
 
-	log.WithField("Sgx-Pck-Certificate-Issuer-Chain", in.PckCertChainInfo.PckCertChain).Debug("Cert Chain")
-	log.WithField("Sgx-Tcbm", in.PckCertInfo.Tcbm).Debug("Tcbm")
+//	log.WithField("Sgx-Pck-Certificate-Issuer-Chain", in.PckCertChainInfo.PckCertChain).Debug("Cert Chain")
 	log.WithField("Date", DateVal).Debug("Date")
 
 	if resp.ContentLength == 0 {
@@ -183,15 +217,22 @@ func FetchPCKCertInfo( in *SgxData ) (error){
         }
 
 //	in.PckCertInfo.PckCert	= []byte(body)
-	var  pckCerts []PckCertInfo
+	var pckCerts []PckCertsInfo
 	err = json.Unmarshal([]byte(body), &pckCerts)
         if err != nil {
                 log.WithError(err).Error("Could not decode the pckCerts json response")
                 return err
         }
 
-	//CertBuf, _ := pem.Decode([]byte(body))
-	CertBuf, _ := pem.Decode(pckCerts[0].PckCert)
+	pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%20", " ", -1)
+        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%0A", "\n", -1)
+        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%2F", "/", -1)
+        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%2B", "+", -1)
+        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%3D", "=", -1)
+        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%20", " ", -1)
+
+	CertBuf, _ := pem.Decode([]byte(pckCerts[0].Cert))
+	
 	if CertBuf == nil {
 		return errors.New("Failed to parse PEM block ")
 	}
@@ -439,12 +480,12 @@ func CacheFmspcTcbInfo( db repository.SCSDatabase, data *SgxData)( error ){
 	return nil
 }
 
-func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
-	log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Leaving")
+func CachePlatformInfo( db repository.SCSDatabase, data *SgxData )( error ){
+	log.Trace("resource/platform_ops.go: CachePlatformInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CachePlatformInfo() Leaving")
 
-	if data.PlatformTcb == nil {
-		data.PlatformTcb = &types.PlatformTcb{
+	if data.Platform == nil {
+		data.Platform = &types.Platform{
 						Encppid: strings.ToLower(data.PlatformInfo.EncryptedPPID), 
 						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn), 
 						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn), 
@@ -455,11 +496,46 @@ func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
 
 	var err error
         if  data.Type == constants.CacheRefresh {
-		data.PlatformTcb.CreatedTime = data.PlatformInfo.CreatedTime
+		data.Platform.CreatedTime = data.PlatformInfo.CreatedTime
+		data.Platform.UpdatedTime = time.Now()
+		err = db.PlatformRepository().Update(*data.Platform)
+		if err != nil {
+				log.WithError(err).Error("Platform values record could not be updated in db")
+				return err
+		}
+        }else {
+		data.Platform.UpdatedTime = time.Now()
+		data.Platform.CreatedTime = time.Now()
+		data.Platform, err = db.PlatformRepository().Create(*data.Platform)
+		if err != nil {
+				log.WithError(err).Error("Platform values record could not be created in db")
+				return err
+		}
+	}
+	return nil
+}
+
+func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
+	log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Entering")
+	defer log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Leaving")
+
+	if data.PlatformTcb == nil {
+		data.PlatformTcb = &types.PlatformTcb{
+						Fmspc: strings.ToLower(data.PlatformTcbInfo.Fmspc),
+						CpuSvn: strings.ToLower(data.PlatformTcbInfo.CpuSvn), 
+						PceSvn:strings.ToLower(data.PlatformTcbInfo.PceSvn), 
+						PceId: strings.ToLower(data.PlatformTcbInfo.PceId), 
+						QeId: strings.ToLower(data.PlatformTcbInfo.QeId), 
+		}
+	}
+
+	var err error
+        if  data.Type == constants.CacheRefresh {
+		data.PlatformTcb.CreatedTime = data.PlatformTcbInfo.CreatedTime
 		data.PlatformTcb.UpdatedTime = time.Now()
 		err = db.PlatformTcbRepository().Update(*data.PlatformTcb)
 		if err != nil {
-				log.WithError(err).Error("Platform values record could not be updated in db")
+				log.WithError(err).Error("PlatformTcb values record could not be updated in db")
 				return err
 		}
         }else {
@@ -467,7 +543,7 @@ func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
 		data.PlatformTcb.CreatedTime = time.Now()
 		data.PlatformTcb, err = db.PlatformTcbRepository().Create(*data.PlatformTcb)
 		if err != nil {
-				log.WithError(err).Error("Platform values record could not be created in db")
+				log.WithError(err).Error("PlatformTcb values record could not be created in db")
 				return err
 		}
 	}
@@ -531,14 +607,14 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                         return &resourceError{Message: "Invalid query Param Data", StatusCode: http.StatusBadRequest}
                 }
 
-		data.PlatformTcb = &types.PlatformTcb{	
+		data.Platform = &types.Platform{	
 						Encppid: strings.ToLower(data.PlatformInfo.EncryptedPPID), 
 						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn), 
 						PceSvn: strings.ToLower(data.PlatformInfo.PceSvn), 
 						PceId: strings.ToLower(data.PlatformInfo.PceId), 
 						QeId: strings.ToLower(data.PlatformInfo.QeId), 
 		}
-		existingPlaformData, err := db.PlatformTcbRepository().Retrieve(*data.PlatformTcb)
+		existingPlaformData, err := db.PlatformRepository().Retrieve(*data.Platform)
                 if  existingPlaformData != nil {
 			w.Header().Set("Content-Type", "application/json")
                 	w.WriteHeader(http.StatusOK) // HTTP 200
@@ -557,7 +633,7 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		err = CachePlatformTcbInfo(db, &data) 
+		err = CachePlatformInfo(db, &data) 
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
@@ -643,7 +719,7 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 	log.Trace("resource/platform_ops.go: RefreshPckCerts() Entering")
 	defer log.Trace("resource/platform_ops.go: RefreshPckCerts() Leaving")
 
-	existingPlaformData, err := db.PlatformTcbRepository().RetrieveAllPlatformInfo()
+	existingPlaformData, err := db.PlatformRepository().RetrieveAllPlatformInfo()
         if  len(existingPlaformData) == 0 {
                 return errors.New("Cached PCK Cert count is 0, cannot perform refresh operation")
         }
@@ -668,7 +744,7 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
                         return errors.New(fmt.Sprintf("Error in Refresh Pck Cert Info: %s", string(err.Error())))
                 }
 
-		err = CachePlatformTcbInfo(db, &data) 
+		err = CachePlatformInfo(db, &data) 
 		if err != nil {
                         return errors.New(fmt.Sprintf("Error in Cache Platform Tcb Cert Info: %s", err.Error()))
 		}

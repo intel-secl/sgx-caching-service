@@ -54,6 +54,7 @@ func (pd *PostgresDatabase) Migrate() error {
 	log.Trace("repository/postgres/pg_database: Migrate() Entering")
 	defer log.Trace("repository/postgres/pg_database: Migrate() Leaving")
 
+	pd.DB.AutoMigrate(types.Platform{})
 	pd.DB.AutoMigrate(types.PlatformTcb{})
 	pd.DB.AutoMigrate(types.PckCertChain{})
 	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
@@ -63,6 +64,10 @@ func (pd *PostgresDatabase) Migrate() error {
 	return nil
 }
 
+func (pd *PostgresDatabase) PlatformRepository() repository.PlatformRepository {
+	return &PostgresPlatformRepository{db: pd.DB}
+}
+
 func (pd *PostgresDatabase) PlatformTcbRepository() repository.PlatformTcbRepository {
 	return &PostgresPlatformTcbRepository{db: pd.DB}
 }
@@ -70,6 +75,7 @@ func (pd *PostgresDatabase) PlatformTcbRepository() repository.PlatformTcbReposi
 func (pd *PostgresDatabase) FmspcTcbInfoRepository() repository.FmspcTcbInfoRepository {
 	return &PostgresFmspcTcbInfoRepository{db: pd.DB}
 }
+
 func (pd *PostgresDatabase) PckCertChainRepository() repository.PckCertChainRepository {
 	return &PostgresPckCertChainRepository{db: pd.DB}
 }

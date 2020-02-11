@@ -51,12 +51,12 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		log.WithField("Encrypted PPID", EncryptedPPID).Debug("QueryParams")
 
-		pinfo := types.PlatformTcb{	
+		pinfo := types.Platform{	
 						CpuSvn: strings.ToLower(CpuSvn[0]), 
 						PceSvn:strings.ToLower(PceSvn[0]), 
 						PceId: strings.ToLower(PceId[0]), 
 						QeId: strings.ToLower(QeId[0]),}
-		existingPinfo, err := db.PlatformTcbRepository().Retrieve(pinfo)
+		existingPinfo, err := db.PlatformRepository().Retrieve(pinfo)
 		model, err := GetCacheModel()
 		if err != nil {
 			return &resourceError{ Message: "GetPCKCertificateCB: Get Lazy Cache Model error: "+err.Error(), 
@@ -106,6 +106,7 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm}
 
  		w.WriteHeader(http.StatusOK) // HTTP 200
+		log.Warn(existingPckCert.PckCert)
         	CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert))
         	if CertBuf == nil {
                         return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache", 
