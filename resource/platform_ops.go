@@ -96,6 +96,7 @@ func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 
 	r.Handle("/push", handlers.ContentTypeHandler( PushPlatformInfoCB(db), "application/json")).Methods("POST") 
 	r.Handle("/refresh", handlers.ContentTypeHandler( RefreshPlatformInfoCB(db), "application/json")).Methods("GET") 
+	r.Handle("/tcbstatus", handlers.ContentTypeHandler( GetTcbStatusCB(db), "application/json")).Methods("GET")
 }
 
 func GetFmspcVal( CertBuf *pem.Block )(string, error){
@@ -836,6 +837,26 @@ func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
 	return nil
 
 }
+
+func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		log.WithField("GetTcbStatusCB", ":").Debug("Invoked")
+		if ( len(r.URL.Query()) == 0) {
+                        return &resourceError{Message: "GetTcbStatusCB: The Request Query Data not provided",
+								 StatusCode: http.StatusBadRequest}
+			}
+		PceId,_	:= r.URL.Query()["pceid"]
+		if !ValidateInputString(constants.PceId_Key, PceId[0]) {
+			return &resourceError{Message: "GetTcbStatusCB: Invalid query Param Data",
+									StatusCode: http.StatusBadRequest}
+		}
+		log.WithField("PCEID", PceId).Debug("QueryParams")
+		w.WriteHeader(http.StatusOK) // HTTP 200
+		log.WithField("Get TCB Status request responded with status", http.StatusOK).Debug("Response")
+		return nil
+	}
+}
+
 //Admin Call
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
