@@ -63,7 +63,7 @@ printf "{
 \"qe_id\": \"$v_qeid\"
 }" > $PF_CREATE_JSON_FILE
 
-#	curl -X POST -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
+	curl -X POST -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -s --insecure
 fi
 
 if [[ "$op" = "refresh" ]]; then

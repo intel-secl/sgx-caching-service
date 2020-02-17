@@ -107,13 +107,13 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 
  		w.WriteHeader(http.StatusOK) // HTTP 200
 		log.Warn(existingPckCert.PckCert)
-        	CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert))
+		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert[0]))
         	if CertBuf == nil {
                         return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache", 
 									StatusCode: http.StatusInternalServerError}
         	}
 
-	        w.Write(existingPckCert.PckCert)	
+	        w.Write([]byte(existingPckCert.PckCert[0]))
 		log.WithField("Pck Cert request responded with status", http.StatusOK).Debug("Response")
 		return nil
 	}

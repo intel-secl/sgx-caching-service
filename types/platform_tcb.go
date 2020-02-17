@@ -13,7 +13,7 @@ type PlatformTcb struct {
 	PceId       	string     `json:"-"`
 	CpuSvn      	string     `json:"-"`
 	PceSvn      	string     `json:"-"`
-	Fmspc           string    `json:"-"`
+	Tcbm           string    `json:"-"`
 	CreatedTime    time.Time  `json:"-"`
 	UpdatedTime    time.Time  `json:"-"`
 }

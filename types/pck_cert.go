@@ -5,6 +5,7 @@
 package types
 import (
         "time"
+	"github.com/lib/pq"
 )
 
 // PckCert struct is the database schema of a PckCerts table
@@ -13,10 +14,10 @@ type PckCert struct {
 	PceId       	string     `json:"-"`
 	Tcbm      	string     `json:"-"` //removed primary key
 	Fmspc      	string     `json:"-"`
-	PckCert     	[]byte	   `json:"-" gorm:"type:bytea;not null`
+	PckCert		pq.StringArray   `json:"-" gorm:"type:TEXT[];not null"`
 	CertChainId   	uint 	   `json:"cert_chain_id" gorm:"type:int;not null"`
- 	CreatedTime    time.Time  
-	UpdatedTime    time.Time  
+ 	CreatedTime	time.Time  
+	UpdatedTime	time.Time  
 }
 
 type PckCerts []PckCert

@@ -33,8 +33,8 @@ type Response struct{
 
 type PlatformInfo struct {
 	EncryptedPPID 	string `json:"enc_ppid"`
-	CpuSvn 		string `json:"cpu_svn"`
-	PceSvn 		string `json:"pce_svn"`
+	CpuSvn          string `json:"cpu_svn"`
+	PceSvn          string `json:"pce_svn"`
 	PceId 		string `json:"pce_id"`
 	QeId 		string `json:"qe_id"`
 	Ca 		string `json:"ca"`
@@ -46,7 +46,7 @@ type PlatformTcbInfo struct {
 	PceSvn 		string `json:"pce_svn"`
 	PceId 		string `json:"pce_id"`
 	QeId 		string `json:"qe_id"`
-	Fmspc 		string `json:"fmspc"`
+	Tcbm 		string `json:"fmspc"`
 	CreatedTime 	time.Time
 }
 type PckCertChainInfo struct {
@@ -63,7 +63,7 @@ type PckCRLInfo struct {
 }
 
 type PckCertInfo struct {
-	PckCert         []byte
+	PckCert         []string
 	Tcbm      	string     
 	Fmspc      	string     
 	CreatedTime 	time.Time
@@ -182,9 +182,9 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
 	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
 
-	resp, err := GetPCKCertFromProvServer(in.PlatformInfo.EncryptedPPID, 
-							in.PlatformInfo.CpuSvn, 
-							in.PlatformInfo.PceSvn, 
+	resp, err := GetPCKCertFromProvServer(in.PlatformInfo.EncryptedPPID,
+							in.PlatformInfo.CpuSvn,
+							in.PlatformInfo.PceSvn,
 							in.PlatformInfo.PceId)
 
         if err != nil {
@@ -216,7 +216,6 @@ func FetchPCKCertInfo( in *SgxData ) (error){
             	return err
         }
 
-//	in.PckCertInfo.PckCert	= []byte(body)
 	var pckCerts []PckCertsInfo
 	err = json.Unmarshal([]byte(body), &pckCerts)
         if err != nil {
@@ -224,14 +223,12 @@ func FetchPCKCertInfo( in *SgxData ) (error){
                 return err
         }
 
-	pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%20", " ", -1)
-        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%0A", "\n", -1)
-        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%2F", "/", -1)
-        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%2B", "+", -1)
-        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%3D", "=", -1)
-        pckCerts[0].Cert = strings.Replace(pckCerts[0].Cert, "%20", " ", -1)
+	in.PckCertInfo.PckCert = make([]string, constants.NumberofPCKCerts)
+	for i:=0; i < len(pckCerts); i++ {
+		in.PckCertInfo.PckCert[i] = ConverAsciiCodeToChar(pckCerts[i].Cert)
+	}
 
-	CertBuf, _ := pem.Decode([]byte(pckCerts[0].Cert))
+	CertBuf, _ := pem.Decode([]byte(in.PckCertInfo.PckCert[0]))
 	
 	if CertBuf == nil {
 		return errors.New("Failed to parse PEM block ")
@@ -243,6 +240,16 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 	}
 
 	return nil
+}
+
+func ConverAsciiCodeToChar(s string) (string) {
+	s = strings.Replace(s, "%20", " ", -1)
+	s = strings.Replace(s, "%0A", "\n", -1)
+	s = strings.Replace(s, "%2F", "/", -1)
+	s = strings.Replace(s, "%2B", "+", -1)
+	s = strings.Replace(s, "%3D", "=", -1)
+	s = strings.Replace(s, "%20", " ", -1)
+	return s
 }
 
 func FetchPCKCRLInfo( in *SgxData ) (error){
@@ -361,10 +368,10 @@ func CachePckCertInfo( db repository.SCSDatabase, data *SgxData )( error ){
 
 	var err error
 	data.PckCert = &types.PckCert {
-					PceId: data.PlatformInfo.PceId, 
-					QeId: strings.ToLower(data.PlatformInfo.QeId), 
+					PceId: data.PlatformInfo.PceId,
+					QeId: strings.ToLower(data.PlatformInfo.QeId),
 					Tcbm: data.PckCertInfo.Tcbm,
-					Fmspc: strings.ToLower(data.PckCertInfo.Fmspc), 
+					Fmspc: strings.ToLower(data.PckCertInfo.Fmspc),
 					PckCert: data.PckCertInfo.PckCert,
 					CertChainId: data.PckCertChain.Id,}
 
@@ -521,7 +528,7 @@ func CachePlatformTcbInfo( db repository.SCSDatabase, data *SgxData )( error ){
 
 	if data.PlatformTcb == nil {
 		data.PlatformTcb = &types.PlatformTcb{
-						Fmspc: strings.ToLower(data.PlatformTcbInfo.Fmspc),
+						Tcbm: strings.ToLower(data.PlatformTcbInfo.Tcbm),
 						CpuSvn: strings.ToLower(data.PlatformTcbInfo.CpuSvn), 
 						PceSvn:strings.ToLower(data.PlatformTcbInfo.PceSvn), 
 						PceId: strings.ToLower(data.PlatformTcbInfo.PceId), 
@@ -687,7 +694,6 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 
 		if len(existingQEData) == 0 {
-
 			err = FetchQEIdentityInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -697,7 +703,6 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
-
 		}else {
 			log.WithField("Tcb Data count", len(existingQEData)).Debug("QE Data already present")
 		}
@@ -721,7 +726,7 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 
 	existingPlaformData, err := db.PlatformRepository().RetrieveAllPlatformInfo()
         if  len(existingPlaformData) == 0 {
-                return errors.New("Cached PCK Cert count is 0, cannot perform refresh operation")
+                return errors.New("No PCK Certificate is cached in SCS, cannot perform refresh operation")
         }
 
 	log.Debug("Existing Platform info count:", len(existingPlaformData))
