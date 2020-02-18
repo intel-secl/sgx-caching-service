@@ -51,7 +51,7 @@ func (r *PostgresPckCertChainRepository) Update(certchain types.PckCertChain) er
 	log.Trace("repository/postgres/pg_pck_certchain.go: Update() Entering")
 	defer log.Trace("repository/postgres/pg_pck_certchain.go: Update() Leaving")
 
-	if err := r.db.Save(&certchain).Error; err != nil {
+	if err := r.db.Update(&certchain).Error; err != nil {
 		return errors.Wrap(err, "Update: Failed to Update PckCertChain")
 	}
 	return nil

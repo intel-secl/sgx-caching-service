@@ -103,7 +103,7 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header()["sgx-pck-certificate-issuer-chain"] = []string{string(existingPckCertChain.CertChain)}
-		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm}
+		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm[0]}
 
  		w.WriteHeader(http.StatusOK) // HTTP 200
 		log.Warn(existingPckCert.PckCert)

@@ -50,4 +50,3 @@ func (m *MockPlatformRepository) Delete(p types.Platform) error {
 	}
 	return nil
 }
-

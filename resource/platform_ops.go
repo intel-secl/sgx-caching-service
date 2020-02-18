@@ -64,7 +64,7 @@ type PckCRLInfo struct {
 
 type PckCertInfo struct {
 	PckCert         []string
-	Tcbm      	string     
+	Tcbm      	[]string
 	Fmspc      	string     
 	CreatedTime 	time.Time
 	PckCertChainId 	int
@@ -152,7 +152,6 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
         for i:=0; i< len(cert.Extensions); i++ {
                 ext=cert.Extensions[i]
                 if SgxExtensionsOid.Equal(ext.Id) == true {
-
                         var asn1Extensions []asn1.RawValue
                         _, err := asn1.Unmarshal(ext.Value, &asn1Extensions)
                         if err != nil {
@@ -162,7 +161,6 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
 
                         var fmspcExt pkix.Extension
                         for j:=0; j<len(asn1Extensions); j++ {
-
                                 _, err = asn1.Unmarshal(asn1Extensions[j].FullBytes, &fmspcExt)
                                 if err != nil {
                                         log.Warn("Warning: Asn1 Extension Unmarshal failed - 2 for index\n")
@@ -200,10 +198,6 @@ func FetchPCKCertInfo( in *SgxData ) (error){
 
 	headers := resp.Header
 	in.PckCertChainInfo.PckCertChain = []byte(headers["Sgx-Pck-Certificate-Issuer-Chain"][0])
-	DateVal := headers["Date"][0]
-
-//	log.WithField("Sgx-Pck-Certificate-Issuer-Chain", in.PckCertChainInfo.PckCertChain).Debug("Cert Chain")
-	log.WithField("Date", DateVal).Debug("Date")
 
 	if resp.ContentLength == 0 {
 		return errors.New("No content found in getPCkCerts Http Response")
@@ -224,8 +218,10 @@ func FetchPCKCertInfo( in *SgxData ) (error){
         }
 
 	in.PckCertInfo.PckCert = make([]string, constants.NumberofPCKCerts)
+	in.PckCertInfo.Tcbm = make([]string, constants.NumberofPCKCerts)
 	for i:=0; i < len(pckCerts); i++ {
 		in.PckCertInfo.PckCert[i] = ConverAsciiCodeToChar(pckCerts[i].Cert)
+		in.PckCertInfo.Tcbm[i] = pckCerts[i].Tcbm
 	}
 
 	CertBuf, _ := pem.Decode([]byte(in.PckCertInfo.PckCert[0]))
@@ -357,7 +353,7 @@ func FetchQEIdentityInfo( in *SgxData ) (error){
 		log.WithError(err).Error("Could not Read GetQEIdentity Http Response")
             	return err
         }
-	in.QEInfo.QEInfo	= []byte(body)
+	in.QEInfo.QEInfo = []byte(body)
 	log.WithField("QEInfo", string(body)).Debug("Values")
 	return nil
 }
@@ -493,11 +489,12 @@ func CachePlatformInfo( db repository.SCSDatabase, data *SgxData )( error ){
 
 	if data.Platform == nil {
 		data.Platform = &types.Platform{
-						Encppid: strings.ToLower(data.PlatformInfo.EncryptedPPID), 
-						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn), 
-						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn), 
-						PceId: strings.ToLower(data.PlatformInfo.PceId), 
-						QeId: strings.ToLower(data.PlatformInfo.QeId), 
+						Encppid: strings.ToLower(data.PlatformInfo.EncryptedPPID),
+						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
+						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn),
+						PceId: strings.ToLower(data.PlatformInfo.PceId),
+						QeId: strings.ToLower(data.PlatformInfo.QeId),
+						Fmspc: strings.ToLower(data.PckCertInfo.Fmspc),
 		}
 	}
 
@@ -507,16 +504,16 @@ func CachePlatformInfo( db repository.SCSDatabase, data *SgxData )( error ){
 		data.Platform.UpdatedTime = time.Now()
 		err = db.PlatformRepository().Update(*data.Platform)
 		if err != nil {
-				log.WithError(err).Error("Platform values record could not be updated in db")
-				return err
+			log.WithError(err).Error("Platform values record could not be updated in db")
+			return err
 		}
         }else {
 		data.Platform.UpdatedTime = time.Now()
 		data.Platform.CreatedTime = time.Now()
 		data.Platform, err = db.PlatformRepository().Create(*data.Platform)
 		if err != nil {
-				log.WithError(err).Error("Platform values record could not be created in db")
-				return err
+			log.WithError(err).Error("Platform values record could not be created in db")
+			return err
 		}
 	}
 	return nil
@@ -562,17 +559,17 @@ func CachePckCRLInfo( db repository.SCSDatabase, data *SgxData )( error ){
 	defer log.Trace("resource/platform_ops.go: CachePckCRLInfo() Leaving")
 
 	data.PckCrl = &types.PckCrl{	
-					Ca: data.PckCRLInfo.Ca,
-					PckCrl: data.PckCRLInfo.PckCRL,
-					PckCrlCertChain: data.PckCRLInfo.PckCRLCertChain}
+				Ca: data.PckCRLInfo.Ca,
+				PckCrl: data.PckCRLInfo.PckCRL,
+				PckCrlCertChain: data.PckCRLInfo.PckCRLCertChain}
 	var err error
         if  data.Type == constants.CacheRefresh {
 		data.PckCrl.CreatedTime = data.PckCRLInfo.CreatedTime
 		data.PckCrl.UpdatedTime = time.Now()
 		err = db.PckCrlRepository().Update(*data.PckCrl)
 		if err != nil {
-				log.WithError(err).Error("PckCrl record could not be updated in db")
-				return err
+			log.WithError(err).Error("PckCrl record could not be updated in db")
+			return err
 		}
         }else {
 		data.PckCrl.CreatedTime = time.Now()
@@ -910,7 +907,7 @@ func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
 	return nil
 
 }
-//Admin Call
+
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		log.Debug("Calling RefreshPlatformInfoCB", r.URL.Query())

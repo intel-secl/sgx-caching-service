@@ -65,7 +65,7 @@ func (r *PostgresPckCrlRepository) Update(crl types.PckCrl) error {
 	log.Trace("repository/postgres/pg_pck_crl: Update() Entering")
 	defer log.Trace("repository/postgres/pg_pck_crl: Update() Leaving")
 
-	if err := r.db.Save(&crl).Error; err != nil {
+	if err := r.db.Update(&crl).Error; err != nil {
 		return errors.Wrap(err, "Update: Failed to Update PckCrl")
 	}
 	return nil

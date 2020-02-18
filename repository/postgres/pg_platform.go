@@ -35,7 +35,6 @@ func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform
 	return &p, nil
 }
 
-
 func (r *PostgresPlatformRepository) RetrieveAll(u types.Platform) (types.Platforms, error) {
         log.Trace("repository/postgres/pg_platform: RetrieveAll() Entering")
         defer log.Trace("repository/postgres/pg_platform: RetrieveAll() Leaving")
@@ -69,7 +68,7 @@ func (r *PostgresPlatformRepository) Update(u types.Platform) error {
         log.Trace("repository/postgres/pg_platform: Update() Entering")
         defer log.Trace("repository/postgres/pg_platform: Update() Leaving")
 
-	if err := r.db.Save(&u).Error; err != nil {
+	if err := r.db.Update(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update Platform")
 	}
 	return nil
@@ -84,4 +83,3 @@ func (r *PostgresPlatformRepository) Delete(u types.Platform) error {
 	}
 	return nil
 }
-

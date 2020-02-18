@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// should move this into lib common, as its duplicated across SCS and SCS
+// should move this into lib common, as its duplicated across SCS and SVS
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
@@ -177,7 +177,6 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	}
 
         return conf.Save()
-
 }
 
 func Load(path string) *Configuration {

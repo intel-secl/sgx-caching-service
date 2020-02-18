@@ -65,7 +65,7 @@ func (r *PostgresFmspcTcbInfoRepository) Update(tcb types.FmspcTcbInfo) error {
         log.Trace("repository/postgres/pg_fmspc_tcb: Update() Entering")
         defer log.Trace("repository/postgres/pg_fmspc_tcb: Update() Leaving")
 
-	if err := r.db.Save(&tcb).Error; err != nil {
+	if err := r.db.Update(&tcb).Error; err != nil {
 		return errors.Wrap(err, "update: failed to update fmspcTcbInfo")
 	}
 	return nil

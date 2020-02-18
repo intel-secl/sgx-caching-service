@@ -67,7 +67,7 @@ func (r *PostgresPlatformTcbRepository) Update(u types.PlatformTcb) error {
         log.Trace("repository/postgres/pg_platform_tcb: Update() Entering")
         defer log.Trace("repository/postgres/pg_platform_tcb: Update() Leaving")
 
-	if err := r.db.Save(&u).Error; err != nil {
+	if err := r.db.Update(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update PlatformTcb")
 	}
 	return nil
