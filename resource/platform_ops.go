@@ -131,8 +131,8 @@ func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
 	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
 
-	r.Handle("/push", handlers.ContentTypeHandler( PushPlatformInfoCB(db), "application/json")).Methods("POST") 
-	r.Handle("/refresh", handlers.ContentTypeHandler( RefreshPlatformInfoCB(db), "application/json")).Methods("GET") 
+	r.Handle("/push", handlers.ContentTypeHandler(PushPlatformInfoCB(db), "application/json")).Methods("POST")
+	r.Handle("/refresh", handlers.ContentTypeHandler(RefreshPlatformInfoCB(db), "application/json")).Methods("GET")
 }
 
 func GetFmspcVal( CertBuf *pem.Block )(string, error){
@@ -155,7 +155,7 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
                         var asn1Extensions []asn1.RawValue
                         _, err := asn1.Unmarshal(ext.Value, &asn1Extensions)
                         if err != nil {
-                                log.Warn("Asn1 Extension Unmarshal failed")
+                                log.Warn("Could not find Intel SGX Extension in certificate")
                                 return fmspcHex, err
                         }
 
@@ -163,17 +163,17 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
                         for j:=0; j<len(asn1Extensions); j++ {
                                 _, err = asn1.Unmarshal(asn1Extensions[j].FullBytes, &fmspcExt)
                                 if err != nil {
-                                        log.Warn("Warning: Asn1 Extension Unmarshal failed - 2 for index\n")
+                                        log.Warn("Could not find FMSPC sub extension in certificate")
                                 }
                                 if FmspcSgxExtensionsOid.Equal(fmspcExt.Id) == true {
                                         fmspcHex=hex.EncodeToString(fmspcExt.Value)
-                                        log.WithField("FMSPC hex value", fmspcHex).Debug("Fmspc Value from cert")
+                                        log.WithField("FMSPC hex value", fmspcHex).Debug("Fmspc Value extracted from PCK cert")
                                         return fmspcHex, nil
                                 }
                         }
                 }
         }
-        return fmspcHex, errors.New("Fmspc Value not found in Extension")
+        return fmspcHex, errors.New("Fmspc Value not found in PCK Certificate")
 }
 
 func FetchPCKCertInfo( in *SgxData ) (error){
@@ -217,8 +217,8 @@ func FetchPCKCertInfo( in *SgxData ) (error){
                 return err
         }
 
-	in.PckCertInfo.PckCert = make([]string, constants.NumberofPCKCerts)
-	in.PckCertInfo.Tcbm = make([]string, constants.NumberofPCKCerts)
+	in.PckCertInfo.PckCert = make([]string, constants.MaxNumberofPCKCerts)
+	in.PckCertInfo.Tcbm = make([]string, constants.MaxNumberofPCKCerts)
 	for i:=0; i < len(pckCerts); i++ {
 		in.PckCertInfo.PckCert[i] = ConverAsciiCodeToChar(pckCerts[i].Cert)
 		in.PckCertInfo.Tcbm[i] = pckCerts[i].Tcbm
@@ -261,7 +261,7 @@ func FetchPCKCRLInfo( in *SgxData ) (error){
 
 	if resp.StatusCode != 200 {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
-		return errors.New("Invalid response from Intel SGX Provisioning Server")
+		return errors.New("invalid response received from intel SGX provisioning server")
 	}
 
 	headers := resp.Header
@@ -274,20 +274,19 @@ func FetchPCKCRLInfo( in *SgxData ) (error){
 	}
 
 	defer resp.Body.Close()
-        body, err := ioutil.ReadAll( resp.Body )
+        body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
 		log.WithError(err).Error("Could not Read GetPckCrl Http Response")
             	return err
         }
-	in.PckCRLInfo.PckCRL	= []byte(body)
+	in.PckCRLInfo.PckCRL = []byte(body)
 	CrlBuf, _ := pem.Decode([]byte(body))
 	if CrlBuf == nil {
-		return errors.New("Failed to parse Crl PEM block ")
+		return errors.New("Failed to parse Crl PEM block")
 	}
 	log.WithField("PckCrl", string(CrlBuf.Bytes)).Debug("Values")
 	return nil
 }
-
 
 func FetchFmspcTcbInfo( in *SgxData ) (error){
 	log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Entering")
@@ -905,41 +904,39 @@ func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
 	}
 	log.Debug("Timer CB: RefreshPlatformInfoTimerCB, completed")
 	return nil
-
 }
 
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		log.Debug("Calling RefreshPlatformInfoCB", r.URL.Query())
 		if  r.URL.Query() != nil && len(r.URL.Query()) > len( constants.Type_Key) {
                 	Type,_ := r.URL.Query()["type"]
-                        if !ValidateInputString(constants.Type_Key, Type[0]) {
-                        	return &resourceError{Message: "Invalid query Param Data type", StatusCode: http.StatusBadRequest}
+			if !ValidateInputString(constants.Type_Key, Type[0]) {
+				return &resourceError{Message: "Invalid query Param type", StatusCode: http.StatusBadRequest}
 			}
 
 			err := RefreshPckCerts(db)
 			if err != nil{
-                        	return &resourceError{Message: "Error in Refresh Pck Certificates", 
-							StatusCode: http.StatusInternalServerError}
+				return &resourceError{Message: "Could not Refresh Pck Certificates",
+					StatusCode: http.StatusInternalServerError}
 			}
 			return nil
 		}
 
 		err := RefreshTcbInfos(db)
 		if err != nil{
-                       	return &resourceError{Message: "Error in Refresh Pck Certificates", 
-						StatusCode: http.StatusInternalServerError}
+			return &resourceError{Message: "Could not Refresh Pck Certificates",
+				StatusCode: http.StatusInternalServerError}
 		}
 
  		w.Header().Set("Content-Type", "application/json")
-                w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK) // HTTP 200
 
-                res := Response{ Status:"Success", Message: "Platform Data refreshed Successfully"}
-                js, err := json.Marshal(res)
-                if err != nil {
-                        return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
-                }
-                w.Write(js)
+		res := Response{ Status:"Success", Message: "All Platform Data refreshed Successfully"}
+		js, err := json.Marshal(res)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+		w.Write(js)
 
 		return nil
 	}

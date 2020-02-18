@@ -12,7 +12,7 @@ import (
 func GetProvClientObj()(*http.Client, *config.Configuration, error){
 	log.Trace("resource/sgx_prov_client_ops: GetProvClientObj() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: GetProvClientObj() Leaving")
-	
+
 	conf:= config.Global()
 	if conf == nil {
 		return nil, nil, errors.New("Configuration pointer is null")
@@ -55,7 +55,7 @@ func GetPCKCertFromProvServer(EncryptedPPID string, CpuSvn string, PceSvn string
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := client.Do( req )
+	resp, err := client.Do(req)
 	if err != nil {
 	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: GET pckcerts call to PCS failed")
 	}
@@ -81,14 +81,12 @@ func GetPCKCRLFromProvServer(ca string) (*http.Response, error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := client.Do( req )
+	resp, err := client.Do(req)
 	if err != nil {
 	    return nil, errors.Wrap(err, "GetPCKCRLFromProvServer(): Cannot get client req")
 	}
 	return resp, nil
 }
-
-
 
 func GetFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: GetFmspcTcbInfoFromProvServer() Entering")
@@ -109,13 +107,12 @@ func GetFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := client.Do( req )
+	resp, err := client.Do(req)
 	if err != nil {
 	    return nil, errors.Wrap(err, "GetFmspcTcbInfoFromProvServer(): Cannot get client req")
 	}
 	return resp, nil
 }
-
 
 func GetQEInfoFromProvServer() (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: GetQEInfoFromProvServer() Entering")
@@ -131,7 +128,7 @@ func GetQEInfoFromProvServer() (*http.Response, error) {
 	    return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): GET http request Failed")
 	}
 
-	resp, err := client.Do( req )
+	resp, err := client.Do(req)
 	if err != nil {
 	    return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): Can not get Client Request")
 	}

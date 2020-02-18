@@ -22,21 +22,24 @@ func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer log.Trace("resource/resource:ServeHTTP() Leaving")
 
 	if err := ehf(w, r); err != nil {
-		log.WithError(err).Error("HTTP Error")
+		slog.WithError(err).Error("HTTP Error")
 		if gorm.IsRecordNotFoundError(err) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		switch t := err.(type) {
 		case *resourceError:
+			log.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case resourceError:
+			log.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case *privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		case privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		default:
+			log.WithError(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
@@ -48,9 +51,6 @@ type privilegeError struct {
 }
 
 func (e privilegeError) Error() string {
-	log.Trace("resource/resource:Error() Entering")
-	defer log.Trace("resource/resource:Error() Leaving")
-
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }
 
@@ -60,8 +60,5 @@ type resourceError struct {
 }
 
 func (e resourceError) Error() string {
-	log.Trace("resource/resource:Error() Entering")
-	defer log.Trace("resource/resource:Error() Leaving")
-
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }

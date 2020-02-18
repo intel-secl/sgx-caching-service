@@ -28,11 +28,10 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		log.WithField("GetPCKCertificateCB", ":").Debug("Invoked")
 
-
 		if ( len(r.URL.Query()) == 0) {
-			return &resourceError{Message: "GetPCKCertificateCB: The Request Query Data not provided", 
+			return &resourceError{Message: "GetPCKCertificateCB: The Request Query Data not provided",
 									StatusCode: http.StatusBadRequest}
-		} 
+		}
 
 		EncryptedPPID,_	:= r.URL.Query()["encrypted_ppid"]
 		CpuSvn, _  	:= r.URL.Query()["cpusvn"]
@@ -40,45 +39,45 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		PceId,_  	:= r.URL.Query()["pceid"]
 		QeId,_  	:= r.URL.Query()["qeid"]
 
-                if  	!ValidateInputString(constants.EncPPID_Key, EncryptedPPID[0]) || 
-			!ValidateInputString(constants.CpuSvn_Key, CpuSvn[0]) || 
-			!ValidateInputString(constants.PceSvn_Key, PceSvn[0]) || 
-			!ValidateInputString(constants.PceId_Key, PceId[0])   || 
+                if  	!ValidateInputString(constants.EncPPID_Key, EncryptedPPID[0]) ||
+			!ValidateInputString(constants.CpuSvn_Key, CpuSvn[0]) ||
+			!ValidateInputString(constants.PceSvn_Key, PceSvn[0]) ||
+			!ValidateInputString(constants.PceId_Key, PceId[0])   ||
 			!ValidateInputString(constants.QeId_Key, QeId[0])  {
-                        return &resourceError{Message: "GetPCKCertificateCB: Invalid query Param Data", 
+                        return &resourceError{Message: "GetPCKCertificateCB: Invalid query Param Data",
 									StatusCode: http.StatusBadRequest}
                 }
 
 		log.WithField("Encrypted PPID", EncryptedPPID).Debug("QueryParams")
 
-		pinfo := types.Platform{	
-						CpuSvn: strings.ToLower(CpuSvn[0]), 
-						PceSvn:strings.ToLower(PceSvn[0]), 
-						PceId: strings.ToLower(PceId[0]), 
+		pinfo := types.Platform{
+						CpuSvn: strings.ToLower(CpuSvn[0]),
+						PceSvn:strings.ToLower(PceSvn[0]),
+						PceId: strings.ToLower(PceId[0]),
 						QeId: strings.ToLower(QeId[0]),}
 		existingPinfo, err := db.PlatformRepository().Retrieve(pinfo)
 		model, err := GetCacheModel()
 		if err != nil {
-			return &resourceError{ Message: "GetPCKCertificateCB: Get Lazy Cache Model error: "+err.Error(), 
+			return &resourceError{ Message: "GetPCKCertificateCB: Get Cache Model error: "+err.Error(),
 									StatusCode: http.StatusInternalServerError}
 		}
 		if model == constants.RegisterCachingModel&& existingPinfo == nil {
-                        return &resourceError{Message: "GetPCKCertificateCB: Platform Data not cached", 
+                        return &resourceError{Message: "GetPCKCertificateCB: Platform Data not cached",
 									StatusCode: http.StatusNotFound}
                 } else if model == constants.LazyCachingModel && existingPinfo == nil {
-                        existingPinfo, err = GetLazyCachePlatformInfo(db, strings.ToLower(EncryptedPPID[0]), 
-										strings.ToLower(CpuSvn[0]), 
-										strings.ToLower(PceSvn[0]), 
-										strings.ToLower(PceId[0]), 
+                        existingPinfo, err = GetLazyCachePlatformInfo(db, strings.ToLower(EncryptedPPID[0]),
+										strings.ToLower(CpuSvn[0]),
+										strings.ToLower(PceSvn[0]),
+										strings.ToLower(PceId[0]),
 										strings.ToLower(QeId[0]))
                         if err != nil {
-                                return &resourceError{ Message: "GetPCKCertificateCB: Lazy Cache error: "+err.Error(), 
+                                return &resourceError{ Message: "GetPCKCertificateCB: Lazy Cache error: "+err.Error(),
 							StatusCode: http.StatusInternalServerError}
                         }
                 }
 
-		pck_cert := types.PckCert{ 
-					QeId: strings.ToLower(QeId[0]), 
+		pck_cert := types.PckCert{
+					QeId: strings.ToLower(QeId[0]),
 					PceId:PceId[0],}
 		existingPckCert, err := db.PckCertRepository().Retrieve(pck_cert)
 		if err != nil {
@@ -89,16 +88,16 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		log.WithField("PceID", PceId[0]).Debug("QueryParams")
                 if existingPckCert == nil {
 			if err != nil {
-				log.WithError(err).Error("Pck Cert Retrival failed")
+				log.WithError(err).Error("Pck Cert Retrieval failed")
 			}
-                        return &resourceError{Message: "GetPCKCertificateCB: Pck Cert Data not cached", 
+                        return &resourceError{Message: "GetPCKCertificateCB: Pck Cert Data not cached",
 										StatusCode: http.StatusBadRequest}
                 }
 
 		existingPckCertChain, err := db.PckCertChainRepository().Retrieve(types.PckCertChain{
 						Id: existingPckCert.CertChainId})
                 if existingPckCertChain == nil {
-                        return &resourceError{Message: "GetPCKCertificateCB: Pck Cert Chain Data not cached", 
+                        return &resourceError{Message: "GetPCKCertificateCB: Pck Cert Chain Data not cached",
 										StatusCode: http.StatusNotFound}
                 }
 		w.Header().Set("Content-Type", "application/x-pem-file")
@@ -109,8 +108,8 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		log.Warn(existingPckCert.PckCert)
 		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert[0]))
         	if CertBuf == nil {
-                        return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache", 
-									StatusCode: http.StatusInternalServerError}
+                        return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache",
+							StatusCode: http.StatusInternalServerError}
         	}
 
 	        w.Write([]byte(existingPckCert.PckCert[0]))
@@ -119,37 +118,37 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-//QutoProvider call
 func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		log.WithField("GetPCKCRLCB", ":").Debug("Invoked")
 
 		if ( len(r.URL.Query()) == 0) {
-                        return &resourceError{Message: "GetPCKCRLCB: The Request Query Data not provided", 
-										StatusCode: http.StatusBadRequest}
+                        return &resourceError{Message: "GetPCKCRLCB: The Request Query Data not provided",
+							StatusCode: http.StatusBadRequest}
                 }
 
-		Ca,_	:= r.URL.Query()["ca"]
+		Ca,_ := r.URL.Query()["ca"]
 
-                if  	!ValidateInputString(constants.Ca_Key, Ca[0]) {
-                        return &resourceError{Message: "GetPCKCRLCB: Invalid query Param Data", StatusCode: http.StatusBadRequest}
+                if !ValidateInputString(constants.Ca_Key, Ca[0]) {
+                        return &resourceError{Message: "GetPCKCRLCB: Invalid query Param Data",
+							StatusCode: http.StatusBadRequest}
                 }
 
 		pckCrl := types.PckCrl{Ca: Ca[0]}
 		model, err := GetCacheModel()
 		if err != nil {
-			return &resourceError{ Message: "GetPCKCRLCB: Lazy Cache Model error: "+err.Error(), 
+			return &resourceError{ Message: "GetPCKCRLCB: Lazy Cache Model error: "+err.Error(),
 							StatusCode: http.StatusInternalServerError}
 		}
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 
                 if model == constants.RegisterCachingModel && existingPckCrl == nil {
-                        return &resourceError{Message: "GetPCKCRLCB: Pck Crl Data not cached", 
-								StatusCode: http.StatusNotFound}
+                        return &resourceError{Message: "GetPCKCRLCB: Pck Crl Data not cached",
+							StatusCode: http.StatusNotFound}
                 } else if model == constants.LazyCachingModel && existingPckCrl == nil{
                         existingPckCrl, err = GetLazyCachePckCrl(db, Ca[0])
                         if err != nil {
-                                return &resourceError{ Message: "GetPCKCRLCB: Lazy Cache error: "+err.Error(), 
+                                return &resourceError{ Message: "GetPCKCRLCB: Lazy Cache error: "+err.Error(),
 							StatusCode: http.StatusInternalServerError}
                         }
                 }
@@ -160,19 +159,18 @@ func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
  		w.WriteHeader(http.StatusOK) // HTTP 200
         	CrlBuf, _ := pem.Decode([]byte(existingPckCrl.PckCrl))
         	if CrlBuf == nil {
-                        return &resourceError{Message: "GetPCKCRLCB: Invalid Pck Crl cache", 
+                        return &resourceError{Message: "GetPCKCRLCB: Invalid Pck Crl cache",
 							StatusCode: http.StatusInternalServerError}
         	}
                 err = pem.Encode(w, CrlBuf)
                 if err != nil {
-                        return &resourceError{Message: "GetPCKCRLCB: Error in writing response to client", 
-								StatusCode: http.StatusInternalServerError}
+                        return &resourceError{Message: "GetPCKCRLCB: Error in writing response to client",
+							StatusCode: http.StatusInternalServerError}
                 }
 		return nil
 	}
 }
 
-//QutoProvider call
 func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		log.WithField("GetQEIdentityInfoCB", ":").Debug("Invoked")
@@ -209,7 +207,6 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-//QutoProvider call
 func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		log.WithField("GetTCBInfoCB", ":").Debug("Invoked")
@@ -221,11 +218,10 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		Fmspc, _ := r.URL.Query()["fmspc"]
 
-                if  	!ValidateInputString(constants.Fmspc_Key, Fmspc[0]) {
+                if !ValidateInputString(constants.Fmspc_Key, Fmspc[0]) {
                         return &resourceError{Message: "Invalid query Param Data", StatusCode: http.StatusBadRequest}
                 }
 		log.WithField("Fmspc", Fmspc[0]).Debug("Value")
-
 
 		TcbInfo := types.FmspcTcbInfo{ Fmspc: strings.ToLower(Fmspc[0])}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
