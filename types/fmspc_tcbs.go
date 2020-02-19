@@ -12,8 +12,8 @@ type FmspcTcbInfo struct {
 	Fmspc			string    `json:"-" gorm:"primary_key"`
 	TcbInfo        		[]byte	  `json:"-" gorm:"type:bytea;not null"`
 	TcbInfoIssuerChain      []byte	  `json:"-" gorm:"type:bytea;not null"`
-	CreatedTime    	time.Time  
-	UpdatedTime    	time.Time  
+	CreatedTime    		time.Time
+	UpdatedTime    		time.Time
 }
 
 type FmspcTcbInfos []FmspcTcbInfo

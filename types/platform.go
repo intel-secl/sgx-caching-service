@@ -13,7 +13,7 @@ type Platform struct {
 	PceId       	string     `json:"-"`
 	CpuSvn      	string     `json:"-"`
 	PceSvn      	string     `json:"-"`
-	Encppid     	string	   `json:"-"`   
+	Encppid     	string	   `json:"-"`
 	Fmspc           string    `json:"-"`
 	CreatedTime    time.Time  `json:"-"`
 	UpdatedTime    time.Time  `json:"-"`

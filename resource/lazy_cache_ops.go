@@ -34,6 +34,11 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 		return nil, errors.New("CachePlatformInfo:" + err.Error())
 	}
 
+	err = CachePlatformTcbInfo(db, &data)
+	if err != nil {
+		return nil, errors.New("CachePlatformTcbInfo:" + err.Error())
+	}
+
 	err = CachePckCertChainInfo(db, &data)
 	if err != nil {
 		return nil, errors.New("CachePckCertChainInfo:" + err.Error())

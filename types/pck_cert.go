@@ -16,8 +16,8 @@ type PckCert struct {
 	Fmspc      	string		`json:"-"`
 	PckCert		pq.StringArray	`json:"-" gorm:"type:TEXT[];not null"`
 	CertChainId   	uint 	   	`json:"cert_chain_id" gorm:"type:int;not null"`
- 	CreatedTime	time.Time  
-	UpdatedTime	time.Time  
+ 	CreatedTime	time.Time
+	UpdatedTime	time.Time
 }
 
 type PckCerts []PckCert
