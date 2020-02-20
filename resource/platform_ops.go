@@ -576,7 +576,7 @@ func CachePckCRLInfo(db repository.SCSDatabase, data *SgxData) error {
 		data.PckCrl.UpdatedTime = time.Now()
 		data.PckCrl, err = db.PckCrlRepository().Create(*data.PckCrl)
 		if err != nil {
-			slog.WithError(err).Error("PckCrl record could not be created in db")
+			log.WithError(err).Error("PckCrl record could not be created in db")
 			return err
 		}
 	}

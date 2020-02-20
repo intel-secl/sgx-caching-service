@@ -7,14 +7,15 @@ package constants
 import "crypto"
 
 const (
-	HomeDir                       = "/opt/sgx-caching-service/"
-	ConfigDir                     = "/etc/sgx-caching-service/"
-	ExecutableDir                 = "/opt/sgx-caching-service/bin/"
-	ExecLinkPath                  = "/usr/bin/sgx-caching-service"
-	RunDirPath                    = "/run/sgx-caching-service"
-	LogDir                        = "/var/log/sgx-caching-service/"
-	LogFile                       = LogDir + "sgx-caching-service.log"
-	SecurityLogFile               = LogDir + "sgx-caching-service-security.log"
+	SCSUserName                    = "scs"
+	HomeDir                       = "/opt/scs/"
+	ConfigDir                     = "/etc/scs/"
+	ExecutableDir                 = "/opt/scs/bin/"
+	ExecLinkPath                  = "/usr/bin/scs"
+	RunDirPath                    = "/run/scs"
+	LogDir                        = "/var/log/scs/"
+	LogFile                       = LogDir + "scs.log"
+	SecLogFile		      = LogDir + "scs-security.log"
 	HTTPLogFile                   = LogDir + "http.log"
 	ConfigFile                    = "config.yml"
 	TLSCertFile                   = "cert.pem"
@@ -23,8 +24,8 @@ const (
 	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
 	RootCADirPath                 = ConfigDir + "certs/cms-root-ca/"
-	PIDFile                       = "sgx-caching-service.pid"
-	ServiceRemoveCmd              = "systemctl disable sgx-caching-service"
+	PIDFile                       = "scs.pid"
+	ServiceRemoveCmd              = "systemctl disable scs"
 	HashingAlgorithm              = crypto.SHA384
 	PasswordRandomLength          = 20
 	DefaultAuthDefendMaxAttempts  = 5
@@ -59,6 +60,8 @@ const (
 	DefaultCachingModel	      = 1
 	LazyCachingModel	      = DefaultCachingModel
 	RegisterCachingModel	      = 2
+	LogEntryMaxlengthEnv          = "LOG_ENTRY_MAXLENGTH"
+	DefaultLogEntryMaxlength      = 300
 )
 
 // State represents whether or not a daemon is running or not

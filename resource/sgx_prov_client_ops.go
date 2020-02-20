@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 	"net/http"
-	"net/url"
 	"github.com/pkg/errors"
 	"intel/isecl/sgx-caching-service/config"
 )
@@ -23,14 +22,6 @@ func GetProvClientObj()(*http.Client, *config.Configuration, error){
 		Timeout: timeout,
 	}
 
-	if len(conf.ProxyUrl) > 0 {
-		proxyUrl, err := url.Parse(conf.ProxyUrl)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "GetProvClientObj: Failed to Parse Proxy Url")
-		}
-		client.Transport = &http.Transport{ Proxy: http.ProxyURL(proxyUrl)}
-		log.WithField("Proxy URL", conf.ProxyUrl).Debug("Intel Prov Client OPS")
-	}
 	return client, conf, nil
 }
 

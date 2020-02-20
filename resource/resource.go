@@ -13,7 +13,6 @@ import (
 )
 
 var log = clog.GetDefaultLogger()
-var slog = clog.GetSecurityLogger()
 
 type errorHandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
@@ -22,7 +21,7 @@ func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer log.Trace("resource/resource:ServeHTTP() Leaving")
 
 	if err := ehf(w, r); err != nil {
-		slog.WithError(err).Error("HTTP Error")
+		log.WithError(err).Error("HTTP Error")
 		if gorm.IsRecordNotFoundError(err) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return

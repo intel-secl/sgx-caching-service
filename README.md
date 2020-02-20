@@ -49,18 +49,18 @@ make all
 
 ### Deploy
 ```console
-> ./sgx-caching-service-*.bin
+> ./scs-*.bin
 ```
 
 ### Manage service
 * Start service
-    * sgx-caching-service start
+    * scs start
 * Stop service
-    * sgx-caching-service stop
+    * scs stop
 * Restart service
-    * sgx-caching-service restart
+    * scs restart
 * Status of service
-    * sgx-caching-service status
+    * scs status
 
 # Third Party Dependencies
 

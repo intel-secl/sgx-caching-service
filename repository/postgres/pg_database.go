@@ -18,7 +18,6 @@ import (
 )
 
 var log = commLog.GetDefaultLogger()
-var slog = commLog.GetSecurityLogger()
 
 type PostgresDatabase struct {
 	DB *gorm.DB

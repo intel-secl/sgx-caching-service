@@ -2,12 +2,12 @@
 
 # READ .env file 
 echo PWD IS $(pwd)
-if [ -f ~/sgx-caching-service.env ]; then 
-    echo Reading Installation options from `realpath ~/sgx-caching-service.env`
-    env_file=~/sgx-caching-service.env
-elif [ -f ../sgx-caching-service.env ]; then
-    echo Reading Installation options from `realpath ../sgx-caching-service.env`
-    env_file=../sgx-caching-service.env
+if [ -f ~/scs.env ]; then 
+    echo Reading Installation options from `realpath ~/scs.env`
+    env_file=~/scs.env
+elif [ -f ../scs.env ]; then
+    echo Reading Installation options from `realpath ../scs.env`
+    env_file=../scs.env
 fi
 
 if [ -n $env_file ]; then
@@ -26,12 +26,9 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "Setting up SGX Caching Service Linux User..."
-id -u $SERVICE_USERNAME 2> /dev/null || useradd $SERVICE_USERNAME
-
 echo "Installing SGX Caching Service..."
 
-COMPONENT_NAME=sgx-caching-service
+COMPONENT_NAME=scs
 PRODUCT_HOME=/opt/$COMPONENT_NAME
 BIN_PATH=$PRODUCT_HOME/bin
 DB_SCRIPT_PATH=$PRODUCT_HOME/dbscripts
@@ -42,6 +39,9 @@ CERTDIR_TOKENSIGN=$CERTS_PATH/tokensign
 CERTDIR_TRUSTEDJWTCERTS=$CERTS_PATH/trustedjwt
 CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
 CERTDIR_CMSROOTCAS=$CERTS_PATH/cms-root-ca
+
+echo "Setting up SGX Caching Service Linux User..."
+id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
 
 for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TOKENSIGN $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS $CERTDIR_CMSROOTCAS; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
@@ -62,16 +62,16 @@ ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 cp db_rotation.sql $DB_SCRIPT_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $DB_SCRIPT_PATH/*
 
 # Create logging dir in /var/log
-mkdir -p $LOG_PATH && chown sgx-caching-service:sgx-caching-service $LOG_PATH
-chmod 761 $LOG_PATH
+mkdir -p $LOG_PATH && chown scs:scs $LOG_PATH
+chmod 700 $LOG_PATH
 chmod g+s $LOG_PATH
 
 # Install systemd script
-cp sgx-caching-service.service $PRODUCT_HOME && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME/sgx-caching-service.service && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME
+cp scs.service $PRODUCT_HOME && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME/scs.service && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME
 
 # Enable systemd service
-systemctl disable sgx-caching-service.service > /dev/null 2>&1
-systemctl enable $PRODUCT_HOME/sgx-caching-service.service
+systemctl disable scs.service > /dev/null 2>&1
+systemctl enable $PRODUCT_HOME/scs.service
 systemctl daemon-reload
 
 #Install log rotation
@@ -116,13 +116,13 @@ export LOG_ROTATION_PERIOD=${LOG_ROTATION_PERIOD:-hourly}
 export LOG_COMPRESS=${LOG_COMPRESS:-compress}
 export LOG_DELAYCOMPRESS=${LOG_DELAYCOMPRESS:-delaycompress}
 export LOG_COPYTRUNCATE=${LOG_COPYTRUNCATE:-copytruncate}
-export LOG_SIZE=${LOG_SIZE:-1K}
+export LOG_SIZE=${LOG_SIZE:-100M}
 export LOG_OLD=${LOG_OLD:-12}
 
 mkdir -p /etc/logrotate.d
 
-if [ ! -a /etc/logrotate.d/sgx-caching-service ]; then
- echo "/var/log/sgx-caching-service/* {
+if [ ! -a /etc/logrotate.d/scs ]; then
+ echo "/var/log/scs/* {
     missingok
         notifempty
         rotate $LOG_OLD
@@ -132,7 +132,7 @@ if [ ! -a /etc/logrotate.d/sgx-caching-service ]; then
         $LOG_COMPRESS
         $LOG_DELAYCOMPRESS
         $LOG_COPYTRUNCATE
-}" > /etc/logrotate.d/sgx-caching-service
+}" > /etc/logrotate.d/scs
 fi
 
 # check if SCS_NOSETUP is defined

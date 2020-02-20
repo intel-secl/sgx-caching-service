@@ -105,7 +105,6 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm[0]}
 
  		w.WriteHeader(http.StatusOK) // HTTP 200
-		log.Warn(existingPckCert.PckCert)
 		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert[0]))
         	if CertBuf == nil {
                         return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache",

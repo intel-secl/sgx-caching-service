@@ -63,12 +63,14 @@ func (s Server) Run(c setup.Context) error {
 		fmt.Fprintf(s.ConsoleWriter, "Intel API Subscription key not provided")
 	}
 	s.Config.ProvServerInfo.ApiSubscriptionkey = intelProvApiKey
-	proxyUrl, err := c.GetenvString("PROXY_URL", "Enviroment Proxy URL")
-	if err != nil {
-		proxyUrl = ""
-		fmt.Fprintf(s.ConsoleWriter, "Proxy URL not provided\n")
+
+	logMaxLength, err := c.GetenvInt(constants.LogEntryMaxlengthEnv, "Maximum length of each entry in a log")
+	if err == nil && logMaxLength >= 100 {
+		s.Config.LogMaxLength = logMaxLength
+	} else {
+		fmt.Println("Invalid Log Entry Max Length defined (should be > 100), using default value:", constants.DefaultLogEntryMaxlength)
+		s.Config.LogMaxLength = constants.DefaultLogEntryMaxlength
 	}
-	s.Config.ProxyUrl = proxyUrl
 
 	return s.Config.Save()
 }

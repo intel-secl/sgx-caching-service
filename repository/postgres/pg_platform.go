@@ -27,7 +27,7 @@ func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform
         log.Trace("repository/postgres/pg_platform: Retrieve() Entering")
         defer log.Trace("repository/postgres/pg_platform: Retrieve() Leaving")
 
-	slog.WithField("Platform", p).Debug("Retrieve Call")
+	log.WithField("Platform", p).Debug("Retrieve Call")
 	err := r.db.Where(&p).First(&p).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve Platform")
@@ -45,7 +45,7 @@ func (r *PostgresPlatformRepository) RetrieveAll(u types.Platform) (types.Platfo
 		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all Platform")
 	}
 
-	slog.WithField("db platforminfo", platforminfo).Trace("RetrieveAll")
+	log.WithField("db platforminfo", platforminfo).Trace("RetrieveAll")
 	return platforminfo, nil
 }
 
@@ -59,7 +59,7 @@ func (r *PostgresPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms,
                 return nil, errors.Wrap(err, "RetrieveAllPlatformInfo: failed to retrieve all PlatformInfo")
         }
 
-        slog.WithField("db PlatformInfo", p).Trace("RetrieveAll")
+        log.WithField("db PlatformInfo", p).Trace("RetrieveAll")
         return p, nil
 }
 

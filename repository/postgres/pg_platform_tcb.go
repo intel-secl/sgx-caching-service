@@ -27,7 +27,7 @@ func (r *PostgresPlatformTcbRepository) Retrieve(p types.PlatformTcb) (*types.Pl
         log.Trace("repository/postgres/pg_platform_tcb: Retrieve() Entering")
         defer log.Trace("repository/postgres/pg_platform_tcb: Retrieve() Leaving")
 
-	slog.WithField("PlatformTcb", p).Debug("Retrieve Call")
+	log.WithField("PlatformTcb", p).Debug("Retrieve Call")
 	err := r.db.Where(&p).First(&p).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve PlatformTcb")
@@ -45,7 +45,7 @@ func (r *PostgresPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.
 		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all PlatformTcb")
 	}
 
-	slog.WithField("db platformTcbinfo", platformTcbinfo).Trace("RetrieveAll")
+	log.WithField("db platformTcbinfo", platformTcbinfo).Trace("RetrieveAll")
 	return platformTcbinfo, nil
 }
 
@@ -59,7 +59,7 @@ func (r *PostgresPlatformTcbRepository) RetrieveAllPlatformTcbInfo() (types.Plat
                 return nil, errors.Wrap(err, "RetrieveAllPlatformTcbInfo: failed to retrieve all PlatformTcbInfo")
         }
 
-        slog.WithField("db PlatformTcbInfo", p).Trace("RetrieveAll")
+        log.WithField("db PlatformTcbInfo", p).Trace("RetrieveAll")
         return p, nil
 }
 

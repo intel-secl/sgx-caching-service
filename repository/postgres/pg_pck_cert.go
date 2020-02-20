@@ -27,7 +27,7 @@ func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckC
 	defer log.Trace("repository/postgres/pg_pck_cert: Retrieve() Leaving")
 
 	var p types.PckCert
-	slog.WithField("PckCert", pckcert).Debug("Retrieve Call")
+	log.WithField("PckCert", pckcert).Debug("Retrieve Call")
 	err := r.db.Where("qe_id = ? AND pce_id = ?",pckcert.QeId, pckcert.PceId).First(&p).Error
 	if err != nil {
 		log.Trace("Error in fetch records Entering")
@@ -46,7 +46,7 @@ func (r *PostgresPckCertRepository) RetrieveAll(u types.PckCert) (types.PckCerts
 		return nil, errors.Wrap(err, "RetrieveAll: failed to Retrieve All PckCert records")
 	}
 
-	slog.WithField("db pckcerts", pckcerts).Trace("RetrieveAll")
+	log.WithField("db pckcerts", pckcerts).Trace("RetrieveAll")
 	return pckcerts, errors.Wrap(err, "RetrieveAll: failed to Retrieve All PckCert records")
 }
 

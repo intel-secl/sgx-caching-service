@@ -5,12 +5,12 @@ Description=SGX Caching Service
 Type=simple
 User=scs
 Group=scs
-ExecStart=/usr/bin/sgx-caching-service run
+ExecStart=/usr/bin/scs run
 ExecReload=/bin/kill -s HUP $MAINPID
 TimeoutStartSec=0
 Restart=on-failure
 PermissionsStartOnly=true
-RuntimeDirectory=sgx-caching-service
+RuntimeDirectory=scs
 RuntimeDirectoryMode=0775
 
 [Install]

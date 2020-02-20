@@ -16,10 +16,12 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"os/signal"
 	"path"
 	"strings"
 	"syscall"
+	"strconv"
 	"time"
 	stdlog "log"
 
@@ -58,26 +60,27 @@ type App struct {
 	ConsoleWriter  io.Writer
 	LogWriter      io.Writer
 	HTTPLogWriter  io.Writer
+	SecLogWriter   io.Writer
 }
 
 func (a *App) printUsage() {
 	w := a.consoleWriter()
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "    sgx-caching-service <command> [arguments]")
+	fmt.Fprintln(w, "    scs <command> [arguments]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Avaliable Commands:")
 	fmt.Fprintln(w, "    -h|--help			Show this help message")
 	fmt.Fprintln(w, "    setup [task]		Run setup task")
-	fmt.Fprintln(w, "    start			Start sgx-caching-service")
-	fmt.Fprintln(w, "    status			Show the status of sgx-caching-service")
-	fmt.Fprintln(w, "    stop			Stop sgx-caching-service")
+	fmt.Fprintln(w, "    start			Start scs")
+	fmt.Fprintln(w, "    status			Show the status of scs")
+	fmt.Fprintln(w, "    stop			Stop scs")
 	fmt.Fprintln(w, "    tlscertsha384		Show the SHA384 digest of the certificate used for TLS")
-	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall sgx-caching-service.  --purge option needs to be applied to remove configuration and data files")
-	fmt.Fprintln(w, "    -v|--version          	Show the version of sgx-caching-service")
+	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall scs.  --purge option needs to be applied to remove configuration and data files")
+	fmt.Fprintln(w, "    -v|--version          	Show the version of scs")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Avaliable Tasks for setup:")
-	fmt.Fprintln(w, "    sgx-caching-service setup database [-force] [--arguments=<argument_value>]")
+	fmt.Fprintln(w, "    scs setup database [-force] [--arguments=<argument_value>]")
 	fmt.Fprintln(w, "        - Avaliable arguments are:")
 	fmt.Fprintln(w, "            - db-host    alternatively, set environment variable SCS_DB_HOSTNAME")
 	fmt.Fprintln(w, "            - db-port    alternatively, set environment variable SCS_DB_PORT")
@@ -88,26 +91,26 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "                         alternatively, set environment variable SCS_DB_SSLMODE")
 	fmt.Fprintln(w, "            - db-sslcert path to where the certificate file of database. Only applicable")
 	fmt.Fprintln(w, "                         for db-sslmode=<verify-ca|verify-full. If left empty, the cert")
-	fmt.Fprintln(w, "                         will be copied to /etc/sgx-caching-service/tdcertdb.pem")
+	fmt.Fprintln(w, "                         will be copied to /etc/scs/tdcertdb.pem")
 	fmt.Fprintln(w, "                         alternatively, set environment variable SCS_DB_SSLCERT")
 	fmt.Fprintln(w, "            - db-sslcertsrc <path to where the database ssl/tls certificate file>")
 	fmt.Fprintln(w, "                         mandatory if db-sslcert does not already exist")
 	fmt.Fprintln(w, "                         alternatively, set environment variable SCS_DB_SSLCERTSRC")
 	fmt.Fprintln(w, "        - Run this command with environment variable SCS_DB_REPORT_MAX_ROWS and")
 	fmt.Fprintln(w, "          SCS_DB_REPORT_NUM_ROTATIONS can update db rotation arguments")
-	fmt.Fprintln(w, "    sgx-caching-service setup server [--port=<port>]")
+	fmt.Fprintln(w, "    scs server [--port=<port>]")
 	fmt.Fprintln(w, "        - Setup http server on <port>")
 	fmt.Fprintln(w, "        - Environment variable SCS_PORT=<port> can be set alternatively")
-	fmt.Fprintln(w, "    sgx-caching-service setup tls [--force] [--host_names=<host_names>]")
+	fmt.Fprintln(w, "    scs setup tls [--force] [--host_names=<host_names>]")
 	fmt.Fprintln(w, "        - Use the key and certificate provided in /etc/threat-detection if files exist")
-	fmt.Fprintln(w, "        - Otherwise create its own self-signed TLS keypair in /etc/sgx-caching-service for quality of life")
+	fmt.Fprintln(w, "        - Otherwise create its own self-signed TLS keypair in /etc/scs for quality of life")
 	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always generate self-signed keypair")
 	fmt.Fprintln(w, "        - Argument <host_names> is a list of host names used by local machine, seperated by comma")
 	fmt.Fprintln(w, "        - Environment variable SCS_TLS_HOST_NAMES=<host_names> can be set alternatively")
-	fmt.Fprintln(w, "    sgx-caching-service setup admin [--user=<username>] [--pass=<password>]")
+	fmt.Fprintln(w, "    scs setup admin [--user=<username>] [--pass=<password>]")
 	fmt.Fprintln(w, "        - Environment variable SCS_ADMIN_USERNAME=<username> can be set alternatively")
 	fmt.Fprintln(w, "        - Environment variable SCS_ADMIN_PASSWORD=<password> can be set alternatively")
-	fmt.Fprintln(w, "    sgx-caching-service setup reghost [--user=<username>] [--pass=<password>]")
+	fmt.Fprintln(w, "    scs setup reghost [--user=<username>] [--pass=<password>]")
 	fmt.Fprintln(w, "        - Environment variable SCS_REG_HOST_USERNAME=<username> can be set alternatively")
 	fmt.Fprintln(w, "        - Environment variable SCS_REG_HOST_PASSWORD=<password> can be set alternatively")
 	fmt.Fprintln(w, "")
@@ -196,14 +199,14 @@ var defaultLogFile *os.File
 
 func (a *App) configureLogs(isStdOut bool, isFileOut bool) {
         var ioWriterDefault io.Writer
-        ioWriterDefault = defaultLogFile
+        ioWriterDefault = a.LogWriter
         if isStdOut && isFileOut {
-                ioWriterDefault = io.MultiWriter(os.Stdout, defaultLogFile)
+                ioWriterDefault = io.MultiWriter(os.Stdout, a.LogWriter)
         } else if isStdOut && !isFileOut {
                 ioWriterDefault = os.Stdout
         }
 
-        ioWriterSecurity := io.MultiWriter(ioWriterDefault, secLogFile)
+        ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.SecLogWriter)
         commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, nil, ioWriterDefault, false)
         commLogInt.SetLogger(commLog.SecurityLoggerName, a.configuration().LogLevel, nil, ioWriterSecurity, false)
 	slog.Trace("sec log initiated")
@@ -218,21 +221,20 @@ func (a *App) Run(args []string) error {
 	}
 
 	var err error
-	secLogFile, err = os.OpenFile(constants.SecurityLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-	if err != nil {
-		log.Errorf("Could not open Security log file"+ err.Error())
-		return err
-	}
-	os.Chmod(constants.SecurityLogFile, 0664)
-	defaultLogFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-	if err != nil {
-		log.Errorf("Could not open default log file"+ err.Error())
-		return err
-	}
-	os.Chmod(constants.LogFile, 0664)
+	scsUser, err := user.Lookup(constants.SCSUserName)
+        if err != nil {
+                return errors.Wrapf(err,"Could not find user '%s'", constants.SCSUserName)
+        }
 
-	defer secLogFile.Close()
-	defer defaultLogFile.Close()
+        uid, err := strconv.Atoi(scsUser.Uid)
+        if err != nil {
+                return errors.Wrapf(err,"Could not parse scs user uid '%s'", scsUser.Uid)
+        }
+
+        gid, err := strconv.Atoi(scsUser.Gid)
+        if err != nil {
+               return errors.Wrapf(err,"Could not parse scs user gid '%s'", scsUser.Gid)
+        }
 
 	isStdOut := false
 	isSCSConsoleEnabled := os.Getenv("SCS_ENABLE_CONSOLE_LOG")
@@ -267,7 +269,7 @@ func (a *App) Run(args []string) error {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
 			time.Sleep(10 * time.Millisecond)
-			return errors.Wrap(err, "app:Run() Error starting sgx-caching-service service")
+			return errors.Wrap(err, "app:Run() Error starting scs service")
 		}
 	case "-h", "--help":
 		a.printUsage()
@@ -404,6 +406,12 @@ func (a *App) Run(args []string) error {
 			fmt.Println("Error running setup: ", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
 	        }
+		//Change the fileownership to cms user
+
+		err = cos.ChownR(constants.ConfigDir, uid, gid)
+		if err != nil {
+			return errors.Wrap(err,"Error while changing file ownership")
+		}
 	}
 	return nil
 }
@@ -574,7 +582,7 @@ func (a *App) startServer() error {
 		}
 	}()
 
-	fmt.Fprintln(a.consoleWriter(), "sgx-caching-service is running")
+	fmt.Fprintln(a.consoleWriter(), "scs is running")
 	// TODO dispatch Service status checker goroutine
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -589,36 +597,36 @@ func (a *App) start() error {
 	log.Trace("app:start() Entering")
 	defer log.Trace("app:start() Leaving")
 
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start sgx-caching-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl start scs"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return errors.Wrap(err, "app:start() Could not locate systemctl to start application service")
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "start", "sgx-caching-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "start", "scs"}, os.Environ())
 }
 
 func (a *App) stop() error {
 	log.Trace("app:stop() Entering")
 	defer log.Trace("app:stop() Leaving")
 
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop sgx-caching-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl stop scs"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return errors.Wrap(err, "app:stop() Could not locate systemctl to stop application service")
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "stop", "sgx-caching-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "stop", "scs"}, os.Environ())
 }
 
 func (a *App) status() error {
 	log.Trace("app:status() Entering")
 	defer log.Trace("app:status() Leaving")
 
-	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status sgx-caching-service"`)
+	fmt.Fprintln(a.consoleWriter(), `Forwarding to "systemctl status scs"`)
 	systemctl, err := exec.LookPath("systemctl")
 	if err != nil {
 		return errors.Wrap(err, "app:status() Could not locate systemctl to check status of application service")
 	}
-	return syscall.Exec(systemctl, []string{"systemctl", "status", "sgx-caching-service"}, os.Environ())
+	return syscall.Exec(systemctl, []string{"systemctl", "status", "scs"}, os.Environ())
 }
 
 func (a *App) uninstall(purge bool) {

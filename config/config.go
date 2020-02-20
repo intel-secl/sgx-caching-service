@@ -31,7 +31,9 @@ type Configuration struct {
 		SSLMode  string
 		SSLCert  string
 	}
+	LogMaxLength     int
 	LogLevel log.Level
+	LogEnableStdout  bool
 
 	AuthDefender struct {
 		MaxAttempts         int
@@ -51,7 +53,6 @@ type Configuration struct {
 		ProvServerUrl string
 		ApiSubscriptionkey string 
 	}
-	ProxyUrl string
 	Subject    struct {
                 TLSCertCommonName string
                 Organization      string
@@ -91,7 +92,7 @@ func (c *Configuration) Save() error {
 		if os.IsNotExist(err) {
 			// error is that the config doesnt yet exist, create it
 			file, err = os.Create(c.configFile)
-			os.Chmod(c.configFile, 0660)
+			os.Chmod(c.configFile, 0640)
 			if err != nil {
 				return err
 			}
@@ -123,7 +124,6 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
         } else if conf.AuthServiceUrl == "" {
                     log.Error("AAS_BASE_URL is not defined in environment")
         }
-
 
         tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
         if err == nil && tlsCertCN != "" {
@@ -190,10 +190,9 @@ func Load(path string) *Configuration {
 		yaml.NewDecoder(file).Decode(&c)
 	} else {
 		// file doesnt exist, create a new blank one
-		c.LogLevel = log.ErrorLevel
+		c.LogLevel = log.InfoLevel
 	}
 
-	c.LogLevel = log.DebugLevel
 	c.configFile = path
 	return &c
 }

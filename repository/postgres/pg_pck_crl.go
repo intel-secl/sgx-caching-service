@@ -43,7 +43,7 @@ func (r *PostgresPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls,
 		return nil, errors.Wrap(err, "RetrieveAll: Failed to RetrieveAll PckCrl")
 	}
 
-	slog.WithField("db crl", crl).Trace("RetrieveAll")
+	log.WithField("db crl", crl).Trace("RetrieveAll")
 	return crls, errors.Wrap(err, "RetrieveAll: Failed to RetrieveAll PckCrl")
 }
 
@@ -57,7 +57,7 @@ func (r *PostgresPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
                 return nil, errors.Wrap(err, "RetrieveAllPckCrls: Failed to RetrieveAllPckCrls")
         }
 
-        slog.WithField("DB Crls", crls).Trace("RetrieveAllPckCrls")
+        log.WithField("DB Crls", crls).Trace("RetrieveAllPckCrls")
         return crls, errors.Wrap(err, "RetrieveAllPckCrls: Failed to RetrieveAllPckCrls")
 }
 
