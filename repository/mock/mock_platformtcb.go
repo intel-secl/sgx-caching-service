@@ -9,9 +9,10 @@ import (
 )
 
 type MockPlatformTcbRepository struct {
-	CreateFunc      func(types.PlatformTcb) (*types.PlatformTcbs, error)
-	RetrieveFunc    func(types.PlatformTcb) (*types.PlatformTcbs, error)
+	CreateFunc      func(types.PlatformTcb) (*types.PlatformTcb, error)
+	RetrieveFunc    func(types.PlatformTcb) (*types.PlatformTcb, error)
 	RetrieveAllFunc func(types.PlatformTcb) (types.PlatformTcbs, error)
+	RetrieveAllPlatformTcbInfoFunc func() (types.PlatformTcbs, error)
 	UpdateFunc      func(types.PlatformTcb) error
 	DeleteFunc      func(types.PlatformTcb) error
 }
@@ -33,6 +34,13 @@ func (m *MockPlatformTcbRepository) Retrieve(p types.PlatformTcb) (*types.Platfo
 func (m *MockPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.PlatformTcbs, error) {
 	if m.RetrieveAllFunc != nil {
 		return m.RetrieveAllFunc(u)
+	}
+	return nil, nil
+}
+
+func (m *MockPlatformTcbRepository) RetrieveAllPlatformTcbInfo() (types.PlatformTcbs, error) {
+	if m.RetrieveAllPlatformTcbInfoFunc != nil {
+		return m.RetrieveAllPlatformTcbInfoFunc()
 	}
 	return nil, nil
 }

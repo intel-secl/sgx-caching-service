@@ -63,7 +63,6 @@ func (r *PostgresPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms,
         return p, nil
 }
 
-
 func (r *PostgresPlatformRepository) Update(u types.Platform) error {
         log.Trace("repository/postgres/pg_platform: Update() Entering")
         defer log.Trace("repository/postgres/pg_platform: Update() Leaving")

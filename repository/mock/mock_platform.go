@@ -12,6 +12,7 @@ type MockPlatformRepository struct {
 	CreateFunc      func(types.Platform) (*types.Platform, error)
 	RetrieveFunc    func(types.Platform) (*types.Platform, error)
 	RetrieveAllFunc func(types.Platform) (types.Platforms, error)
+	RetrieveAllPlatformInfoFunc func() (types.Platforms, error)
 	UpdateFunc      func(types.Platform) error
 	DeleteFunc      func(types.Platform) error
 }
@@ -33,6 +34,13 @@ func (m *MockPlatformRepository) Retrieve(p types.Platform) (*types.Platform, er
 func (m *MockPlatformRepository) RetrieveAll(u types.Platform) (types.Platforms, error) {
 	if m.RetrieveAllFunc != nil {
 		return m.RetrieveAllFunc(u)
+	}
+	return nil, nil
+}
+
+func (m *MockPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms, error) {
+	if m.RetrieveAllPlatformInfoFunc != nil {
+		return m.RetrieveAllPlatformInfoFunc()
 	}
 	return nil, nil
 }
