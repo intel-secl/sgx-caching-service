@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func ExecuteQPLTest(input TestData){
 	input.Test.Log("Test:", input.Description)
 	var req *http.Request
@@ -24,7 +23,6 @@ func ExecuteQPLTest(input TestData){
 	input.Test.Log("Test:", input.Description,", Response:", input.Recorder.Body)
 	input.Test.Log("Test:", input.Description, " ended")
 }
-
 
 func TestGetPckCert(t *testing.T) {
 	input := TestData {
@@ -44,7 +42,6 @@ func TestGetPckCert(t *testing.T) {
 	input.Description = "Invalid Query Params"
 	ExecuteQPLTest(input)
 }
-
 
 func TestGetPckCrl(t *testing.T) {
 	input := TestData {
