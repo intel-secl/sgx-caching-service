@@ -202,7 +202,7 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["sgx-qe-identity-issuer-chain"]= []string{ string(existingQeInfo[0].QeIdentityIssuerChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
-		w.Write(existingQeInfo[0].QeIdentity)
+		w.Write([]byte(existingQeInfo[0].QeIdentity))
 		return nil
 	}
 }
@@ -244,7 +244,7 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["sgx-tcb-info-issuer-chain"]= []string{ string(existingFmspc.TcbInfoIssuerChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
 
-		w.Write(existingFmspc.TcbInfo)
+		w.Write([]byte(existingFmspc.TcbInfo))
 		return nil
 	}
 }

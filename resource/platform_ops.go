@@ -57,8 +57,8 @@ type PckCertChainInfo struct {
 }
 
 type PckCRLInfo struct {
-	PckCRL 		[]byte
-	PckCRLCertChain []byte
+	PckCRL 		string
+	PckCRLCertChain string
 	Ca 		string
 	CreatedTime 	time.Time
 }
@@ -75,15 +75,15 @@ type PckCertInfo struct {
 
 type FmspcTcbInfo struct {
 	Fmspc      	string     
-	TcbInfo         []byte
-	TcbInfoIssuerChain  []byte
+	TcbInfo         string
+	TcbInfoIssuerChain  string
 	CreatedTime 	time.Time
 }
 
 type QEInfo struct {
 	Id		uint
-	QEInfo         	[]byte
-	QEIssuerChain  	[]byte
+	QEInfo         	string
+	QEIssuerChain  	string
 	CreatedTime 	time.Time
 }
 
@@ -138,7 +138,7 @@ func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 	r.Handle("/refresh", handlers.ContentTypeHandler(RefreshPlatformInfoCB(db), "application/json")).Methods("GET")
 }
 
-func GetFmspcVal( CertBuf *pem.Block )(string, error){
+func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 	log.Trace("resource/platform_ops.go: GetFmspcVal() Entering")
 	defer log.Trace("resource/platform_ops.go: GetFmspcVal() Leaving")
 
@@ -158,7 +158,7 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
                         var asn1Extensions []asn1.RawValue
                         _, err := asn1.Unmarshal(ext.Value, &asn1Extensions)
                         if err != nil {
-                                log.Warn("Could not find Intel SGX Extension in certificate")
+                                log.Warn("Could not parse extension")
                                 return fmspcHex, err
                         }
 
@@ -166,7 +166,7 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
                         for j:=0; j<len(asn1Extensions); j++ {
                                 _, err = asn1.Unmarshal(asn1Extensions[j].FullBytes, &fmspcExt)
                                 if err != nil {
-                                        log.Warn("Could not find FMSPC sub extension in certificate")
+                                        log.Warn("Could not parse sub extension")
                                 }
                                 if FmspcSgxExtensionsOid.Equal(fmspcExt.Id) == true {
                                         fmspcHex=hex.EncodeToString(fmspcExt.Value)
@@ -176,7 +176,7 @@ func GetFmspcVal( CertBuf *pem.Block )(string, error){
                         }
                 }
         }
-        return fmspcHex, errors.New("Fmspc Value not found in PCK Certificate")
+        return fmspcHex, errors.New("Fmspc value not found in PCK Certificate")
 }
 
 func FetchPCKCertInfo(in *SgxData) error {
@@ -200,7 +200,7 @@ func FetchPCKCertInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
-	in.PckCertChainInfo.PckCertChain = headers["Sgx-Pck-Certificate-Issuer-Chain"][0]
+	in.PckCertChainInfo.PckCertChain = ConverAsciiCodeToChar(headers["Sgx-Pck-Certificate-Issuer-Chain"][0])
 	if resp.ContentLength == 0 {
 		return errors.New("No content found in getPCkCerts Http Response")
 	}
@@ -213,7 +213,7 @@ func FetchPCKCertInfo(in *SgxData) error {
         }
 
 	var pckCerts []PckCertsInfo
-	err = json.Unmarshal([]byte(body), &pckCerts)
+	err = json.Unmarshal(body, &pckCerts)
         if err != nil {
                 log.WithError(err).Error("Could not decode the pckCerts json response")
                 return err
@@ -269,7 +269,7 @@ func FetchPCKCRLInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
-	in.PckCRLInfo.PckCRLCertChain = []byte(headers["Sgx-Pck-Crl-Issuer-Chain"][0])
+	in.PckCRLInfo.PckCRLCertChain = ConverAsciiCodeToChar(headers["Sgx-Pck-Crl-Issuer-Chain"][0])
 	log.WithField("PckCrlCertChain", in.PckCRLInfo.PckCRLCertChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
@@ -282,12 +282,12 @@ func FetchPCKCRLInfo(in *SgxData) error {
 		log.WithError(err).Error("Could not Read GetPckCrl Http Response")
             	return err
         }
-	in.PckCRLInfo.PckCRL = []byte(body)
-	CrlBuf, _ := pem.Decode([]byte(body))
+	in.PckCRLInfo.PckCRL = ConverAsciiCodeToChar(string(body))
+	CrlBuf, _ := pem.Decode(body)
 	if CrlBuf == nil {
 		return errors.New("Failed to parse Crl PEM block")
 	}
-	log.WithField("PckCrl", string(CrlBuf.Bytes)).Debug("Values")
+	log.WithField("PckCrl", in.PckCRLInfo.PckCRL).Debug("Values")
 	return nil
 }
 
@@ -307,7 +307,7 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
-	in.FmspcTcbInfo.TcbInfoIssuerChain = []byte(headers["Sgx-Tcb-Info-Issuer-Chain"][0])
+	in.FmspcTcbInfo.TcbInfoIssuerChain = ConverAsciiCodeToChar(headers["Sgx-Tcb-Info-Issuer-Chain"][0])
 	log.WithField("TcbInfoIssuerChain", in.FmspcTcbInfo.TcbInfoIssuerChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
@@ -320,7 +320,7 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 		log.WithError(err).Error("Could not Read GetTCBInfo Http Response")
             	return err
         }
-	in.FmspcTcbInfo.TcbInfo	= []byte(body)
+	in.FmspcTcbInfo.TcbInfo	= string(body)
 	return nil
 }
 
@@ -340,7 +340,7 @@ func FetchQEIdentityInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
-	in.QEInfo.QEIssuerChain = []byte(headers["Sgx-Enclave-Identity-Issuer-Chain"][0])
+	in.QEInfo.QEIssuerChain = ConverAsciiCodeToChar(headers["Sgx-Enclave-Identity-Issuer-Chain"][0])
 	log.WithField("QEIssuerChain", in.QEInfo.QEIssuerChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
@@ -348,12 +348,12 @@ func FetchQEIdentityInfo(in *SgxData) error {
 	}
 
 	defer resp.Body.Close()
-        body, err := ioutil.ReadAll( resp.Body )
+        body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
 		log.WithError(err).Error("Could not Read GetQEIdentity Http Response")
             	return err
         }
-	in.QEInfo.QEInfo = []byte(body)
+	in.QEInfo.QEInfo = string(body)
 	log.WithField("QEInfo", string(body)).Debug("Values")
 	return nil
 }
@@ -579,17 +579,12 @@ func CachePckCRLInfo(db repository.SCSDatabase, data *SgxData) error {
 			slog.WithError(err).Error("PckCrl record could not be created in db")
 			return err
 		}
-		slog.WithError(err).Error("PckCrl Info Insertion failed")
 	}
 	return nil
 }
 
 func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-
-		//As of now platform is not supported and currently fetching only processor 
-		//CaArray := [2]string { constants.Ca_Processor, constants.Ca_Platform }
-		CaArray := [1]string { constants.Ca_Processor}
 
 		var data SgxData
 		if (r.ContentLength == 0) {
@@ -622,7 +617,7 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 if  existingPlaformData != nil {
 			w.Header().Set("Content-Type", "application/json")
                 	w.WriteHeader(http.StatusOK) // HTTP 200
-                	res := Response{ Status:"Success", Message: "Platform Info Already exist, Nothing to push"}
+			res := Response{ Status:"Success", Message: "Platform Info Already exists"}
                 	js, err := json.Marshal(res)
                 	if err != nil {
                         	return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -652,18 +647,16 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                         return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		for i:=0; i<len(CaArray); i++ {	
-			pckCrl := types.PckCrl{Ca: CaArray[0]}
-			existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
-                	if  existingPckCrl != nil {
-				break;
-			}
-			data.PlatformInfo.Ca=CaArray[i]
+		pckCrl := types.PckCrl{Ca: constants.Ca_Processor}
+		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
+		if existingPckCrl == nil {
+
+			data.PlatformInfo.Ca = constants.Ca_Processor
 			err = FetchPCKCRLInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
-			
+
 			err = CachePckCRLInfo(db, &data) 
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -730,7 +723,6 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 	var data SgxData
 	data.Type = constants.CacheRefresh
 	for n := 0; n < len(existingPlaformData); n++ {
-		
 		tmp := existingPlaformData[n]
 		data.PlatformInfo.EncryptedPPID = tmp.Encppid
 	 	data.PlatformInfo.CpuSvn = tmp.CpuSvn 

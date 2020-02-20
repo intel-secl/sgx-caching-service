@@ -10,8 +10,8 @@ import (
 // FmspcTcb struct is the database schema of a FmspcTcbs table
 type FmspcTcbInfo struct {
 	Fmspc			string    `json:"-" gorm:"primary_key"`
-	TcbInfo        		[]byte	  `json:"-" gorm:"type:bytea;not null"`
-	TcbInfoIssuerChain      []byte	  `json:"-" gorm:"type:bytea;not null"`
+	TcbInfo        		string	  `json:"-" gorm:"type:text;not null"`
+	TcbInfoIssuerChain      string	  `json:"-" gorm:"type:text;not null"`
 	CreatedTime    		time.Time
 	UpdatedTime    		time.Time
 }

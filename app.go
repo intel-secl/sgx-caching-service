@@ -23,6 +23,7 @@ import (
 	"time"
 	stdlog "log"
 
+	"intel/isecl/lib/common/middleware"
 	"intel/isecl/sgx-caching-service/config"
 	"intel/isecl/sgx-caching-service/constants"
 	"intel/isecl/sgx-caching-service/repository/postgres"
@@ -379,6 +380,11 @@ func (a *App) Run(args []string) error {
 					Config:        a.configuration(),
 					ConsoleWriter: os.Stdout,
 				},
+				tasks.JWT{
+					Flags:         flags,
+					Config:        a.configuration(),
+					ConsoleWriter: os.Stdout,
+				},
  				tasks.Root_Ca{
                                         Flags:            flags,
                                         ConsoleWriter:    os.Stdout,
@@ -511,6 +517,8 @@ func (a *App) startServer() error {
 
 	// Create Router, set routes
 	sr := r.PathPrefix("/scs/sgx/certification/v1/").Subrouter()
+	var cacheTime, _ = time.ParseDuration(constants.JWTCertsCacheTime)
+	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, fnGetJwtCerts, cacheTime))
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)
@@ -519,8 +527,7 @@ func (a *App) startServer() error {
 
 
 	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
-	//sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts, 
-	//					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
+	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, fnGetJwtCerts, cacheTime))
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)
@@ -528,7 +535,6 @@ func (a *App) startServer() error {
 	}(resource.PlatformInfoOps)
 
 	sr = r.PathPrefix("/scs/test/").Subrouter()
-	//sr.Use(cmw.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, a.retrieveJWTSigningCerts))
 	func(setters ...func(*mux.Router)) {
 		for _, setter := range setters {
 			setter(sr)
@@ -568,7 +574,7 @@ func (a *App) startServer() error {
 		}
 	}()
 
-	fmt.Fprintln(a.consoleWriter(), "Auth Service is running")
+	fmt.Fprintln(a.consoleWriter(), "sgx-caching-service is running")
 	// TODO dispatch Service status checker goroutine
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -822,4 +828,11 @@ func (a *App) DatabaseFactory() (repository.SCSDatabase, error) {
 		return nil, err
 	}
 	return p, nil
+}
+
+//To be implemented if JWT certificate is needed from any other services
+func fnGetJwtCerts() error {
+	log.Trace("app:fnGetJwtCerts() Entering")
+	defer log.Trace("app:fnGetJwtCerts() Leaving")
+	return nil
 }

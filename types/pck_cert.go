@@ -12,9 +12,9 @@ import (
 type PckCert struct {
 	QeId 		string		`json:"-" gorm:"primary_key"`
 	PceId       	string		`json:"-"`
-	Tcbm      	pq.StringArray	`json:"-" gorm:"type:TEXT[];not null"`
+	Tcbm      	pq.StringArray	`json:"-" gorm:"type:text[];not null"`
 	Fmspc      	string		`json:"-"`
-	PckCert		pq.StringArray	`json:"-" gorm:"type:TEXT[];not null"`
+	PckCert		pq.StringArray	`json:"-" gorm:"type:text[];not null"`
 	CertChainId   	uint 	   	`json:"cert_chain_id" gorm:"type:int;not null"`
  	CreatedTime	time.Time
 	UpdatedTime	time.Time
