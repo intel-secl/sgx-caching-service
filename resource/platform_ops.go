@@ -79,6 +79,7 @@ type PckCertInfo struct {
 	TotalPckCerts   int
 	Tcbm      	[]string
 	Fmspc      	string     
+	CertIndex	uint
 	CreatedTime 	time.Time
 	PckCertChainId 	int
 }
@@ -144,7 +145,17 @@ type cpu_svn struct {
 	bytes []byte
 }
 
-func GetBestPckCert(in *SgxData) (uint) {
+func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
+	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
+	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
+
+	r.Handle("/push", handlers.ContentTypeHandler(PushPlatformInfoCB(db), "application/json")).Methods("POST")
+	r.Handle("/refresh", handlers.ContentTypeHandler(RefreshPlatformInfoCB(db), "application/json")).Methods("GET")
+	r.Handle("/tcbstatus", handlers.ContentTypeHandler(GetTcbStatusCB(db), "application/json")).Methods("GET")
+}
+
+func GetBestPckCert(in *SgxData) (uint, error) {
+	var err error
 	var cpusvn cpu_svn
 	cpusvn.bytes, _ = hex.DecodeString(in.PlatformInfo.CpuSvn)
 
@@ -152,7 +163,7 @@ func GetBestPckCert(in *SgxData) (uint) {
 	pce_id, _ :=  strconv.Atoi(in.PlatformInfo.PceId)
 	certsLen := in.PckCertInfo.TotalPckCerts
 
-	tcbInfo := C.CString(in.FmspcTcbInfo.TcbInfo+"\x00")
+	tcbInfo := C.CString(in.FmspcTcbInfo.TcbInfo)
 	defer C.free(unsafe.Pointer(tcbInfo))
 
 	var certIdx C.uint
@@ -163,19 +174,13 @@ func GetBestPckCert(in *SgxData) (uint) {
 		defer C.free(unsafe.Pointer(certs[i]))
 	}
 
-	err := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn)), C.ushort(pce_svn), C.ushort(pce_id),
-				(*C.char)(unsafe.Pointer(tcbInfo)), (**C.char)(unsafe.Pointer(&certs[0])),
-				C.uint(certsLen), &certIdx)
-	log.Warn(err)
-	return uint(certIdx)
-}
-
-func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
-	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
-	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
-
-	r.Handle("/push", handlers.ContentTypeHandler(PushPlatformInfoCB(db), "application/json")).Methods("POST")
-	r.Handle("/refresh", handlers.ContentTypeHandler(RefreshPlatformInfoCB(db), "application/json")).Methods("GET")
+	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pce_svn),
+				C.ushort(pce_id), (*C.char)(unsafe.Pointer(tcbInfo)),
+				(**C.char)(unsafe.Pointer(&certs[0])), C.uint(certsLen), &certIdx)
+	if ret != 0 {
+		err = errors.New("PCK Cert Select Library could not find best PCK Cert for current TCB level")
+	}
+	return uint(certIdx), err
 }
 
 func GetFmspcVal(CertBuf *pem.Block) (string, error) {
@@ -281,9 +286,17 @@ func FetchPCKCertInfo(in *SgxData) error {
                 log.WithError(err).Error("Failed to get FMSPC value from PCK Certificate")
 		return err
 	}
-	_ = FetchFmspcTcbInfo(in)
+	err = FetchFmspcTcbInfo(in)
+	if err != nil {
+		return err
+	}
 
-	_ = GetBestPckCert(in)
+	in.PckCertInfo.CertIndex, err = GetBestPckCert(in)
+	if err != nil {
+                log.WithError(err).Error("Failed to get PCK cert for the platform")
+		return err
+	}
+
 	return nil
 }
 
@@ -412,6 +425,7 @@ func CachePckCertInfo(db repository.SCSDatabase, data *SgxData) error {
 					QeId: strings.ToLower(data.PckCertInfo.QeId),
 					Tcbm: data.PckCertInfo.Tcbm,
 					Fmspc: strings.ToLower(data.PckCertInfo.Fmspc),
+					CertIndex: data.PckCertInfo.CertIndex,
 					PckCert: data.PckCertInfo.PckCert,
 					CertChainId: data.PckCertChain.Id,}
 
@@ -968,7 +982,35 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
  		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK) // HTTP 200
 
-		res := Response{ Status:"Success", Message: "All Platform Data refreshed Successfully"}
+		res := Response{Status:"Success", Message: "All Platform Data refreshed Successfully"}
+		js, err := json.Marshal(res)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+		w.Write(js)
+
+		return nil
+	}
+}
+
+func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		log.WithField("GetTcbStatusCB", ":").Debug("Invoked")
+		if ( len(r.URL.Query()) == 0) {
+			return &resourceError{Message: "GetTcbStatusCB: The Request Query Data not provided",
+						StatusCode: http.StatusBadRequest}
+		}
+		PceId,_ := r.URL.Query()["pceid"]
+		if !ValidateInputString(constants.PceId_Key, PceId[0]) {
+			return &resourceError{Message: "GetTcbStatusCB: Invalid query Param Data",
+						StatusCode: http.StatusBadRequest}
+		}
+		log.WithField("PCEID", PceId).Debug("QueryParams")
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK) // HTTP 200
+
+		res := Response{Status:"true", Message: "TCB Status is UptoDate"}
 		js, err := json.Marshal(res)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}

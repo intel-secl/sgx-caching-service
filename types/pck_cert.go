@@ -12,6 +12,7 @@ import (
 type PckCert struct {
 	QeId 		string		`json:"-" gorm:"primary_key"`
 	PceId       	string		`json:"-"`
+	CertIndex      	uint		`json:"-"`
 	Tcbm      	pq.StringArray	`json:"-" gorm:"type:text[];not null"`
 	Fmspc      	string		`json:"-"`
 	PckCert		pq.StringArray	`json:"-" gorm:"type:text[];not null"`

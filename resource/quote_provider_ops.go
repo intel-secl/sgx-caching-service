@@ -94,6 +94,7 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 										StatusCode: http.StatusBadRequest}
                 }
 
+		certIndex := existingPckCert.CertIndex
 		existingPckCertChain, err := db.PckCertChainRepository().Retrieve(types.PckCertChain{
 						Id: existingPckCert.CertChainId})
                 if existingPckCertChain == nil {
@@ -102,16 +103,16 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header()["sgx-pck-certificate-issuer-chain"] = []string{string(existingPckCertChain.CertChain)}
-		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm[0]}
+		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm[certIndex]}
 
  		w.WriteHeader(http.StatusOK) // HTTP 200
-		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert[0]))
+		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert[certIndex]))
         	if CertBuf == nil {
                         return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache",
 							StatusCode: http.StatusInternalServerError}
         	}
 
-	        w.Write([]byte(existingPckCert.PckCert[0]))
+	        w.Write([]byte(existingPckCert.PckCert[certIndex]))
 		log.WithField("Pck Cert request responded with status", http.StatusOK).Debug("Response")
 		return nil
 	}
