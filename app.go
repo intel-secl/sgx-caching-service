@@ -76,10 +76,18 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "    status			Show the status of scs")
 	fmt.Fprintln(w, "    stop			Stop scs")
 	fmt.Fprintln(w, "    tlscertsha384		Show the SHA384 digest of the certificate used for TLS")
-	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall scs.  --purge option needs to be applied to remove configuration and data files")
+	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall scs. --purge option needs to be applied to remove configuration and data files")
 	fmt.Fprintln(w, "    -v|--version          	Show the version of scs")
 	fmt.Fprintln(w, "")
+        fmt.Fprintln(w, "Setup command usage:     scs setup [task] [--arguments=<argument_value>] [--force]")
+        fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Avaliable Tasks for setup:")
+        fmt.Fprintln(w, "    all                       Runs all setup tasks")
+        fmt.Fprintln(w, "                              Required env variables:")
+        fmt.Fprintln(w, "                                  - get required env variables from all the setup tasks")
+        fmt.Fprintln(w, "                              Optional env variables:")
+        fmt.Fprintln(w, "                                  - get optional env variables from all the setup tasks")
+        fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    scs setup database [-force] [--arguments=<argument_value>]")
 	fmt.Fprintln(w, "        - Avaliable arguments are:")
 	fmt.Fprintln(w, "            - db-host    alternatively, set environment variable SCS_DB_HOSTNAME")
@@ -150,6 +158,7 @@ func (a *App) executablePath() string {
 	}
 	exec, err := os.Executable()
 	if err != nil {
+		log.WithError(err).Error("app:executablePath() Unable to find SCS executable")
 		// if we can't find self-executable path, we're probably in a state that is panic() worthy
 		panic(err)
 	}
@@ -236,12 +245,7 @@ func (a *App) Run(args []string) error {
                return errors.Wrapf(err,"Could not parse scs user gid '%s'", scsUser.Gid)
         }
 
-	isStdOut := false
-	isSCSConsoleEnabled := os.Getenv("SCS_ENABLE_CONSOLE_LOG")
-	if isSCSConsoleEnabled == "true" {
-		isStdOut = true
-	}
-	a.configureLogs(isStdOut, true)
+	a.configureLogs(a.configuration().LogEnableStdout, true)
 
 	cmd := args[1]
 	switch cmd {
@@ -255,7 +259,6 @@ func (a *App) Run(args []string) error {
 		}
 		return a.PrintDirFileContents(args[2])
 	case "tlscertsha384":
-		a.configureLogs(true, false)
 		hash, err := crypt.GetCertHexSha384(path.Join(a.configDir(), constants.TLSCertFile))
 		if err != nil {
 			fmt.Println(err.Error())
@@ -264,22 +267,19 @@ func (a *App) Run(args []string) error {
 		fmt.Println(hash)
 		return nil
 	case "run":
-		a.configureLogs(true, true)
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
 			time.Sleep(10 * time.Millisecond)
-			return errors.Wrap(err, "app:Run() Error starting scs service")
+			return errors.Wrap(err, "app:Run() Error starting SCS service")
 		}
 	case "-h", "--help":
 		a.printUsage()
 	case "start":
 		return a.start()
 	case "stop":
-		a.configureLogs(true, false)
 		return a.stop()
 	case "status":
-		a.configureLogs(true, false)
 		return a.status()
 	case "uninstall":
 		var purge bool
@@ -291,7 +291,6 @@ func (a *App) Run(args []string) error {
 	case "--version", "-v":
 		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\n", version.Version, version.GitHash)
 	case "setup":
-		a.configureLogs(false, true)
 		var context setup.Context
 		if len(args) <= 2 {
 			a.printUsage()
@@ -317,18 +316,16 @@ func (a *App) Run(args []string) error {
 
 		a.Config = config.Global()
 		err = a.Config.SaveConfiguration(context)
-                if err != nil {
-                        fmt.Println("Error saving configuration: " + err.Error())
-		        return errors.New("Configuration save ends with error")
-                }
+		if err != nil {
+			fmt.Println("Error saving configuration: " + err.Error())
+			return errors.New("Configuration save ends with error")
+		}
 
 		task := strings.ToLower(args[2])
 		flags := args[3:]
 		if args[2] == "download_cert" && len(args) > 3 {
 			flags = args[4:]
 		}
-
-		a.Config = config.Global()
 
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
@@ -396,7 +393,6 @@ func (a *App) Run(args []string) error {
 			},
 			AskInput: false,
 		}
-		a.configureLogs(true, true)
 		if task == "all" {
 			err = setupRunner.RunTasks()
 		} else {
@@ -761,7 +757,7 @@ func validateSetupArgs(cmd string, args []string) error {
 
 		err := fs.Parse(args)
 		if err != nil {
-			return errors.Wrap(err, "app:validateCmdAndEnv() Fail to parse arguments")
+			return fmt.Errorf("Fail to parse arguments: %s", err.Error())
 		}
 		return validateCmdAndEnv(env_names_cmd_opts, fs)
 
@@ -782,7 +778,7 @@ func validateSetupArgs(cmd string, args []string) error {
 		return validateCmdAndEnv(env_names_cmd_opts, fs)
 
 	case "server":
-		// this has a default port value on 8443
+		// this has a default port value on 9443
 		return nil
 
 	case "tls":
@@ -801,7 +797,7 @@ func validateSetupArgs(cmd string, args []string) error {
 
 	case "all":
 		if len(args) != 0 {
-			return errors.New("app:validateCmdAndEnv() Please setup the arguments with env")
+			return errors.New("Please setup the arguments with env")
 		}
 	}
 

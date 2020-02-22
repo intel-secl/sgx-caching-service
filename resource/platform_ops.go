@@ -4,6 +4,13 @@
  */
 package resource
 
+/*
+ #cgo LDFLAGS: -lPCKCertSelection
+ #include <stdlib.h>
+ #include "pck_cert_selection.h"
+*/
+import "C"
+
 import (
 	"strings"
 	"fmt"
@@ -13,6 +20,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"time"
+	"strconv"
+	"unsafe"
 	"encoding/pem"
 	"encoding/hex"
 	"crypto/x509"
@@ -26,7 +35,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Response struct{
+type Response struct {
 	Status 		string
 	Message 	string
 }
@@ -67,6 +76,7 @@ type PckCertInfo struct {
 	PceId 		string `json:"pce_id"`
 	QeId 		string `json:"qe_id"`
 	PckCert         []string
+	TotalPckCerts   int
 	Tcbm      	[]string
 	Fmspc      	string     
 	CreatedTime 	time.Time
@@ -128,6 +138,36 @@ type SgxData struct {
 	PckCrl *types.PckCrl
 	FmspcTcb *types.FmspcTcbInfo
 	QEIdentity *types.QEIdentity
+}
+
+type cpu_svn struct {
+	bytes []byte
+}
+
+func GetBestPckCert(in *SgxData) (uint) {
+	var cpusvn cpu_svn
+	cpusvn.bytes, _ = hex.DecodeString(in.PlatformInfo.CpuSvn)
+
+	pce_svn, _ := strconv.Atoi(in.PlatformInfo.PceSvn)
+	pce_id, _ :=  strconv.Atoi(in.PlatformInfo.PceId)
+	certsLen := in.PckCertInfo.TotalPckCerts
+
+	tcbInfo := C.CString(in.FmspcTcbInfo.TcbInfo+"\x00")
+	defer C.free(unsafe.Pointer(tcbInfo))
+
+	var certIdx C.uint
+
+	certs := make([]*C.char, certsLen)
+	for i, s := range in.PckCertInfo.PckCert {
+		certs[i] = C.CString(s)
+		defer C.free(unsafe.Pointer(certs[i]))
+	}
+
+	err := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn)), C.ushort(pce_svn), C.ushort(pce_id),
+				(*C.char)(unsafe.Pointer(tcbInfo)), (**C.char)(unsafe.Pointer(&certs[0])),
+				C.uint(certsLen), &certIdx)
+	log.Warn(err)
+	return uint(certIdx)
 }
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
@@ -219,9 +259,10 @@ func FetchPCKCertInfo(in *SgxData) error {
                 return err
         }
 
-	in.PckCertInfo.PckCert = make([]string, constants.MaxNumberofPCKCerts)
-	in.PckCertInfo.Tcbm = make([]string, constants.MaxNumberofPCKCerts)
-	for i:=0; i < len(pckCerts); i++ {
+	in.PckCertInfo.TotalPckCerts = len(pckCerts)
+	in.PckCertInfo.PckCert = make([]string, in.PckCertInfo.TotalPckCerts)
+	in.PckCertInfo.Tcbm = make([]string, in.PckCertInfo.TotalPckCerts)
+	for i:=0; i < in.PckCertInfo.TotalPckCerts; i++ {
 		in.PckCertInfo.PckCert[i] = ConverAsciiCodeToChar(pckCerts[i].Cert)
 		in.PckCertInfo.Tcbm[i] = pckCerts[i].Tcbm
 	}
@@ -235,10 +276,14 @@ func FetchPCKCertInfo(in *SgxData) error {
 	}
 
 	in.PckCertInfo.Fmspc, err = GetFmspcVal(CertBuf)
+	in.FmspcTcbInfo.Fmspc = in.PckCertInfo.Fmspc
 	if err != nil {
+                log.WithError(err).Error("Failed to get FMSPC value from PCK Certificate")
 		return err
 	}
+	_ = FetchFmspcTcbInfo(in)
 
+	_ = GetBestPckCert(in)
 	return nil
 }
 
@@ -305,7 +350,6 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
 		return errors.New("Invalid response from Intel SGX Provisioning Server")
 	}
-
 	headers := resp.Header
 	in.FmspcTcbInfo.TcbInfoIssuerChain = ConverAsciiCodeToChar(headers["Sgx-Tcb-Info-Issuer-Chain"][0])
 	log.WithField("TcbInfoIssuerChain", in.FmspcTcbInfo.TcbInfoIssuerChain).Debug("Values")
@@ -320,7 +364,7 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 		log.WithError(err).Error("Could not Read GetTCBInfo Http Response")
             	return err
         }
-	in.FmspcTcbInfo.TcbInfo	= string(body)
+	in.FmspcTcbInfo.TcbInfo = string(body)
 	return nil
 }
 

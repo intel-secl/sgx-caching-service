@@ -37,7 +37,6 @@ const (
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
 	DefaultIntelProvServerURL     = "https://api.trustedservices.intel.com/sgx/certification/v2/"
-	MaxNumberofPCKCerts	      = 10
 	EncPPID_Key		      = "encrypted_ppid"
 	CpuSvn_Key		      = "cpu_svn"
 	PceSvn_Key		      = "pce_svn"

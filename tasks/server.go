@@ -12,6 +12,7 @@ import (
 	"intel/isecl/lib/common/setup"
 	"github.com/pkg/errors"
 	"io"
+	"strconv"
 )
 
 type Server struct {
@@ -70,6 +71,15 @@ func (s Server) Run(c setup.Context) error {
 	} else {
 		fmt.Println("Invalid Log Entry Max Length defined (should be > 100), using default value:", constants.DefaultLogEntryMaxlength)
 		s.Config.LogMaxLength = constants.DefaultLogEntryMaxlength
+	}
+
+	s.Config.LogEnableStdout = false
+        logEnableStdout, err := c.GetenvString("SCS_ENABLE_CONSOLE_LOG", "SGX Caching Service Enable standard output")
+        if err == nil  && logEnableStdout != "" {
+	s.Config.LogEnableStdout, err = strconv.ParseBool(logEnableStdout)
+		if err != nil{
+			log.Info("Error while parsing the variable SCS_ENABLE_CONSOLE_LOG, setting to default value false")
+		}
 	}
 
 	return s.Config.Save()
