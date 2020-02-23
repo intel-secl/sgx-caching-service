@@ -241,7 +241,7 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                         }
                 }
 		w.Header().Set("Content-Type", "application/json")
-		w.Header()["sgx-tcb-info-issuer-chain"]= []string{ string(existingFmspc.TcbInfoIssuerChain)}
+		w.Header()["sgx-tcb-info-issuer-chain"]= []string{string(existingFmspc.TcbInfoIssuerChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
 
 		w.Write([]byte(existingFmspc.TcbInfo))

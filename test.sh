@@ -43,8 +43,6 @@ if [ "$op" = "qe" ] && [ "$env" = "scs" ]; then
 	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/qe/identity" -H "Authorization: Bearer ${Bearer_token}" -k
 elif [ "$op" = "qe" ] && [ "$env" = "intel" ]; then
 	curl -v "${intel_pcs_server}/qe/identity"
-elif [ "$op" = "qe" ] && [ "$env" = "nodejs" ]; then
-	curl -v --tlsv1.2 "https://$hostname:8081/sgx/certification/v1/qe/identity" -k
 fi
 
 if [ "$op" = "tcb" ] && [ "$env" = "scs" ]; then
@@ -66,8 +64,6 @@ printf "{
 fi
 
 if [[ "$op" = "refresh" ]]; then
-	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/refresh?type=certs" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" -k
-
 	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/refresh" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" -k
 fi
 

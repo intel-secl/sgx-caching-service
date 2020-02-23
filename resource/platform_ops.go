@@ -154,6 +154,16 @@ func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 	r.Handle("/tcbstatus", handlers.ContentTypeHandler(GetTcbStatusCB(db), "application/json")).Methods("GET")
 }
 
+// This function invokes SGX DCAP PCK Certificate Selection Library (C++)
+// we pass following parameters to the C++ library
+// 1. current taw tcb level of the platform (cpusvn and pcesvn value)
+// 2. pce id of the platform
+// 3. TCBInfo for the platform
+// 4. All PCK Certficates for all the TCB levels of the platform
+// 5. Number of PCK certificates
+// C++ library chooses best suited PCK certificate for the current TCB level
+// and returns index to the certificate
+
 func GetBestPckCert(in *SgxData) (uint, error) {
 	var err error
 	var cpusvn cpu_svn
@@ -183,6 +193,7 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 	return uint(certIdx), err
 }
 
+// parse the PCK certificate and extract Intel custom extensions to extract the fmpsc value
 func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 	log.Trace("resource/platform_ops.go: GetFmspcVal() Entering")
 	defer log.Trace("resource/platform_ops.go: GetFmspcVal() Leaving")
@@ -228,6 +239,7 @@ func FetchPCKCertInfo(in *SgxData) error {
 	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
 	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
 
+	// Using the Platform SGX Values, fetch the PCK Certs from Intel PCS Server
 	resp, err := GetPCKCertFromProvServer(in.PlatformInfo.EncryptedPPID,
 							in.PlatformInfo.CpuSvn,
 							in.PlatformInfo.PceSvn,
@@ -245,18 +257,21 @@ func FetchPCKCertInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
+	// read the PCKCertChain from HTTP response header
 	in.PckCertChainInfo.PckCertChain = ConverAsciiCodeToChar(headers["Sgx-Pck-Certificate-Issuer-Chain"][0])
 	if resp.ContentLength == 0 {
 		return errors.New("No content found in getPCkCerts Http Response")
 	}
 
 	defer resp.Body.Close()
+	// read the set  of PCKCerts blob sent as part of HTTP response body
         body, err := ioutil.ReadAll(resp.Body)
         if err != nil {
 		log.WithError(err).Error("Could not Read GetPckCerts Http Response")
             	return err
         }
 
+	// we unmarshal the json response to read set of pck certs and tcbm values
 	var pckCerts []PckCertsInfo
 	err = json.Unmarshal(body, &pckCerts)
         if err != nil {
@@ -267,6 +282,7 @@ func FetchPCKCertInfo(in *SgxData) error {
 	in.PckCertInfo.TotalPckCerts = len(pckCerts)
 	in.PckCertInfo.PckCert = make([]string, in.PckCertInfo.TotalPckCerts)
 	in.PckCertInfo.Tcbm = make([]string, in.PckCertInfo.TotalPckCerts)
+	// read individual pck certs and corresponding tcbm value
 	for i:=0; i < in.PckCertInfo.TotalPckCerts; i++ {
 		in.PckCertInfo.PckCert[i] = ConverAsciiCodeToChar(pckCerts[i].Cert)
 		in.PckCertInfo.Tcbm[i] = pckCerts[i].Tcbm
@@ -274,23 +290,28 @@ func FetchPCKCertInfo(in *SgxData) error {
 
 	in.PckCertInfo.QeId = in.PlatformInfo.QeId
 	in.PckCertInfo.PceId = in.PlatformInfo.PceId
+	// from bunch of PCK certs receive, choose random PCK cert
 	CertBuf, _ := pem.Decode([]byte(in.PckCertInfo.PckCert[0]))
 	
 	if CertBuf == nil {
 		return errors.New("Failed to parse PEM block ")
 	}
 
+	// extract fmpsc value from randomly chosen PCK certificate
 	in.PckCertInfo.Fmspc, err = GetFmspcVal(CertBuf)
 	in.FmspcTcbInfo.Fmspc = in.PckCertInfo.Fmspc
 	if err != nil {
                 log.WithError(err).Error("Failed to get FMSPC value from PCK Certificate")
 		return err
 	}
+	// using the extacted fmspc value, get the TCBInfo structure fo platform
 	err = FetchFmspcTcbInfo(in)
 	if err != nil {
 		return err
 	}
 
+	// Out of bunch of PCK certificates, choose best suited PCK certificate for the
+	// current raw TCB level
 	in.PckCertInfo.CertIndex, err = GetBestPckCert(in)
 	if err != nil {
                 log.WithError(err).Error("Failed to get PCK cert for the platform")
@@ -300,6 +321,10 @@ func FetchPCKCertInfo(in *SgxData) error {
 	return nil
 }
 
+// temporary utility function to find ascii codes present in PCK certificate
+// and convert them into corresponding ascii characters
+// to be removed once this issue is resolved in the pckcerts response from
+// intel PCS server
 func ConverAsciiCodeToChar(s string) string {
 	s = strings.Replace(s, "%20", " ", -1)
 	s = strings.Replace(s, "%0A", "\n", -1)
@@ -310,6 +335,9 @@ func ConverAsciiCodeToChar(s string) string {
 	return s
 }
 
+// Fetches the latest PCK Certificate Revocation List for the sgx intel processor
+// SVS will make use of this to verify if PCK certificate in a  quote is valid
+// by comparing against this CRL
 func FetchPCKCRLInfo(in *SgxData) error {
 	log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Entering")
 	defer log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Leaving")
@@ -349,6 +377,7 @@ func FetchPCKCRLInfo(in *SgxData) error {
 	return nil
 }
 
+// for a platform FMSPC value, fetches corresponding TCBInfo structure from Intel PCS server
 func FetchFmspcTcbInfo(in *SgxData) error {
 	log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Entering")
 	defer log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Leaving")
@@ -381,6 +410,7 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 	return nil
 }
 
+// Fetches Quoting Enclave ID details for a platform from intel PCS server
 func FetchQEIdentityInfo(in *SgxData) error {
 	log.Trace("resource/platform_ops.go: FetchQEIdentityInfo() Entering")
 	defer log.Trace("resource/platform_ops.go: FetchQEIdentityInfo() Leaving")
@@ -583,7 +613,7 @@ func CachePlatformTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 
 	if data.PlatformTcb == nil {
 		data.PlatformTcb = &types.PlatformTcb{
-						Tcbm: strings.ToLower(data.PckCertInfo.Tcbm[0]),
+						Tcbm: strings.ToLower(data.PckCertInfo.Tcbm[data.PckCertInfo.CertIndex]),
 						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
 						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn),
 						PceId: strings.ToLower(data.PlatformInfo.PceId),
@@ -686,6 +716,11 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		data.Type = constants.CacheInsert
 		err = FetchPCKCertInfo(&data)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+
+		err = CachePlatformTcbInfo(db, &data)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
@@ -959,23 +994,15 @@ func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
 
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		if  r.URL.Query() != nil && len(r.URL.Query()) > len( constants.Type_Key) {
-                	Type,_ := r.URL.Query()["type"]
-			if !ValidateInputString(constants.Type_Key, Type[0]) {
-				return &resourceError{Message: "Invalid query Param type", StatusCode: http.StatusBadRequest}
-			}
-
-			err := RefreshPckCerts(db)
-			if err != nil{
-				return &resourceError{Message: "Could not Refresh Pck Certificates",
-					StatusCode: http.StatusInternalServerError}
-			}
-			return nil
-		}
-
-		err := RefreshTcbInfos(db)
+		err := RefreshPckCerts(db)
 		if err != nil{
 			return &resourceError{Message: "Could not Refresh Pck Certificates",
+						StatusCode: http.StatusInternalServerError}
+		}
+
+		err = RefreshTcbInfos(db)
+		if err != nil{
+			return &resourceError{Message: "Could not Refresh TCB Info",
 				StatusCode: http.StatusInternalServerError}
 		}
 
