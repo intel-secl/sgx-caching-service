@@ -13,10 +13,10 @@ type PckCert struct {
 	QeId 		string		`json:"-" gorm:"primary_key"`
 	PceId       	string		`json:"-"`
 	CertIndex      	uint		`json:"-"`
-	Tcbm      	pq.StringArray	`json:"-" gorm:"type:text[];not null"`
+	Tcbms      	pq.StringArray	`json:"-" gorm:"type:text[];not null"`
 	Fmspc      	string		`json:"-"`
-	PckCert		pq.StringArray	`json:"-" gorm:"type:text[];not null"`
-	CertChainId   	uint 	   	`json:"cert_chain_id" gorm:"type:int;not null"`
+	PckCerts	pq.StringArray	`json:"-" gorm:"type:text[];not null"`
+	PckCertChainId	uint 	   	`json:"pck_cert_chain_id" gorm:"type:int;not null"`
  	CreatedTime	time.Time
 	UpdatedTime	time.Time
 }

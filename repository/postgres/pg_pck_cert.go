@@ -54,7 +54,7 @@ func (r *PostgresPckCertRepository) Update(u types.PckCert) error {
 	log.Trace("repository/postgres/pg_pck_cert: Update() Entering")
 	defer log.Trace("repository/postgres/pg_pck_cert: Update() Leaving")
 
-	if err := r.db.Update(&u).Error; err != nil {
+	if err := r.db.Save(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update PckCert record")
 	}
 	return nil

@@ -56,7 +56,7 @@ func (pd *PostgresDatabase) Migrate() error {
 	pd.DB.AutoMigrate(types.Platform{})
 	pd.DB.AutoMigrate(types.PlatformTcb{})
 	pd.DB.AutoMigrate(types.PckCertChain{})
-	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
+	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("pck_cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
 	pd.DB.AutoMigrate(types.PckCrl{})
 	pd.DB.AutoMigrate(types.FmspcTcbInfo{})
 	pd.DB.AutoMigrate(types.QEIdentity{})

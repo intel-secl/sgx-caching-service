@@ -67,7 +67,7 @@ func (r *PostgresPlatformRepository) Update(u types.Platform) error {
         log.Trace("repository/postgres/pg_platform: Update() Entering")
         defer log.Trace("repository/postgres/pg_platform: Update() Leaving")
 
-	if err := r.db.Update(&u).Error; err != nil {
+	if err := r.db.Save(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update Platform")
 	}
 	return nil

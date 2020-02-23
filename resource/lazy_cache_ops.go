@@ -18,7 +18,7 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Leaving")
 
 	var data SgxData
-	data.PlatformInfo.EncryptedPPID = encryptedPPIDType
+	data.PlatformInfo.Encppid = encryptedPPIDType
 	data.PlatformInfo.CpuSvn = cpuSvnType
 	data.PlatformInfo.PceSvn = PceSvnType
 	data.PlatformInfo.PceId = pceIdType
@@ -37,6 +37,11 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 	err = CachePlatformTcbInfo(db, &data)
 	if err != nil {
 		return nil, errors.New("CachePlatformTcbInfo:" + err.Error())
+	}
+
+	err = CacheFmspcTcbInfo(db, &data)
+	if err != nil {
+		return nil, errors.New("CacheFmpscTcbInfo:" + err.Error())
 	}
 
 	err = CachePckCertChainInfo(db, &data)

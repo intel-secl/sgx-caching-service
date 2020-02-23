@@ -52,7 +52,7 @@ func (r *PostgresQEIdentityRepository) Update(u types.QEIdentity) error {
         log.Trace("repository/postgres/pg_qe_identity: Update() Entering")
         defer log.Trace("repository/postgres/pg_qe_identity: Update() Leaving")
 
-	if err := r.db.Update(&u).Error; err != nil {
+	if err := r.db.Save(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update qeIdentity")
 	}
 	return nil

@@ -96,23 +96,23 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		certIndex := existingPckCert.CertIndex
 		existingPckCertChain, err := db.PckCertChainRepository().Retrieve(types.PckCertChain{
-						Id: existingPckCert.CertChainId})
+						ID: existingPckCert.PckCertChainId})
                 if existingPckCertChain == nil {
                         return &resourceError{Message: "GetPCKCertificateCB: Pck Cert Chain Data not cached",
 										StatusCode: http.StatusNotFound}
                 }
 		w.Header().Set("Content-Type", "application/x-pem-file")
-		w.Header()["sgx-pck-certificate-issuer-chain"] = []string{string(existingPckCertChain.CertChain)}
-		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbm[certIndex]}
+		w.Header()["sgx-pck-certificate-issuer-chain"] = []string{string(existingPckCertChain.PckCertChain)}
+		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbms[certIndex]}
 
  		w.WriteHeader(http.StatusOK) // HTTP 200
-		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCert[certIndex]))
+		CertBuf, _ := pem.Decode([]byte(existingPckCert.PckCerts[certIndex]))
         	if CertBuf == nil {
                         return &resourceError{Message: "GetPCKCertificateCB: Invalid Pck Cert cache",
 							StatusCode: http.StatusInternalServerError}
         	}
 
-	        w.Write([]byte(existingPckCert.PckCert[certIndex]))
+	        w.Write([]byte(existingPckCert.PckCerts[certIndex]))
 		log.WithField("Pck Cert request responded with status", http.StatusOK).Debug("Response")
 		return nil
 	}
@@ -200,9 +200,9 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 										StatusCode: http.StatusInternalServerError}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Header()["sgx-qe-identity-issuer-chain"]= []string{ string(existingQeInfo[0].QeIdentityIssuerChain)}
+		w.Header()["sgx-qe-identity-issuer-chain"]= []string{ string(existingQeInfo[0].QeIssuerChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
-		w.Write([]byte(existingQeInfo[0].QeIdentity))
+		w.Write([]byte(existingQeInfo[0].QeInfo))
 		return nil
 	}
 }
