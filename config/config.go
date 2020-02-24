@@ -167,15 +167,6 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
                         conf.RefreshHours = constants.DefaultScsRefreshHours
         }
 
-        model, err := c.GetenvInt("CACHING_MODEL", "Caching Model of SGX Data")
-	if err == nil && model != 0 &&  model != 1 && model != 2 {
-		return errors.New("Invalid CACHING_MODEL")	
-        } else if err != nil ||  model == 0 {
-		conf.CachingModel = constants.DefaultCachingModel
-	} else {
-               conf.CachingModel = model
-	}
-
         return conf.Save()
 }
 

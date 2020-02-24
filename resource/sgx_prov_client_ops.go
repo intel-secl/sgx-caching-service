@@ -25,7 +25,7 @@ func GetProvClientObj()(*http.Client, *config.Configuration, error){
 	return client, conf, nil
 }
 
-func GetPCKCertFromProvServer(EncryptedPPID string, CpuSvn string, PceSvn string, PceId string) (*http.Response, error) {
+func GetPCKCertFromProvServer(EncryptedPPID string, PceId string) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: GetPCKCertFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: GetPCKCertFromProvServer() Leaving")
 
@@ -36,7 +36,7 @@ func GetPCKCertFromProvServer(EncryptedPPID string, CpuSvn string, PceSvn string
 	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerUrl)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: GET http request Failed")
+	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: Getpckcerts http request Failed")
 	}
 
 	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.ApiSubscriptionkey)
@@ -48,7 +48,7 @@ func GetPCKCertFromProvServer(EncryptedPPID string, CpuSvn string, PceSvn string
 
 	resp, err := client.Do(req)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: GET pckcerts call to PCS failed")
+	    return nil, errors.Wrap(err, "GetPCKCertFromProvServer: Getpckcerts call to PCS Server Failed")
 	}
 	return resp, nil
 }
@@ -64,7 +64,7 @@ func GetPCKCRLFromProvServer(ca string) (*http.Response, error) {
 	url := fmt.Sprintf("%s/pckcrl", conf.ProvServerInfo.ProvServerUrl)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetPCKCRLFromProvServer(): GET http request Failed")
+	    return nil, errors.Wrap(err, "GetPCKCRLFromProvServer(): GetpckCrl http request Failed")
 	}
 
 	q := req.URL.Query()
@@ -74,7 +74,7 @@ func GetPCKCRLFromProvServer(ca string) (*http.Response, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetPCKCRLFromProvServer(): Cannot get client req")
+	    return nil, errors.Wrap(err, "GetPCKCRLFromProvServer(): GetPckCrl call to PCS Server Failed")
 	}
 	return resp, nil
 }
@@ -90,7 +90,7 @@ func GetFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 	url := fmt.Sprintf("%s/tcb", conf.ProvServerInfo.ProvServerUrl)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetFmspcTcbInfoFromProvServer(): GET http request Failed")
+	    return nil, errors.Wrap(err, "GetFmspcTcbInfoFromProvServer(): GetTcb http request Failed")
 	}
 
 	q := req.URL.Query()
@@ -100,7 +100,7 @@ func GetFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetFmspcTcbInfoFromProvServer(): Cannot get client req")
+	    return nil, errors.Wrap(err, "GetFmspcTcbInfoFromProvServer(): GetTcb call to PCS Server Failed")
 	}
 	return resp, nil
 }
@@ -116,12 +116,12 @@ func GetQEInfoFromProvServer() (*http.Response, error) {
 	url := fmt.Sprintf("%s/qe/identity", conf.ProvServerInfo.ProvServerUrl)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): GET http request Failed")
+	    return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): GetQeIdentity http request Failed")
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-	    return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): Can not get Client Request")
+	    return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): GetQeIdentity call to PCS Server Failed")
 	}
 	return resp, nil
 }

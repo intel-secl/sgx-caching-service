@@ -6,16 +6,15 @@ package resource
 
 import (
 
-        "intel/isecl/sgx-caching-service/config"
         "intel/isecl/sgx-caching-service/repository"
         "intel/isecl/sgx-caching-service/types"
 	"github.com/pkg/errors"
 )
 
-func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType string, cpuSvnType string,
-			PceSvnType string, pceIdType string, qeIdType string) (*types.Platform, error ) {
-	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Entering")
-	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePlatformInfo() Leaving")
+func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPIDType string, cpuSvnType string,
+			PceSvnType string, pceIdType string, qeIdType string) (*types.Platform, error) {
+	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Entering")
+	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Leaving")
 
 	var data SgxData
 	data.PlatformInfo.Encppid = encryptedPPIDType
@@ -54,7 +53,7 @@ func GetLazyCachePlatformInfo( db repository.SCSDatabase, encryptedPPIDType stri
 		return nil, errors.New("CachePckCertInfo:" + err.Error())
 	}
 	
-	log.Debug("PlatformInfo fetch and cache operation completed")
+	log.Debug("GetLazyCachePckCert: Pck Cert best suited for current tcb level is fetched")
 	return data.Platform, nil
 }
 
@@ -75,7 +74,7 @@ func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *ty
 		return nil, errors.New("CacheFmspcTcbInfo:" + err.Error())
 	}
 
-	log.Debug("FmspcTcbInfo fetch and cache operation completed")
+	log.Debug("GetLazyCacheFmspcTcbInfo fetch and cache operation completed")
 	return data.FmspcTcb, nil
 }
 
@@ -96,7 +95,7 @@ func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) ( *types.PckCr
 		return nil, errors.New("CachePckCRLInfo:" + err.Error())
 	}
 
-	log.Debug("PckCrl fetch and cache operation completed")
+	log.Debug("GetLazyCachePckCrl fetch and cache operation completed")
 	return data.PckCrl, nil
 }
 
@@ -121,19 +120,6 @@ func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) ( types.QEIdentities,
 		return nil, errors.New("GetLazyCacheQEIdentityInfo: Retrive data error" +  err.Error() )
 	}
 
-	log.Debug("QEIdentityInfo fetch and cache operation completed")
+	log.Debug("GetLazyCacheQEIdentityInfo fetch and cache operation completed")
 	return existingQeInfo, nil
-}
-
-func GetCacheModel() ( int, error ) {
-	log.Trace("resource/lazy_cache_ops.go:GetCacheModel() Entering")
-	defer log.Trace("resource/lazy_cache_ops.go:GetCacheModel() Leaving")
-
-	conf := config.Global()
-	if conf == nil {
-		return 0, errors.New("GetLazyCacheModel Configuration pointer is null")
-	}
-
-	log.Debug("Caching Model is: ",conf.CachingModel)	
-	return conf.CachingModel, nil
 }

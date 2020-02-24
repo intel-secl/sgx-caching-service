@@ -15,18 +15,18 @@ import (
 func TestServerSetup(t *testing.T) {
 	c := config.Configuration{}
 	s := Server{
-		Flags:         []string{"-port=1337"},
+		Flags:         []string{"-port=9443"},
 		Config:        &c,
 		ConsoleWriter: os.Stdout,
 	}
 	ctx := setup.Context{}
 	err := s.Run(ctx)
 	assert.Equal(t, config.ErrNoConfigFile, err)
-	assert.Equal(t, 1337, c.Port)
+	assert.Equal(t, 9443, c.Port)
 }
 
 func TestServerSetupEnv(t *testing.T) {
-	os.Setenv("SCS_PORT", "1337")
+	os.Setenv("SCS_PORT", "9443")
 	c := config.Configuration{}
 	s := Server{
 		Flags:         nil,
@@ -36,5 +36,5 @@ func TestServerSetupEnv(t *testing.T) {
 	ctx := setup.Context{}
 	err := s.Run(ctx)
 	assert.Equal(t, config.ErrNoConfigFile, err)
-	assert.Equal(t, 1337, c.Port)
+	assert.Equal(t, 9443, c.Port)
 }

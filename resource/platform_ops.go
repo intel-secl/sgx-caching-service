@@ -240,9 +240,7 @@ func FetchPCKCertInfo(in *SgxData) error {
 
 	// Using the Platform SGX Values, fetch the PCK Certs from Intel PCS Server
 	resp, err := GetPCKCertFromProvServer(in.PlatformInfo.Encppid,
-							in.PlatformInfo.CpuSvn,
-							in.PlatformInfo.PceSvn,
-							in.PlatformInfo.PceId)
+						in.PlatformInfo.PceId)
 
         if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPCKCerts curl failed")

@@ -56,9 +56,6 @@ const (
 	DefaultJwtValidateCacheKeyMins = 60
 	Type_Refresh_Cert 	      = "certs"
 	Type_Refresh_Tcb	      = "tcbs"
-	DefaultCachingModel	      = 1
-	LazyCachingModel	      = DefaultCachingModel
-	RegisterCachingModel	      = 2
 	LogEntryMaxlengthEnv          = "LOG_ENTRY_MAXLENGTH"
 	DefaultLogEntryMaxlength      = 300
 )
