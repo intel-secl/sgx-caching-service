@@ -84,7 +84,7 @@ func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) ( *types.PckCr
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Leaving")
 
 	var data SgxData
-	data.PlatformInfo.Ca = CaType
+	data.PckCRLInfo.Ca = CaType
 
 	err := FetchPCKCRLInfo(&data)
 	if err != nil {

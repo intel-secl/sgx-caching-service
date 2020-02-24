@@ -46,7 +46,7 @@ type PlatformInfo struct {
 	PceSvn          string `json:"pce_svn"`
 	PceId 		string `json:"pce_id"`
 	QeId 		string `json:"qe_id"`
-	Ca 		string `json:"ca"`
+	Fmspc      	string
 	CreatedTime 	time.Time
 }
 
@@ -61,8 +61,8 @@ type PlatformTcbInfo struct {
 
 type PckCertChainInfo struct {
 	Id 		uint
-	CreatedTime 	time.Time
 	PckCertChain 	string
+	CreatedTime 	time.Time
 }
 
 type PckCRLInfo struct {
@@ -78,10 +78,9 @@ type PckCertInfo struct {
 	PckCerts         []string
 	TotalPckCerts   int
 	Tcbms      	[]string
-	Fmspc      	string     
 	CertIndex	uint
-	CreatedTime 	time.Time
 	PckCertChainId 	uint
+	CreatedTime 	time.Time
 }
 
 type FmspcTcbInfo struct {
@@ -298,12 +297,12 @@ func FetchPCKCertInfo(in *SgxData) error {
 	}
 
 	// extract fmpsc value from randomly chosen PCK certificate
-	in.PckCertInfo.Fmspc, err = GetFmspcVal(CertBuf)
-	in.FmspcTcbInfo.Fmspc = in.PckCertInfo.Fmspc
+	in.FmspcTcbInfo.Fmspc, err = GetFmspcVal(CertBuf)
 	if err != nil {
                 log.WithError(err).Error("Failed to get FMSPC value from PCK Certificate")
 		return err
 	}
+	in.PlatformInfo.Fmspc = in.FmspcTcbInfo.Fmspc
 	// using the extacted fmspc value, get the TCBInfo structure fo platform
 	err = FetchFmspcTcbInfo(in)
 	if err != nil {
@@ -342,7 +341,6 @@ func FetchPCKCRLInfo(in *SgxData) error {
 	log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Entering")
 	defer log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Leaving")
 
-	in.PckCRLInfo.Ca = in.PlatformInfo.Ca
 	resp, err := GetPCKCRLFromProvServer(in.PckCRLInfo.Ca)
         if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPCKCrl curl failed")
@@ -454,7 +452,7 @@ func CachePckCertInfo(db repository.SCSDatabase, data *SgxData) error {
 					PceId: strings.ToLower(data.PckCertInfo.PceId),
 					QeId: strings.ToLower(data.PckCertInfo.QeId),
 					Tcbms: data.PckCertInfo.Tcbms,
-					Fmspc: strings.ToLower(data.PckCertInfo.Fmspc),
+					Fmspc: strings.ToLower(data.PlatformInfo.Fmspc),
 					CertIndex: data.PckCertInfo.CertIndex,
 					PckCerts: data.PckCertInfo.PckCerts,
 					PckCertChainId: data.PckCertChain.ID,}
@@ -582,7 +580,7 @@ func CachePlatformInfo(db repository.SCSDatabase, data *SgxData) error {
 						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn),
 						PceId: strings.ToLower(data.PlatformInfo.PceId),
 						QeId: strings.ToLower(data.PlatformInfo.QeId),
-						Fmspc: strings.ToLower(data.PckCertInfo.Fmspc),
+						Fmspc: strings.ToLower(data.PlatformInfo.Fmspc),
 		}
 	}
 
@@ -745,8 +743,7 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		pckCrl := types.PckCrl{Ca: constants.Ca_Processor,}
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 		if existingPckCrl == nil {
-
-			data.PlatformInfo.Ca = constants.Ca_Processor
+			data.PckCRLInfo.Ca = constants.Ca_Processor
 			err = FetchPCKCRLInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -758,10 +755,9 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{ Fmspc: strings.ToLower(data.PckCertInfo.Fmspc) }
+		TcbInfo := types.FmspcTcbInfo{ Fmspc: strings.ToLower(data.PlatformInfo.Fmspc), }
                 existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
-			data.FmspcTcbInfo.Fmspc = data.PckCertInfo.Fmspc
 			err = FetchFmspcTcbInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -873,7 +869,7 @@ func RefreshAllPckCrl(db repository.SCSDatabase) error {
 	var data SgxData
 	data.Type = constants.CacheRefresh
 	for n := 0; n < len(existingPckCrlData); n++ {
-		data.PlatformInfo.Ca=existingPckCrlData[n].Ca
+		data.PckCRLInfo.Ca=existingPckCrlData[n].Ca
 		err = FetchPCKCRLInfo(&data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Fetch Pck CRL info: %s", err.Error()))
@@ -952,16 +948,19 @@ func RefreshTcbInfos(db repository.SCSDatabase) error {
 
 	err := RefreshAllPckCrl(db)
 	if err != nil {
+		log.WithError(err).Error("Could not complete refresh of PCK Crl")
 		return err
 	}
 
 	err = RefreshAllTcbInfo(db)
 	if err != nil {
+		log.WithError(err).Error("Could not complete refresh of TcbInfo")
 		return err
 	}
 
 	err = RefreshAllQE(db)
 	if err != nil {
+		log.WithError(err).Error("Could not complete refresh of QE Identity")
 		return err
 	}
 	return nil
