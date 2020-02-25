@@ -170,14 +170,14 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 
 	pce_svn, _ := strconv.Atoi(in.PlatformInfo.PceSvn)
 	pce_id, _ :=  strconv.Atoi(in.PlatformInfo.PceId)
-	certsLen := in.PckCertInfo.TotalPckCerts
+	TotalPckPcerts := in.PckCertInfo.TotalPckCerts
 
 	tcbInfo := C.CString(in.FmspcTcbInfo.TcbInfo)
 	defer C.free(unsafe.Pointer(tcbInfo))
 
 	var certIdx C.uint
 
-	certs := make([]*C.char, certsLen)
+	certs := make([]*C.char, TotalPckPcerts)
 	for i, s := range in.PckCertInfo.PckCerts {
 		certs[i] = C.CString(s)
 		defer C.free(unsafe.Pointer(certs[i]))
@@ -185,14 +185,14 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 
 	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pce_svn),
 				C.ushort(pce_id), (*C.char)(unsafe.Pointer(tcbInfo)),
-				(**C.char)(unsafe.Pointer(&certs[0])), C.uint(certsLen), &certIdx)
+				(**C.char)(unsafe.Pointer(&certs[0])), C.uint(TotalPckPcerts), &certIdx)
 	if ret != 0 {
 		err = errors.New("PCK Cert Select Library could not find best PCK Cert for current TCB level")
 	}
 	return uint(certIdx), err
 }
 
-// parse the PCK certificate and extract Intel custom extensions to extract the fmpsc value
+// parse the PCK certificate and parse Intel custom extensions to extract the fmpsc value
 func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 	log.Trace("resource/platform_ops.go: GetFmspcVal() Entering")
 	defer log.Trace("resource/platform_ops.go: GetFmspcVal() Leaving")
@@ -1030,18 +1030,15 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		log.WithField("GetTcbStatusCB", ":").Debug("Invoked")
 		if ( len(r.URL.Query()) == 0) {
 			return &resourceError{Message: "GetTcbStatusCB: The Request Query Data not provided",
 						StatusCode: http.StatusBadRequest}
 		}
 		PceId,_ := r.URL.Query()["pceid"]
 		if !ValidateInputString(constants.PceId_Key, PceId[0]) {
-			return &resourceError{Message: "GetTcbStatusCB: Invalid query Param Data",
+			return &resourceError{Message: "GetTcbStatusCB: Invalid PceId",
 						StatusCode: http.StatusBadRequest}
 		}
-		log.WithField("PCEID", PceId).Debug("QueryParams")
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK) // HTTP 200
 

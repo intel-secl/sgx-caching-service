@@ -11,17 +11,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPIDType string, cpuSvnType string,
-			PceSvnType string, pceIdType string, qeIdType string) (*types.Platform, error) {
+func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn string,
+			PceSvn string, pceId string, qeId string) (*types.Platform, error) {
 	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Entering")
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Leaving")
 
 	var data SgxData
-	data.PlatformInfo.Encppid = encryptedPPIDType
-	data.PlatformInfo.CpuSvn = cpuSvnType
-	data.PlatformInfo.PceSvn = PceSvnType
-	data.PlatformInfo.PceId = pceIdType
-	data.PlatformInfo.QeId = qeIdType
+	data.PlatformInfo.Encppid = encryptedPPID
+	data.PlatformInfo.CpuSvn = cpuSvn
+	data.PlatformInfo.PceSvn = PceSvn
+	data.PlatformInfo.PceId = pceId
+	data.PlatformInfo.QeId = qeId
 
         err := FetchPCKCertInfo(&data)
 	if err != nil {
@@ -57,7 +57,7 @@ func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPIDType string, cp
 	return data.Platform, nil
 }
 
-func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *types.FmspcTcbInfo, error ) {
+func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*types.FmspcTcbInfo, error) {
 	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Leaving")
 
@@ -78,7 +78,7 @@ func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) ( *ty
 	return data.FmspcTcb, nil
 }
 
-func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) ( *types.PckCrl, error ) {
+func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl, error) {
 	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Entering")
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Leaving")
 
@@ -99,7 +99,7 @@ func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) ( *types.PckCr
 	return data.PckCrl, nil
 }
 
-func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) ( types.QEIdentities, error ) {
+func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) (types.QEIdentities, error) {
 	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheQEIdentityInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCacheQEIdentityInfo() Leaving")
 

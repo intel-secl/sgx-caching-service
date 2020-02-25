@@ -3,13 +3,18 @@
 `SGX Caching Service` is a web service whose purpose is to fetch and cache all the SGX Platform collaterals from Intel PCS Server
 
 ## Key features
+- Connect to intel PCS server on need basis
 - Fetch and cache PCK Certificates for a platform
 - Fetch and cache TCBInfo for a platform
+- Fetch and cache PCK Certificate Revocation List
+- Fetch and cache Quoting Enclave Identity information
+- Periodically (configurable) refreshes above data
 - RESTful APIs for easy and versatile access to above features
 
 ## System Requirements
 - RHEL 8.1
 - Epel 8 Repo
+- pgdg 42 Repo
 - Proxy settings if applicable
 
 ## Software requirements
@@ -42,7 +47,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 - Run scripts to build the SGX Caching service
 
 ```shell
-git clone https://github.com/intel-secl/certificate-management-service.git
+git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
 make all
 ```

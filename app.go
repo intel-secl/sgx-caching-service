@@ -459,7 +459,7 @@ func (a *App) retrieveJWTSigningCerts() error {
                 return fmt.Errorf("Certificate setup: %v", err)
         }
 
-        log.WithField("Retrieve JWT cert", "compledted").Debug("successfully")
+        log.WithField("Retrieve JWT cert", "completed").Debug("successfully")
         return nil
 }
 
