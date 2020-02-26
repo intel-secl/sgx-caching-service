@@ -70,3 +70,7 @@ fi
 if [[ "$op" = "tcbstatus" ]]; then
 	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/tcbstatus?pceid=$v_pceid" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" -k
 fi
+
+if [[ "$op" = "tcbstatus" ]]; then
+	curl -X GET -vvv --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/tcbstatus?pceid=$v_pceid" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}"  -s --insecure
+fi
