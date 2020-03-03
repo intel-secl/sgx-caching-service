@@ -29,10 +29,8 @@ ISECL_PGDB_SERVICEHOST="${ISECL_PGDB_SERVICEHOST:-localhost}" # host name or ip 
 ISECL_PGDB_ALLOW_NONSSL="${ISECL_PGDB_ALLOW_NONSSL:-false}"
 ISECL_PGDB_CERT_VALIDITY_DAYS="${ISECL_PGDB_CERT_VALIDITY_DAYS:-3652}"
 
-
 ISECL_PGDB_CERTSUBJECT="${ISECL_PGDB_CERTSUBJECT:-$DEFAULT_CERTSUBJECT}"
 ISECL_PGDB_CIPHERSUITES="${ISECL_PGDB_CIPHERSUITES:-$DEFAULT_CIPHERSUITES}"
-
 
 echo "Installing postgres database version 11 and its rpm repo for RHEL 7 x86_64 ..."
 
@@ -82,7 +80,6 @@ if [ ! -f $PGDATA/pg_hba.conf ] ; then
 
     chmod og-rwx $PGDATA/server.key
 
-
     # Configure the Postgres database for TLS
     mv $PGDATA/postgresql.conf $PGDATA/postgresql-original.conf
     echo "# ISECL Postgres database configuration File\n" > $PGDATA/postgresql.conf
@@ -114,7 +111,6 @@ if [ ! -f $PGDATA/pg_hba.conf ] ; then
     fi
 
     chown -R postgres:postgres /usr/local/pgsql
-
 fi
 
 echo "Setting up systemctl for postgres database ..."

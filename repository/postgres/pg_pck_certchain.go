@@ -43,7 +43,7 @@ func (r *PostgresPckCertChainRepository) RetrieveAll(certchain types.PckCertChai
 		return nil, errors.Wrap(err, "RetrieveAll: Failed to RetriveAll PckCertChain")
 	}
 
-	slog.WithField("db users", certchains).Trace("RetrieveAll")
+	log.WithField("db users", certchains).Trace("RetrieveAll")
 	return certchains, errors.Wrap(err, "RetrieveAll: Failed to RetriveAll PckCertChain")
 }
 

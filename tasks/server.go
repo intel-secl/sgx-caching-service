@@ -12,6 +12,7 @@ import (
 	"intel/isecl/lib/common/setup"
 	"github.com/pkg/errors"
 	"io"
+	"strconv"
 )
 
 type Server struct {
@@ -52,25 +53,34 @@ func (s Server) Run(c setup.Context) error {
 	}
 	s.Config.CMSBaseUrl = cmsBaseUrl
 
-
 	intelProvUrl, err := c.GetenvString("INTEL_PROVISIONING_SERVER", "Intel ECDSA Provisioning Server URL")
 	if err != nil {
 		intelProvUrl = constants.DefaultIntelProvServerURL
 	}
 	s.Config.ProvServerInfo.ProvServerUrl = intelProvUrl
 
-
 	intelProvApiKey, err := c.GetenvString("INTEL_PROVISIONING_SERVER_API_KEY", "Intel ECDSA Provisioning Server API Subscription key")
 	if err != nil {
 		fmt.Fprintf(s.ConsoleWriter, "Intel API Subscription key not provided")
 	}
 	s.Config.ProvServerInfo.ApiSubscriptionkey = intelProvApiKey
-	proxyUrl, err := c.GetenvString("PROXY_URL", "Enviroment Proxy URL")
-	if err != nil {
-		proxyUrl = ""
-		fmt.Fprintf(s.ConsoleWriter, "Proxy URL not provided\n")
+
+	logMaxLength, err := c.GetenvInt(constants.LogEntryMaxlengthEnv, "Maximum length of each entry in a log")
+	if err == nil && logMaxLength >= 100 {
+		s.Config.LogMaxLength = logMaxLength
+	} else {
+		fmt.Println("Invalid Log Entry Max Length defined (should be > 100), using default value:", constants.DefaultLogEntryMaxlength)
+		s.Config.LogMaxLength = constants.DefaultLogEntryMaxlength
 	}
-	s.Config.ProxyUrl = proxyUrl
+
+	s.Config.LogEnableStdout = false
+        logEnableStdout, err := c.GetenvString("SCS_ENABLE_CONSOLE_LOG", "SGX Caching Service Enable standard output")
+        if err == nil  && logEnableStdout != "" {
+	s.Config.LogEnableStdout, err = strconv.ParseBool(logEnableStdout)
+		if err != nil{
+			log.Info("Error while parsing the variable SCS_ENABLE_CONSOLE_LOG, setting to default value false")
+		}
+	}
 
 	return s.Config.Save()
 }

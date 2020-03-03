@@ -7,37 +7,36 @@ package constants
 import "crypto"
 
 const (
-	HomeDir                       = "/opt/sgx-caching-service/"
-	ConfigDir                     = "/etc/sgx-caching-service/"
-	ExecutableDir                 = "/opt/sgx-caching-service/bin/"
-	ExecLinkPath                  = "/usr/bin/sgx-caching-service"
-	RunDirPath                    = "/run/sgx-caching-service"
-	LogDir                        = "/var/log/sgx-caching-service/"
-	LogFile                       = LogDir + "sgx-caching-service.log"
-	SecurityLogFile               = LogDir + "sgx-caching-service-security.log"
+	SCSUserName                    = "scs"
+	HomeDir                       = "/opt/scs/"
+	ConfigDir                     = "/etc/scs/"
+	ExecutableDir                 = "/opt/scs/bin/"
+	ExecLinkPath                  = "/usr/bin/scs"
+	RunDirPath                    = "/run/scs"
+	LogDir                        = "/var/log/scs/"
+	LogFile                       = LogDir + "scs.log"
+	SecLogFile		      = LogDir + "scs-security.log"
 	HTTPLogFile                   = LogDir + "http.log"
 	ConfigFile                    = "config.yml"
 	TLSCertFile                   = "cert.pem"
 	TLSKeyFile                    = "key.pem"
+	JWTCertsCacheTime              = "1m"
 	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
 	RootCADirPath                 = ConfigDir + "certs/cms-root-ca/"
-	//RootCACertPath                = RootCADirPath + "root-ca-cert.pem"
-	PIDFile                       = "sgx-caching-service.pid"
-	ServiceRemoveCmd              = "systemctl disable sgx-caching-service"
+	PIDFile                       = "scs.pid"
+	ServiceRemoveCmd              = "systemctl disable scs"
 	HashingAlgorithm              = crypto.SHA384
 	PasswordRandomLength          = 20
 	DefaultAuthDefendMaxAttempts  = 5
 	DefaultAuthDefendIntervalMins = 5
 	DefaultAuthDefendLockoutMins  = 15
-	DefaultDBRotationMaxRowCnt    = 100000
-	DefaultDBRotationMaxTableCnt  = 10
-	DefaultSSLCertFilePath        = ConfigDir + "svsdbcert.pem"
-	ServiceName                   = "SVS"
+	DefaultSSLCertFilePath        = ConfigDir + "scsdbcert.pem"
+	ServiceName                   = "SCS"
 	DefaultHttpPort               = 9443
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
-	DefaultIntelProvServerURL     = "https://sbx.api.trustedservices.intel.com/sgx/certification/v1/"
+	DefaultIntelProvServerURL     = "https://api.trustedservices.intel.com/sgx/certification/v2/"
 	EncPPID_Key		      = "encrypted_ppid"
 	CpuSvn_Key		      = "cpu_svn"
 	PceSvn_Key		      = "pce_svn"
@@ -46,7 +45,6 @@ const (
 	Ca_Key		      	      = "ca"
 	Type_Key		      = "type"
 	Ca_Processor		      = "processor"
-	Ca_Platform		      = "platform"
 	Fmspc_Key		      = "fmspc"
 	DefaultScsTlsSan              = "127.0.0.1,localhost"
         DefaultScsTlsCn               = "SCS TLS Certificate"
@@ -58,9 +56,8 @@ const (
 	DefaultJwtValidateCacheKeyMins = 60
 	Type_Refresh_Cert 	      = "certs"
 	Type_Refresh_Tcb	      = "tcbs"
-	DefaultCachingModel	      = 1
-	LazyCachingModel	      = DefaultCachingModel
-	RegisterCachingModel	      = 2
+	LogEntryMaxlengthEnv          = "LOG_ENTRY_MAXLENGTH"
+	DefaultLogEntryMaxlength      = 300
 )
 
 // State represents whether or not a daemon is running or not
@@ -78,4 +75,3 @@ const (
 	// Running means the daemon is active
 	Running State = true
 )
-

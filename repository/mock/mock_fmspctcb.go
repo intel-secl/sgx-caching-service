@@ -12,6 +12,7 @@ type MockFmspcTcbInfoRepository struct {
 	CreateFunc      func(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
 	RetrieveFunc    func(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
 	RetrieveAllFunc func(types.FmspcTcbInfo) (types.FmspcTcbInfos, error)
+	RetrieveAllFmspcTcbInfosFunc func() (types.FmspcTcbInfos, error)
 	UpdateFunc      func(types.FmspcTcbInfo) error
 	DeleteFunc      func(types.FmspcTcbInfo) error
 }
@@ -33,6 +34,13 @@ func (m *MockFmspcTcbInfoRepository) Retrieve(fmspc types.FmspcTcbInfo) (*types.
 func (m *MockFmspcTcbInfoRepository) RetrieveAll(fmspc types.FmspcTcbInfo) (types.FmspcTcbInfos, error) {
 	if m.RetrieveAllFunc != nil {
 		return m.RetrieveAllFunc(fmspc)
+	}
+	return nil, nil
+}
+
+func (m *MockFmspcTcbInfoRepository) RetrieveAllFmspcTcbInfos() (types.FmspcTcbInfos, error) {
+	if m.RetrieveAllFmspcTcbInfosFunc != nil {
+		return m.RetrieveAllFmspcTcbInfosFunc()
 	}
 	return nil, nil
 }

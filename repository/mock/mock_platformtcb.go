@@ -12,6 +12,7 @@ type MockPlatformTcbRepository struct {
 	CreateFunc      func(types.PlatformTcb) (*types.PlatformTcb, error)
 	RetrieveFunc    func(types.PlatformTcb) (*types.PlatformTcb, error)
 	RetrieveAllFunc func(types.PlatformTcb) (types.PlatformTcbs, error)
+	RetrieveAllPlatformTcbInfoFunc func() (types.PlatformTcbs, error)
 	UpdateFunc      func(types.PlatformTcb) error
 	DeleteFunc      func(types.PlatformTcb) error
 }
@@ -37,6 +38,13 @@ func (m *MockPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.Plat
 	return nil, nil
 }
 
+func (m *MockPlatformTcbRepository) RetrieveAllPlatformTcbInfo() (types.PlatformTcbs, error) {
+	if m.RetrieveAllPlatformTcbInfoFunc != nil {
+		return m.RetrieveAllPlatformTcbInfoFunc()
+	}
+	return nil, nil
+}
+
 func (m *MockPlatformTcbRepository) Update(p types.PlatformTcb) error {
 	if m.UpdateFunc != nil {
 		return m.UpdateFunc(p)
@@ -50,4 +58,3 @@ func (m *MockPlatformTcbRepository) Delete(p types.PlatformTcb) error {
 	}
 	return nil
 }
-

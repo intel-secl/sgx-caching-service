@@ -10,7 +10,6 @@ import (
 	"intel/isecl/sgx-caching-service/repository"
 	"intel/isecl/lib/common/setup"
 	"io"
-
 	commLog "intel/isecl/lib/common/log"
 	"github.com/pkg/errors"
 )
@@ -26,7 +25,11 @@ var slog = commLog.GetSecurityLogger()
 
 func (a Admin) Run(c setup.Context) error {
 	fmt.Fprintln(a.ConsoleWriter, "Running admin setup...")
+	envUser, _ := c.GetenvString("SCS_ADMIN_USERNAME", "Username for admin authentication")
+	envPass, _ := c.GetenvSecret("SCS_ADMIN_PASSWORD", "Password for admin authentication")
 	fs := flag.NewFlagSet("admin", flag.ContinueOnError)
+	_ = fs.String("user", envUser, "Username for admin authentication")
+	_ = fs.String("pass", envPass, "Password for admin authentication")
 	err := fs.Parse(a.Flags)
 	if err != nil {
 		return errors.Wrap(err, "setup admin: failed to parse cmd flags")

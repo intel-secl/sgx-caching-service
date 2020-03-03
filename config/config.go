@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// should move this into lib common, as its duplicated across SCS and SCS
+// should move this into lib common, as its duplicated across SCS and SVS
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
@@ -31,7 +31,9 @@ type Configuration struct {
 		SSLMode  string
 		SSLCert  string
 	}
+	LogMaxLength     int
 	LogLevel log.Level
+	LogEnableStdout  bool
 
 	AuthDefender struct {
 		MaxAttempts         int
@@ -51,7 +53,6 @@ type Configuration struct {
 		ProvServerUrl string
 		ApiSubscriptionkey string 
 	}
-	ProxyUrl string
 	Subject    struct {
                 TLSCertCommonName string
                 Organization      string
@@ -91,7 +92,7 @@ func (c *Configuration) Save() error {
 		if os.IsNotExist(err) {
 			// error is that the config doesnt yet exist, create it
 			file, err = os.Create(c.configFile)
-			os.Chmod(c.configFile, 0660)
+			os.Chmod(c.configFile, 0640)
 			if err != nil {
 				return err
 			}
@@ -123,7 +124,6 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
         } else if conf.AuthServiceUrl == "" {
                     log.Error("AAS_BASE_URL is not defined in environment")
         }
-
 
         tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
         if err == nil && tlsCertCN != "" {
@@ -167,17 +167,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
                         conf.RefreshHours = constants.DefaultScsRefreshHours
         }
 
-        model, err := c.GetenvInt("CACHING_MODEL", "Caching Model of SGX Data")
-	if err == nil && model != 0 &&  model != 1 && model != 2 {
-		return errors.New("Invalid CACHING_MODEL")	
-        } else if err != nil ||  model == 0 {
-		conf.CachingModel = constants.DefaultCachingModel
-	} else {
-               conf.CachingModel = model
-	}
-
         return conf.Save()
-
 }
 
 func Load(path string) *Configuration {
@@ -191,7 +181,7 @@ func Load(path string) *Configuration {
 		yaml.NewDecoder(file).Decode(&c)
 	} else {
 		// file doesnt exist, create a new blank one
-		c.LogLevel = log.ErrorLevel
+		c.LogLevel = log.InfoLevel
 	}
 
 	c.LogLevel = log.DebugLevel

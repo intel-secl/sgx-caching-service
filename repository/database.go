@@ -6,6 +6,7 @@ package repository
 
 type SCSDatabase interface {
 	Migrate() error
+	PlatformRepository() PlatformRepository
 	PlatformTcbRepository() PlatformTcbRepository
 	PckCertChainRepository() PckCertChainRepository
 	PckCertRepository() PckCertRepository

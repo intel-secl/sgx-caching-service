@@ -9,11 +9,10 @@ import (
 
 // PckCertChain struct is the database schema of a PckCertChains table
 type PckCertChain struct {
-	Id 		uint     `json:"-" gorm:"primary_key;auto_increment"`
-	CertChain      []byte	`json:"-" gorm:"type:bytea;not null"`
-	CreatedTime    time.Time  
-	UpdatedTime    time.Time  
+	ID		uint		`json:"-" gorm:"auto_increment"`
+	PckCertChain	string		`json:"-" gorm:"type:text;not null"`
+	CreatedTime	time.Time
+	UpdatedTime	time.Time
 }
 
 type PckCertChains []PckCertChain
-

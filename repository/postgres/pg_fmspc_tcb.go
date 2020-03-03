@@ -80,4 +80,3 @@ func (r *PostgresFmspcTcbInfoRepository) Delete(tcb types.FmspcTcbInfo) error {
 	}
 	return nil
 }
-

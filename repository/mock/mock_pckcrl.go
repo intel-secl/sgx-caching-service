@@ -12,6 +12,7 @@ type MockPckCrlRepository struct {
 	CreateFunc      func(types.PckCrl) (*types.PckCrl, error)
 	RetrieveFunc    func(types.PckCrl) (*types.PckCrl, error)
 	RetrieveAllFunc func(types.PckCrl) (types.PckCrls, error)
+	RetrieveAllPckCrlsFunc func() (types.PckCrls, error)
 	UpdateFunc      func(types.PckCrl) error
 	DeleteFunc      func(types.PckCrl) error
 }
@@ -33,6 +34,13 @@ func (m *MockPckCrlRepository) Retrieve(crl types.PckCrl) (*types.PckCrl, error)
 func (m *MockPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls, error) {
 	if m.RetrieveAllFunc != nil {
 		return m.RetrieveAllFunc(crl)
+	}
+	return nil, nil
+}
+
+func (m *MockPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
+	if m.RetrieveAllPckCrlsFunc != nil {
+		return m.RetrieveAllPckCrlsFunc()
 	}
 	return nil, nil
 }

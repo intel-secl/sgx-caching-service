@@ -18,7 +18,6 @@ import (
 )
 
 var log = commLog.GetDefaultLogger()
-var slog = commLog.GetSecurityLogger()
 
 type PostgresDatabase struct {
 	DB *gorm.DB
@@ -54,13 +53,18 @@ func (pd *PostgresDatabase) Migrate() error {
 	log.Trace("repository/postgres/pg_database: Migrate() Entering")
 	defer log.Trace("repository/postgres/pg_database: Migrate() Leaving")
 
+	pd.DB.AutoMigrate(types.Platform{})
 	pd.DB.AutoMigrate(types.PlatformTcb{})
 	pd.DB.AutoMigrate(types.PckCertChain{})
-	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
+	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("pck_cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
 	pd.DB.AutoMigrate(types.PckCrl{})
 	pd.DB.AutoMigrate(types.FmspcTcbInfo{})
 	pd.DB.AutoMigrate(types.QEIdentity{})
 	return nil
+}
+
+func (pd *PostgresDatabase) PlatformRepository() repository.PlatformRepository {
+	return &PostgresPlatformRepository{db: pd.DB}
 }
 
 func (pd *PostgresDatabase) PlatformTcbRepository() repository.PlatformTcbRepository {
@@ -70,6 +74,7 @@ func (pd *PostgresDatabase) PlatformTcbRepository() repository.PlatformTcbReposi
 func (pd *PostgresDatabase) FmspcTcbInfoRepository() repository.FmspcTcbInfoRepository {
 	return &PostgresFmspcTcbInfoRepository{db: pd.DB}
 }
+
 func (pd *PostgresDatabase) PckCertChainRepository() repository.PckCertChainRepository {
 	return &PostgresPckCertChainRepository{db: pd.DB}
 }
@@ -85,7 +90,6 @@ func (pd *PostgresDatabase) PckCrlRepository() repository.PckCrlRepository {
 func (pd *PostgresDatabase) QEIdentityRepository() repository.QEIdentityRepository {
 	return &PostgresQEIdentityRepository{db: pd.DB}
 }
-
 
 func (pd *PostgresDatabase) Close() {
 	if pd.DB != nil {

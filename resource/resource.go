@@ -13,7 +13,6 @@ import (
 )
 
 var log = clog.GetDefaultLogger()
-var slog = clog.GetSecurityLogger()
 
 type errorHandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
@@ -29,14 +28,17 @@ func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		switch t := err.(type) {
 		case *resourceError:
+			log.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case resourceError:
+			log.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case *privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		case privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		default:
+			log.WithError(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
@@ -48,9 +50,6 @@ type privilegeError struct {
 }
 
 func (e privilegeError) Error() string {
-	log.Trace("resource/resource:Error() Entering")
-	defer log.Trace("resource/resource:Error() Leaving")
-
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }
 
@@ -60,9 +59,5 @@ type resourceError struct {
 }
 
 func (e resourceError) Error() string {
-	log.Trace("resource/resource:Error() Entering")
-	defer log.Trace("resource/resource:Error() Leaving")
-
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }
-

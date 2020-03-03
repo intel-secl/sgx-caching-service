@@ -15,7 +15,6 @@ import (
 	"intel/isecl/sgx-caching-service/constants"
 )
 
-
 type TestData struct {
 	Description string
 	Recorder *httptest.ResponseRecorder
@@ -34,7 +33,6 @@ func mockRetrieveJWTSigningCerts() error {
 
 	return nil
 }
-
 
 func setupRouter(t *testing.T) *mux.Router {
 	log.Trace("resource/resource_test:setupRouter() Entering")

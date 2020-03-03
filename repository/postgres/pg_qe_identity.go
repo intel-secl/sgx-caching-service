@@ -44,7 +44,7 @@ func (r *PostgresQEIdentityRepository) RetrieveAll() (types.QEIdentities, error)
 		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all qeIdentity")
 	}
 
-	slog.WithField("db qes", qes).Trace("RetrieveAll")
+	log.WithField("db qes", qes).Trace("RetrieveAll")
 	return qes, errors.Wrap(err, "RetrieveAll: failed to retrieve all qeIdentity")
 }
 
@@ -67,4 +67,3 @@ func (r *PostgresQEIdentityRepository) Delete(u types.QEIdentity) error {
 	}
 	return nil
 }
-
