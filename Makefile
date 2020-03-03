@@ -5,6 +5,7 @@ VERSION := $(or ${GITTAG}, v0.0.0)
 .PHONY: scs installer all test clean
 
 scs:
+	cp libPCKCertSelection.so /usr/lib64/
 	env GOOS=linux go build -ldflags "-X intel/isecl/sgx-caching-service/version.Version=$(VERSION) -X intel/isecl/sgx-caching-service/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 test:
