@@ -16,7 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
  )
- 
+
 type Root_Ca struct {
 	Flags            []string
 	ConsoleWriter    io.Writer
@@ -52,7 +52,7 @@ func (ca Root_Ca) Run(c setup.Context) error {
 
 	return nil
 }
- 
+
 func (ca Root_Ca) Validate(c setup.Context) error {
 	log.Trace("tasks/rootca:Validate() Entering")
 	defer log.Trace("tasks/rootca:Validate() Leaving")

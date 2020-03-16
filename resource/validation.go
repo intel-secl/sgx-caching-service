@@ -8,9 +8,9 @@
 	 "regexp"
 	 "intel/isecl/sgx-caching-service/constants"
  )
- 
+
 var regExMap = map[string]*regexp.Regexp{
-				constants.EncPPID_Key: regexp.MustCompile(`^[0-9a-fA-F]{768}$`), 
+				constants.EncPPID_Key: regexp.MustCompile(`^[0-9a-fA-F]{768}$`),
 				constants.CpuSvn_Key: regexp.MustCompile(`^[0-9a-fA-F]{32}$`),
 				constants.PceSvn_Key: regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
 				constants.PceId_Key: regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
@@ -20,7 +20,6 @@ var regExMap = map[string]*regexp.Regexp{
 				constants.QeId_Key: regexp.MustCompile(`^[0-9a-fA-F]{32}$`)}
 
 func ValidateInputString(key string, inString string) bool {
-
 	regEx := regExMap[key]
 	if len(key)<=0 || !regEx.MatchString(inString) {
 		log.WithField(key, inString).Error("Input Validation")

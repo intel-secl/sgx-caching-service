@@ -30,13 +30,13 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 						StatusCode: http.StatusBadRequest}
 		}
 
-		EncryptedPPID,_	:= r.URL.Query()["encrypted_ppid"]
-		CpuSvn, _  	:= r.URL.Query()["cpusvn"]
-		PceSvn,_  	:= r.URL.Query()["pcesvn"]
-		PceId,_  	:= r.URL.Query()["pceid"]
-		QeId,_  	:= r.URL.Query()["qeid"]
+		EncryptedPPID, _ := r.URL.Query()["encrypted_ppid"]
+		CpuSvn, _ := r.URL.Query()["cpusvn"]
+		PceSvn, _ := r.URL.Query()["pcesvn"]
+		PceId, _  := r.URL.Query()["pceid"]
+		QeId, _ := r.URL.Query()["qeid"]
 
-                if  	!ValidateInputString(constants.EncPPID_Key, EncryptedPPID[0]) ||
+                if !ValidateInputString(constants.EncPPID_Key, EncryptedPPID[0]) ||
 			!ValidateInputString(constants.CpuSvn_Key, CpuSvn[0]) ||
 			!ValidateInputString(constants.PceSvn_Key, PceSvn[0]) ||
 			!ValidateInputString(constants.PceId_Key, PceId[0])   ||
@@ -96,7 +96,7 @@ func GetPCKCertificateCB(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["sgx-pck-certificate-issuer-chain"] = []string{string(existingPckCertChain.PckCertChain)}
 		w.Header()["sgx-tcbm"]= []string{existingPckCert.Tcbms[certIndex]}
 
- 		w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK) // HTTP 200
 
 	        w.Write([]byte(existingPckCert.PckCerts[certIndex]))
 		return nil
@@ -132,7 +132,7 @@ func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header()["SGX-PCK-CRL-Issuer-Chain"]= []string{string(existingPckCrl.PckCrlCertChain)}
- 		w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK) // HTTP 200
 		w.Write([]byte(existingPckCrl.PckCrl))
 		return nil
 	}
@@ -147,19 +147,19 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 if (existingQeInfo == nil || len(existingQeInfo) == 0) {
 			existingQeInfo, err = GetLazyCacheQEIdentityInfo(db)
                         if err != nil {
-				return &resourceError{ Message: "GetQEIdentityInfoCB: Lazy Cache error: "+err.Error(), 
+				return &resourceError{ Message: "GetQEIdentityInfoCB: Lazy Cache error: "+err.Error(),
 							StatusCode: http.StatusInternalServerError}
                         }
                 }
 
 		if len(existingQeInfo) != 1{
-                        return &resourceError{Message: "GetQEIdentityInfoCB:Tcb Info caching multiple duplicate entries", 
+                        return &resourceError{Message: "GetQEIdentityInfoCB:Tcb Info caching multiple duplicate entries",
 						StatusCode: http.StatusInternalServerError}
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["Sgx-Qe-Identity-Issuer-Chain"]= []string{ string(existingQeInfo[0].QeIssuerChain)}
- 		w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK) // HTTP 200
 		w.Write([]byte(existingQeInfo[0].QeInfo))
 		return nil
 	}
@@ -168,7 +168,7 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if ( len(r.URL.Query()) == 0) {
-                        return &resourceError{Message: "GetTCBInfoCB:The Request Query Data not provided", 
+                        return &resourceError{Message: "GetTCBInfoCB:The Request Query Data not provided",
 						StatusCode: http.StatusBadRequest}
                 }
 
@@ -184,14 +184,14 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 if existingFmspc == nil{
                         existingFmspc, err = GetLazyCacheFmspcTcbInfo(db, strings.ToLower(Fmspc[0]))
                         if err != nil {
-                                return &resourceError{ Message: "GetTCBInfoCB: Lazy Cache error: "+err.Error(), 
+                                return &resourceError{ Message: "GetTCBInfoCB: Lazy Cache error: "+err.Error(),
 							StatusCode: http.StatusInternalServerError}
                         }
                 }
 
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["SGX-TCB-Info-Issuer-Chain"]= []string{string(existingFmspc.TcbInfoIssuerChain)}
- 		w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK) // HTTP 200
 		w.Write([]byte(existingFmspc.TcbInfo))
 		return nil
 	}

@@ -68,5 +68,5 @@ if [[ "$op" = "refresh" ]]; then
 fi
 
 if [[ "$op" = "tcbstatus" ]]; then
-	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/tcbstatus?pceid=$v_pceid" -H "Content-Type: application/json" -k
+	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/tcbstatus?qeid=$v_qeid" -H "Content-Type: application/json" -k
 fi

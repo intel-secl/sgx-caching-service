@@ -4,7 +4,7 @@
  */
 package resource
 
-import ( 
+import (
         "testing"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +37,7 @@ func TestGetPckCert(t *testing.T) {
 			Description: "Without Query Params",
 	}
 	ExecuteQPLTest(input)
-	
+
 	input.Url = "/scs/sgx/certification/v1/pckcert?encrypted_ppid=invalid&cpusvn=invalid&pcesvn=invalid&pceid=invalid"
 	input.Description = "Invalid Query Params"
 	ExecuteQPLTest(input)

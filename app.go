@@ -383,10 +383,10 @@ func (a *App) Run(args []string) error {
 					Config:        a.configuration(),
 					ConsoleWriter: os.Stdout,
 				},
- 				tasks.Root_Ca{
-                                        Flags:            flags,
-                                        ConsoleWriter:    os.Stdout,
-                                        Config:           a.configuration(),
+				tasks.Root_Ca{
+					Flags:            flags,
+					ConsoleWriter:    os.Stdout,
+					Config:           a.configuration(),
                                 },
 
 			},
@@ -447,7 +447,7 @@ func (a *App) retrieveJWTSigningCerts() error {
 
         res, err := httpClient.Do(req)
         if err != nil {
-        	log.WithError(err).Debug("Could not retrieve jwt certificate")
+		log.WithError(err).Debug("Could not retrieve jwt certificate")
                 return fmt.Errorf("Could not retrieve jwt certificate")
         }
         defer res.Body.Close()
@@ -474,9 +474,9 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 		for {
 		      select {
 			case <-stop:
-		       	   fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
-		           return 
-		       	case t := <-ticker.C:
+				fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
+		           return
+			case t := <-ticker.C:
 			   log.Debug("Timer started", t)
 			   err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
 			   if err != nil {
@@ -489,7 +489,7 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 		      }
 		}
 	}()
-	return nil	
+	return nil
 }
 
 func (a *App) startServer() error {

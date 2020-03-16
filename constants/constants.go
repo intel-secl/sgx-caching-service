@@ -42,7 +42,7 @@ const (
 	PceSvn_Key		      = "pce_svn"
 	PceId_Key		      = "pce_id"
 	QeId_Key		      = "qe_id"
-	Ca_Key		      	      = "ca"
+	Ca_Key			      = "ca"
 	Type_Key		      = "type"
 	Ca_Processor		      = "processor"
 	Fmspc_Key		      = "fmspc"
@@ -54,10 +54,11 @@ const (
         DefaultScsCertLocality        = "SC"
 	DefaultScsRefreshHours	      = 24
 	DefaultJwtValidateCacheKeyMins = 60
-	Type_Refresh_Cert 	      = "certs"
+	Type_Refresh_Cert		= "certs"
 	Type_Refresh_Tcb	      = "tcbs"
 	LogEntryMaxlengthEnv          = "LOG_ENTRY_MAXLENGTH"
 	DefaultLogEntryMaxlength      = 300
+	MaxTcbLevels		      = 16
 )
 
 // State represents whether or not a daemon is running or not

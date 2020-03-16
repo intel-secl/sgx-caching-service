@@ -17,7 +17,7 @@ func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Leaving")
 
 	var data SgxData
-	data.PlatformInfo.Encppid = encryptedPPID
+	data.PlatformInfo.EncPpid = encryptedPPID
 	data.PlatformInfo.CpuSvn = cpuSvn
 	data.PlatformInfo.PceSvn = PceSvn
 	data.PlatformInfo.PceId = pceId
@@ -52,7 +52,7 @@ func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 	if err != nil {
 		return nil, errors.New("CachePckCertInfo:" + err.Error())
 	}
-	
+
 	log.Debug("GetLazyCachePckCert: Pck Cert best suited for current tcb level is fetched")
 	return data.Platform, nil
 }
