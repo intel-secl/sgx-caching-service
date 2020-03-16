@@ -69,11 +69,12 @@ func fnGetJwtCerts(aasURL string) error {
 	req.Header.Add("accept", "application/x-pem-file")
 	secLog.Debugf("tasks/download_aas_jwtcert:fnGetJwtCerts() Connecting to AAS Endpoint %s", url)
 
-	hc, err := clients.HTTPClientWithCADir(consts.TrustedCAsStoreDir)
+	/*hc, err := clients.HTTPClientWithCADir(consts.TrustedCAsStoreDir)
 	if err != nil {
 		return errors.Wrap(err, "tasks/download_aas_jwtcert:fnGetJwtCerts() Error setting up HTTP client")
-	}
+	}*/
 
+	hc := clients.HTTPClientTLSNoVerify()
 	res, err := hc.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "tasks/download_aas_jwtcert:fnGetJwtCerts() Could not retrieve jwt certificate")

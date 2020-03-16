@@ -131,7 +131,7 @@ func GetPCKCRLCB(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/x-pem-file")
-		w.Header()["sgx-pck-crl-issuer-chain"]= []string{string(existingPckCrl.PckCrlCertChain)}
+		w.Header()["SGX-PCK-CRL-Issuer-Chain"]= []string{string(existingPckCrl.PckCrlCertChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
 		w.Write([]byte(existingPckCrl.PckCrl))
 		return nil
@@ -144,7 +144,6 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
-
                 if (existingQeInfo == nil || len(existingQeInfo) == 0) {
 			existingQeInfo, err = GetLazyCacheQEIdentityInfo(db)
                         if err != nil {
@@ -159,7 +158,7 @@ func GetQEIdentityInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Header()["sgx-qe-identity-issuer-chain"]= []string{ string(existingQeInfo[0].QeIssuerChain)}
+		w.Header()["Sgx-Qe-Identity-Issuer-Chain"]= []string{ string(existingQeInfo[0].QeIssuerChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
 		w.Write([]byte(existingQeInfo[0].QeInfo))
 		return nil
@@ -191,7 +190,7 @@ func GetTCBInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Header()["sgx-tcb-info-issuer-chain"]= []string{string(existingFmspc.TcbInfoIssuerChain)}
+		w.Header()["SGX-TCB-Info-Issuer-Chain"]= []string{string(existingFmspc.TcbInfoIssuerChain)}
  		w.WriteHeader(http.StatusOK) // HTTP 200
 		w.Write([]byte(existingFmspc.TcbInfo))
 		return nil

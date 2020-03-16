@@ -18,6 +18,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"net/http/httputil"
 	"time"
 	"strconv"
@@ -255,7 +256,7 @@ func FetchPCKCertInfo(in *SgxData) error {
 
 	headers := resp.Header
 	// read the PCKCertChain from HTTP response header
-	in.PckCertChainInfo.PckCertChain = ConverAsciiCodeToChar(headers["Sgx-Pck-Certificate-Issuer-Chain"][0])
+	in.PckCertChainInfo.PckCertChain = headers["Sgx-Pck-Certificate-Issuer-Chain"][0]
 	if resp.ContentLength == 0 {
 		return errors.New("No content found in getPCkCerts Http Response")
 	}
@@ -281,13 +282,13 @@ func FetchPCKCertInfo(in *SgxData) error {
 	in.PckCertInfo.Tcbms = make([]string, in.PckCertInfo.TotalPckCerts)
 	// read individual pck certs and corresponding tcbm value
 	for i:=0; i < in.PckCertInfo.TotalPckCerts; i++ {
-		in.PckCertInfo.PckCerts[i] = ConverAsciiCodeToChar(pckCerts[i].Cert)
+		in.PckCertInfo.PckCerts[i], _ = url.QueryUnescape(pckCerts[i].Cert)
 		in.PckCertInfo.Tcbms[i] = pckCerts[i].Tcbm
 	}
 
 	in.PckCertInfo.QeId = in.PlatformInfo.QeId
 	in.PckCertInfo.PceId = in.PlatformInfo.PceId
-	// From bunch of PCK certs received, choose random PCK TcbInfoIssuerChaincert
+	// From bunch of PCK certs received, choose random PCK Cert
 	CertBuf, _ := pem.Decode([]byte(in.PckCertInfo.PckCerts[0]))
 	
 	if CertBuf == nil {
@@ -318,20 +319,6 @@ func FetchPCKCertInfo(in *SgxData) error {
 	return nil
 }
 
-// Temporary utility function to find ascii codes present in PCK certificate
-// and convert them into corresponding ascii characters
-// to be removed once this issue is resolved in the pckcerts response from
-// intel PCS server
-func ConverAsciiCodeToChar(s string) string {
-	s = strings.Replace(s, "%20", " ", -1)
-	s = strings.Replace(s, "%0A", "\n", -1)
-	s = strings.Replace(s, "%2F", "/", -1)
-	s = strings.Replace(s, "%2B", "+", -1)
-	s = strings.Replace(s, "%3D", "=", -1)
-	s = strings.Replace(s, "%20", " ", -1)
-	return s
-}
-
 // Fetches the latest PCK Certificate Revocation List for the sgx intel processor
 // SVS will make use of this to verify if PCK certificate in a  quote is valid
 // by comparing against this CRL
@@ -351,7 +338,7 @@ func FetchPCKCRLInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
-	in.PckCRLInfo.PckCrlCertChain = ConverAsciiCodeToChar(headers["Sgx-Pck-Crl-Issuer-Chain"][0])
+	in.PckCRLInfo.PckCrlCertChain = headers["Sgx-Pck-Crl-Issuer-Chain"][0]
 	log.WithField("PckCrlCertChain", in.PckCRLInfo.PckCrlCertChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
@@ -364,7 +351,7 @@ func FetchPCKCRLInfo(in *SgxData) error {
 		log.WithError(err).Error("Could not Read GetPckCrl Http Response")
             	return err
         }
-	in.PckCRLInfo.PckCrl = ConverAsciiCodeToChar(string(body))
+	in.PckCRLInfo.PckCrl = string(body)
 	CrlBuf, _ := pem.Decode(body)
 	if CrlBuf == nil {
 		return errors.New("Failed to parse Crl PEM block")
@@ -389,7 +376,7 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 		return errors.New("Invalid response from Intel SGX Provisioning Server")
 	}
 	headers := resp.Header
-	in.FmspcTcbInfo.TcbInfoIssuerChain = ConverAsciiCodeToChar(headers["Sgx-Tcb-Info-Issuer-Chain"][0])
+	in.FmspcTcbInfo.TcbInfoIssuerChain = headers["Sgx-Tcb-Info-Issuer-Chain"][0]
 	log.WithField("TcbInfoIssuerChain", in.FmspcTcbInfo.TcbInfoIssuerChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
@@ -423,7 +410,7 @@ func FetchQEIdentityInfo(in *SgxData) error {
 	}
 
 	headers := resp.Header
-	in.QEInfo.QeIssuerChain = ConverAsciiCodeToChar(headers["Sgx-Enclave-Identity-Issuer-Chain"][0])
+	in.QEInfo.QeIssuerChain = headers["Sgx-Enclave-Identity-Issuer-Chain"][0]
 	log.WithField("QEIssuerChain", in.QEInfo.QeIssuerChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
@@ -693,7 +680,6 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 
 		data.Platform = &types.Platform{	
-						Encppid: strings.ToLower(data.PlatformInfo.Encppid),
 						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
 						PceSvn: strings.ToLower(data.PlatformInfo.PceSvn),
 						PceId: strings.ToLower(data.PlatformInfo.PceId),

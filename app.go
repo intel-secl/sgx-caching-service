@@ -25,7 +25,6 @@ import (
 	"time"
 	stdlog "log"
 
-	"intel/isecl/lib/common/middleware"
 	"intel/isecl/sgx-caching-service/config"
 	"intel/isecl/sgx-caching-service/constants"
 	"intel/isecl/sgx-caching-service/repository/postgres"
@@ -521,8 +520,6 @@ func (a *App) startServer() error {
 
 	// Create Router, set routes
 	sr := r.PathPrefix("/scs/sgx/certification/v1/").Subrouter()
-	var cacheTime, _ = time.ParseDuration(constants.JWTCertsCacheTime)
-	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, fnGetJwtCerts, cacheTime))
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)
@@ -531,7 +528,6 @@ func (a *App) startServer() error {
 
 
 	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
-	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir, constants.TrustedCAsStoreDir, fnGetJwtCerts, cacheTime))
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)
