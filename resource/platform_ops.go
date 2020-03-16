@@ -1165,7 +1165,7 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		pckinfo := &types.PckCert {QeId: QeId[0],}
 		existingPckCertData, err := db.PckCertRepository().Retrieve(*pckinfo)
 		if existingPckCertData == nil {
-			return &resourceError{Message: "GetTcbStatusCB: PckCert DB retrieve error: "+err.Error(),
+			return &resourceError{Message: "GetTcbStatusCB: No PckCert record found: "+err.Error(),
 						StatusCode: http.StatusNotFound}
 		}
 
@@ -1176,7 +1176,7 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		existingPlatformData := &types.Platform{QeId: QeId[0],}
 		existingPlatformData, err = db.PlatformRepository().Retrieve(*existingPlatformData)
                if existingPlatformData == nil {
-			return &resourceError{Message: "GetTcbStatusCB: Platform DB retrieve error: "+err.Error(),
+			return &resourceError{Message: "GetTcbStatusCB: No Platform record found: "+err.Error(),
 						StatusCode: http.StatusNotFound}
 		}
 
@@ -1188,7 +1188,7 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		TcbInfo := types.FmspcTcbInfo{Fmspc: strings.ToLower(data.PlatformInfo.Fmspc),}
                 existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
-			return &resourceError{Message: "GetTcbStatusCB: FmspcTcb DB retrieve error: "+err.Error(),
+			return &resourceError{Message: "GetTcbStatusCB: No FmspcTcb record found: "+err.Error(),
 						StatusCode: http.StatusNotFound}
 		}
 		data.FmspcTcbInfo.TcbInfo = existingFmspc.TcbInfo
@@ -1226,6 +1226,7 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		response.Message = "TCB Status is not UpToDate"
 
 		var TcbComponents []byte
+		// iterate through all TCB Levels present in TCBInfo
 		for i := 0; i < len(tcbInfo.TcbInfo.TcbLevels); i++ {
 			TcbPceSvn := tcbInfo.TcbInfo.TcbLevels[i].Tcb.PceSvn
 			TcbComponents = GetTcbCompList(&tcbInfo.TcbInfo.TcbLevels[i].Tcb)
