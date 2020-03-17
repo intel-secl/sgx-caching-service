@@ -28,7 +28,7 @@ func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckC
 
 	var p types.PckCert
 	log.WithField("PckCert", pckcert).Debug("Retrieve Call")
-	err := r.db.Where("qe_id = ? AND pce_id = ?",pckcert.QeId, pckcert.PceId).First(&p).Error
+	err := r.db.Where("qe_id = ?",pckcert.QeId).First(&p).Error
 	if err != nil {
 		log.Trace("Error in fetch records Entering")
 		return nil, errors.Wrap(err, "Retrieve: failed to Retrieve PckCert record")

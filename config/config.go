@@ -51,7 +51,7 @@ type Configuration struct {
 
 	ProvServerInfo struct {
 		ProvServerUrl string
-		ApiSubscriptionkey string 
+		ApiSubscriptionkey string
 	}
 	Subject    struct {
                 TLSCertCommonName string
