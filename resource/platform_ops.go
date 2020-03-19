@@ -234,8 +234,8 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 	var cpusvn cpu_svn
 
 	cpusvn.bytes, _ = hex.DecodeString(in.PlatformInfo.CpuSvn)
-	pce_svn, _ := strconv.Atoi(in.PlatformInfo.PceSvn)
-	pce_id, _ :=  strconv.Atoi(in.PlatformInfo.PceId)
+	pce_svn, _ := strconv.ParseUint(in.PlatformInfo.PceSvn, 16, 32)
+	pce_id, _ :=  strconv.ParseUint(in.PlatformInfo.PceId, 16, 32)
 	TotalPckPcerts := in.PckCertInfo.TotalPckCerts
 
 	tcbInfo := C.CString(in.FmspcTcbInfo.TcbInfo)
@@ -248,7 +248,6 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 		certs[i] = C.CString(s)
 		defer C.free(unsafe.Pointer(certs[i]))
 	}
-
 	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pce_svn),
 				C.ushort(pce_id), (*C.char)(unsafe.Pointer(tcbInfo)),
 				(**C.char)(unsafe.Pointer(&certs[0])), C.uint(TotalPckPcerts), &certIdx)
