@@ -1,14 +1,12 @@
 #!/bin/bash
-#set -x
 #Steps:
 #Get token from AAS
-#to customize, export the correct values before running the script
 
 echo "Setting up SCS Related roles and user in AAS Database"
 
 #Get the value of AAS IP address and port. Default vlue is also provided.
 aas_hostname=${AAS_URL:-"https://10.105.167.184:8443"}
-CURL_OPTS="-s --insecure"
+CURL_OPTS="-s -k"
 IPADDR="10.105.167.184,127.0.0.1,localhost"
 CN="SCS TLS Certificate"
 
@@ -39,13 +37,12 @@ fi
 create_scs_user() {
 cat > $tmpdir/user.json << EOF
 {
-	"username":"scsuser22@scs",
+	"username":"scsuser@scs",
 	"password":"scspassword"
 }
 EOF
 
 curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/user.json -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/aas/users > $tmpdir/createscsuser-response.status
-
 
 local actual_status=$(cat $tmpdir/createscsuser-response.status)
 if [ $actual_status -ne 201 ]; then
@@ -69,7 +66,6 @@ fi
 #cms role(scs will create these roles where CN=SCS), getroles(api in aas that is to be map with), keyTransfer, keyCrud
 create_user_roles() {
 
-
 cat > $tmpdir/roles.json << EOF
 {
 	"service": "$1",
@@ -90,7 +86,6 @@ if [ $actual_status -ne 201 ]; then
 fi
 
 if [ -s $tmpdir/role_response.json ]; then
-	#jq < $tmpdir/role_response.json
 	role_id=$(jq -r '.role_id' < $tmpdir/role_response.json)
 fi
 echo "$role_id"
@@ -98,9 +93,9 @@ echo "$role_id"
 
 create_roles() {
 
-		local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
-		ROLE_ID_TO_MAP=`echo \"$cms_role_id\"`
-		echo $ROLE_ID_TO_MAP
+	local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
+	ROLE_ID_TO_MAP=`echo \"$cms_role_id\"`
+	echo $ROLE_ID_TO_MAP
 }
 
 #Map scsUser to Roles
@@ -128,7 +123,7 @@ do
 	eval $api
     	status=$?
     if [ $status -ne 0 ]; then
-        echo "AAS details creation stopped.: $api"
+        echo "SCS-AAS User/Roles creation failed.: $api"
         break;
     fi
 done
@@ -140,7 +135,7 @@ if [ $status -eq 2 ]; then
     echo "SCS Setup for AAS-CMS already exists in AAS Database: No action will be done"
 fi
 
-#Get Token for SCS USER and configure it is scs config to be used by JAVA Code.
+#Get Token for SCS USER and configure it in scs config
 curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/user.json -o $tmpdir/scs_token-response.json -w "%{http_code}" $aas_hostname/aas/token > $tmpdir/getscsusertoken-response.status
 
 status=$(cat $tmpdir/getscsusertoken-response.status)

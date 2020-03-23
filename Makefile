@@ -1,12 +1,13 @@
 GITTAG := $(shell git describe --tags --abbrev=0 2> /dev/null)
 GITCOMMIT := $(shell git describe --always)
 VERSION := $(or ${GITTAG}, v0.0.0)
+BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
 .PHONY: scs installer all test clean
 
 scs:
 	cp libPCKCertSelection.so /usr/lib64/
-	env GOOS=linux go build -ldflags "-X intel/isecl/sgx-caching-service/version.Version=$(VERSION) -X intel/isecl/sgx-caching-service/version.GitHash=$(GITCOMMIT)" -o out/scs
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/sgx-caching-service/version.BuildDate=$(BUILDDATE) -X intel/isecl/sgx-caching-service/version.Version=$(VERSION) -X intel/isecl/sgx-caching-service/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 test:
 	go test ./... -coverprofile cover.out

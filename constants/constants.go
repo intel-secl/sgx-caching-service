@@ -4,10 +4,12 @@
  */
 package constants
 
-import "crypto"
+import (
+	"crypto"
+	"time"
+)
 
 const (
-	SCSUserName                    = "scs"
 	HomeDir                       = "/opt/scs/"
 	ConfigDir                     = "/etc/scs/"
 	ExecutableDir                 = "/opt/scs/bin/"
@@ -18,24 +20,23 @@ const (
 	SecLogFile		      = LogDir + "scs-security.log"
 	HTTPLogFile                   = LogDir + "http.log"
 	ConfigFile                    = "config.yml"
-	TLSCertFile                   = "cert.pem"
-	TLSKeyFile                    = "key.pem"
-	JWTCertsCacheTime              = "1m"
+	DefaultTLSCertFile            = ConfigDir + "tls-cert.pem"
+	DefaultTLSKeyFile             = ConfigDir + "tls.key"
 	TrustedJWTSigningCertsDir     = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir            = ConfigDir + "certs/trustedca/"
-	RootCADirPath                 = ConfigDir + "certs/cms-root-ca/"
-	PIDFile                       = "scs.pid"
 	ServiceRemoveCmd              = "systemctl disable scs"
 	HashingAlgorithm              = crypto.SHA384
-	PasswordRandomLength          = 20
 	DefaultAuthDefendMaxAttempts  = 5
 	DefaultAuthDefendIntervalMins = 5
 	DefaultAuthDefendLockoutMins  = 15
 	DefaultSSLCertFilePath        = ConfigDir + "scsdbcert.pem"
 	ServiceName                   = "SCS"
+	SCSUserName                   = "scs"
 	DefaultHttpPort               = 9443
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
+	DefaultScsTlsSan              = "127.0.0.1,localhost"
+	DefaultScsTlsCn               = "SCS TLS Certificate"
 	DefaultIntelProvServerURL     = "https://api.trustedservices.intel.com/sgx/certification/v2/"
 	EncPPID_Key		      = "encrypted_ppid"
 	CpuSvn_Key		      = "cpu_svn"
@@ -46,18 +47,17 @@ const (
 	Type_Key		      = "type"
 	Ca_Processor		      = "processor"
 	Fmspc_Key		      = "fmspc"
-	DefaultScsTlsSan              = "127.0.0.1,localhost"
-        DefaultScsTlsCn               = "SCS TLS Certificate"
-        DefaultScsCertOrganization    = "INTEL"
-        DefaultScsCertCountry         = "US"
-        DefaultScsCertProvince        = "SF"
-        DefaultScsCertLocality        = "SC"
 	DefaultScsRefreshHours	      = 24
 	DefaultJwtValidateCacheKeyMins = 60
-	Type_Refresh_Cert		= "certs"
+	CmsTlsCertDigestEnv           = "CMS_TLS_CERT_SHA384"
+	DefaultReadTimeout             = 30 * time.Second
+	DefaultReadHeaderTimeout       = 10 * time.Second
+	DefaultWriteTimeout            = 10 * time.Second
+	DefaultIdleTimeout             = 10 * time.Second
+	DefaultMaxHeaderBytes          = 1 << 20
+	DefaultLogEntryMaxLength      = 300
+	Type_Refresh_Cert	      = "certs"
 	Type_Refresh_Tcb	      = "tcbs"
-	LogEntryMaxlengthEnv          = "LOG_ENTRY_MAXLENGTH"
-	DefaultLogEntryMaxlength      = 300
 	MaxTcbLevels		      = 16
 )
 

@@ -177,9 +177,6 @@ type cpu_svn struct {
 }
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
-	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
-	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
-
 	r.Handle("/push", handlers.ContentTypeHandler(PushPlatformInfoCB(db), "application/json")).Methods("POST")
 	r.Handle("/refresh", handlers.ContentTypeHandler(RefreshPlatformInfoCB(db), "application/json")).Methods("GET")
 	r.Handle("/tcbstatus", handlers.ContentTypeHandler(GetTcbStatusCB(db), "application/json")).Methods("GET")
@@ -261,9 +258,6 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 
 // parse the PCK certificate and parse Intel custom extensions to extract the fmpsc value
 func GetFmspcVal(CertBuf *pem.Block) (string, error) {
-	log.Trace("resource/platform_ops.go: GetFmspcVal() Entering")
-	defer log.Trace("resource/platform_ops.go: GetFmspcVal() Leaving")
-
         var fmspcHex string
         cert, err := x509.ParseCertificate(CertBuf.Bytes)
         if err != nil {
@@ -302,9 +296,6 @@ func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 }
 
 func FetchPCKCertInfo(in *SgxData) error {
-	log.Trace("resource/platform_ops.go: PlatformInfoOps() Entering")
-	defer log.Trace("resource/platform_ops.go: PlatformInfoOps() Leaving")
-
 	// Using the Platform SGX Values, fetch the PCK Certs from Intel PCS Server
 	resp, err := GetPCKCertFromProvServer(in.PlatformInfo.EncPpid,
 						in.PlatformInfo.PceId)
@@ -389,9 +380,6 @@ func FetchPCKCertInfo(in *SgxData) error {
 // SVS will make use of this to verify if PCK certificate in a  quote is valid
 // by comparing against this CRL
 func FetchPCKCRLInfo(in *SgxData) error {
-	log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: FetchPCKCRLInfo() Leaving")
-
 	resp, err := GetPCKCRLFromProvServer(in.PckCRLInfo.Ca)
         if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPCKCrl curl failed")
@@ -428,9 +416,6 @@ func FetchPCKCRLInfo(in *SgxData) error {
 
 // for a platform FMSPC value, fetches corresponding TCBInfo structure from Intel PCS server
 func FetchFmspcTcbInfo(in *SgxData) error {
-	log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: FetchFmspcTcbInfo() Leaving")
-
 	resp, err := GetFmspcTcbInfoFromProvServer(in.FmspcTcbInfo.Fmspc)
         if err != nil {
 		log.WithError(err).Error("Intel PCS Server getTCBInfo curl failed")
@@ -461,9 +446,6 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 
 // Fetches Quoting Enclave ID details for a platform from intel PCS server
 func FetchQEIdentityInfo(in *SgxData) error {
-	log.Trace("resource/platform_ops.go: FetchQEIdentityInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: FetchQEIdentityInfo() Leaving")
-
 	resp, err := GetQEInfoFromProvServer()
         if err != nil {
 		log.WithError(err).Error("Intel PCS Server getQEIdentity curl failed")
@@ -495,9 +477,6 @@ func FetchQEIdentityInfo(in *SgxData) error {
 }
 
 func CachePckCertInfo(db repository.SCSDatabase, data *SgxData) error {
-	log.Trace("resource/platform_ops.go: CachePckCertInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CachePckCertInfo() Leaving")
-
 	var err error
 	data.PckCert = &types.PckCert {
 					PceId: strings.ToLower(data.PckCertInfo.PceId),
@@ -533,9 +512,7 @@ func CacheQEIdentityInfo(db repository.SCSDatabase, data *SgxData) error {
 					QeInfo: data.QEInfo.QeInfo,
 					QeIssuerChain: data.QEInfo.QeIssuerChain,
 					CreatedTime: time.Now(),
-					UpdatedTime: time.Now()}
-	log.Trace("resource/platform_ops.go: CacheQEIdentityInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CacheQEIdentityInfo() Leaving")
+					UpdatedTime: time.Now(),}
 	var err error
         if  data.Type == constants.CacheRefresh {
 		data.QEIdentity.UpdatedTime = time.Now()
@@ -560,9 +537,6 @@ func CacheQEIdentityInfo(db repository.SCSDatabase, data *SgxData) error {
 }
 
 func CachePckCertChainInfo(db repository.SCSDatabase, data *SgxData) error {
-	log.Trace("resource/platform_ops.go: CachePckCertChainInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CachePckCertChainInfo() Leaving")
-
 	var err error
 	data.PckCertChain = &types.PckCertChain{
 					PckCertChain: data.PckCertChainInfo.PckCertChain,}
@@ -590,10 +564,7 @@ func CachePckCertChainInfo(db repository.SCSDatabase, data *SgxData) error {
 }
 
 func CacheFmspcTcbInfo(db repository.SCSDatabase, data *SgxData) error {
-	log.Trace("resource/platform_ops.go: CacheFmspcTcbInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CacheFmspcTcbInfo() Leaving")
-
-	data.FmspcTcb = &types.FmspcTcbInfo{
+	data.FmspcTcb = &types.FmspcTcbInfo {
 					Fmspc: strings.ToLower(data.FmspcTcbInfo.Fmspc),
 					TcbInfo: data.FmspcTcbInfo.TcbInfo,
 					TcbInfoIssuerChain: data.FmspcTcbInfo.TcbInfoIssuerChain,}
@@ -621,19 +592,13 @@ func CacheFmspcTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 }
 
 func CachePlatformInfo(db repository.SCSDatabase, data *SgxData) error {
-	log.Trace("resource/platform_ops.go: CachePlatformInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CachePlatformInfo() Leaving")
-
-	if data.Platform == nil {
-		data.Platform = &types.Platform{
-						Encppid: strings.ToLower(data.PlatformInfo.EncPpid),
-						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
-						PceSvn:strings.ToLower(data.PlatformInfo.PceSvn),
-						PceId: strings.ToLower(data.PlatformInfo.PceId),
-						QeId: strings.ToLower(data.PlatformInfo.QeId),
-						Fmspc: strings.ToLower(data.PlatformInfo.Fmspc),
-		}
-	}
+	data.Platform = &types.Platform {
+					Encppid: strings.ToLower(data.PlatformInfo.EncPpid),
+					CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
+					PceSvn:strings.ToLower(data.PlatformInfo.PceSvn),
+					PceId: strings.ToLower(data.PlatformInfo.PceId),
+					QeId: strings.ToLower(data.PlatformInfo.QeId),
+					Fmspc: strings.ToLower(data.PlatformInfo.Fmspc),}
 
 	var err error
         if  data.Type == constants.CacheRefresh {
@@ -657,17 +622,12 @@ func CachePlatformInfo(db repository.SCSDatabase, data *SgxData) error {
 }
 
 func CachePlatformTcbInfo(db repository.SCSDatabase, data *SgxData) error {
-	log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CachePlatformTcbInfo() Leaving")
-
-	if data.PlatformTcb == nil {
-		data.PlatformTcb = &types.PlatformTcb{
-						Tcbm: strings.ToLower(data.PckCertInfo.Tcbms[data.PckCertInfo.CertIndex]),
-						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
-						PceSvn: strings.ToLower(data.PlatformInfo.PceSvn),
-						PceId: strings.ToLower(data.PlatformInfo.PceId),
-						QeId: strings.ToLower(data.PlatformInfo.QeId),
-		}
+	data.PlatformTcb = &types.PlatformTcb {
+					Tcbm: strings.ToLower(data.PckCertInfo.Tcbms[data.PckCertInfo.CertIndex]),
+					CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
+					PceSvn: strings.ToLower(data.PlatformInfo.PceSvn),
+					PceId: strings.ToLower(data.PlatformInfo.PceId),
+					QeId: strings.ToLower(data.PlatformInfo.QeId),
 	}
 
 	var err error
@@ -692,9 +652,6 @@ func CachePlatformTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 }
 
 func CachePckCRLInfo(db repository.SCSDatabase, data *SgxData) error {
-	log.Trace("resource/platform_ops.go: CachePckCRLInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: CachePckCRLInfo() Leaving")
-
 	data.PckCrl = &types.PckCrl{
 				Ca: data.PckCRLInfo.Ca,
 				PckCrl: data.PckCRLInfo.PckCrl,
@@ -746,11 +703,11 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
                 }
 
 		data.Platform = &types.Platform{
+						Encppid: strings.ToLower(data.PlatformInfo.EncPpid),
 						CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
 						PceSvn: strings.ToLower(data.PlatformInfo.PceSvn),
 						PceId: strings.ToLower(data.PlatformInfo.PceId),
-						QeId: strings.ToLower(data.PlatformInfo.QeId),
-		}
+						QeId: strings.ToLower(data.PlatformInfo.QeId),}
 		existingPlaformData, err := db.PlatformRepository().Retrieve(*data.Platform)
                 if  existingPlaformData != nil {
 			w.Header().Set("Content-Type", "application/json")
@@ -805,7 +762,7 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{ Fmspc: strings.ToLower(data.PlatformInfo.Fmspc), }
+		TcbInfo := types.FmspcTcbInfo{Fmspc: strings.ToLower(data.PlatformInfo.Fmspc),}
                 existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
 			err = FetchFmspcTcbInfo(&data)
@@ -852,11 +809,8 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 func RefreshPckCerts(db repository.SCSDatabase) error {
-	log.Trace("resource/platform_ops.go: RefreshPckCerts() Entering")
-	defer log.Trace("resource/platform_ops.go: RefreshPckCerts() Leaving")
-
 	existingPlaformData, err := db.PlatformRepository().RetrieveAllPlatformInfo()
-        if  len(existingPlaformData) == 0 {
+        if len(existingPlaformData) == 0 {
                 return errors.New("No Platform values are cached in SCS, cannot perform refresh")
         }
 
@@ -908,9 +862,6 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 }
 
 func RefreshAllPckCrl(db repository.SCSDatabase) error {
-	log.Trace("resource/platform_ops.go: RefreshAllPckCrl() Entering")
-	defer log.Trace("resource/platform_ops.go: RefreshAllPckCrl() Leaving")
-
 	existingPckCrlData, err := db.PckCrlRepository().RetrieveAllPckCrls()
         if  len(existingPckCrlData) == 0 {
                 return errors.New("Cached PCK Crl count is 0, cannot perform refresh operation")
@@ -919,7 +870,7 @@ func RefreshAllPckCrl(db repository.SCSDatabase) error {
 	var data SgxData
 	data.Type = constants.CacheRefresh
 	for n := 0; n < len(existingPckCrlData); n++ {
-		data.PckCRLInfo.Ca=existingPckCrlData[n].Ca
+		data.PckCRLInfo.Ca = existingPckCrlData[n].Ca
 		err = FetchPCKCRLInfo(&data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Fetch Pck CRL info: %s", err.Error()))
@@ -936,9 +887,6 @@ func RefreshAllPckCrl(db repository.SCSDatabase) error {
 }
 
 func RefreshAllTcbInfo(db repository.SCSDatabase) error {
-	log.Trace("resource/platform_ops.go: RefreshAllTcbInfo() Entering")
-	defer log.Trace("resource/platform_ops.go: RefreshAllTcbInfo() Leaving")
-
 	existingTcbInfoData, err := db.FmspcTcbInfoRepository().RetrieveAllFmspcTcbInfos()
         if  len(existingTcbInfoData) == 0 {
                 return errors.New("Cached Tcb Info count is 0, cannot perform refresh operation")
@@ -965,9 +913,6 @@ func RefreshAllTcbInfo(db repository.SCSDatabase) error {
 }
 
 func RefreshAllQE(db repository.SCSDatabase) error {
-	log.Trace("resource/platform_ops.go: RefreshAllQE() Entering")
-	defer log.Trace("resource/platform_ops.go: RefreshAllQE() Leaving")
-
 	existingQEData, err := db.QEIdentityRepository().RetrieveAll()
         if  len(existingQEData) == 0 {
                 return errors.New("Cached QEIdentity count is 0, cannot perform refresh operation")
@@ -993,9 +938,6 @@ func RefreshAllQE(db repository.SCSDatabase) error {
 }
 
 func RefreshTcbInfos(db repository.SCSDatabase) error {
-	log.Trace("resource/platform_ops.go: RefreshTcbInfos() Entering")
-	defer log.Trace("resource/platform_ops.go: RefreshTcbInfos() Leaving")
-
 	err := RefreshAllPckCrl(db)
 	if err != nil {
 		log.WithError(err).Error("Could not complete refresh of PCK Crl")
@@ -1017,9 +959,6 @@ func RefreshTcbInfos(db repository.SCSDatabase) error {
 }
 
 func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
-	log.Trace("resource/platform_ops.go: RefreshPlatformInfoTimerCB() Entering")
-	defer log.Trace("resource/platform_ops.go: RefreshPlatformInfoTimerCB() Leaving")
-
 	var err error
 	if strings.Compare(rtype ,constants.Type_Refresh_Cert) == 0 {
 		err = RefreshPckCerts(db)
@@ -1049,9 +988,10 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			res := Response{Status:"Failure", Message: "Could not find platform info in database"}
 			js, err := json.Marshal(res)
 			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
 			w.Write(js)
+			return err
 		}
 
 		err = RefreshTcbInfos(db)
@@ -1061,7 +1001,7 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			res := Response{Status:"Failure", Message: "Could not find platform info in database"}
 			js, err := json.Marshal(res)
 			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
 			w.Write(js)
 			return err
