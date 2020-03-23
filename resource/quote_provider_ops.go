@@ -8,9 +8,9 @@ import (
 	"strings"
 	"net/http"
 
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/sgx-caching-service/repository"
-	"intel/isecl/sgx-caching-service/types"
+	"intel/isecl/scs/constants"
+	"intel/isecl/scs/repository"
+	"intel/isecl/scs/types"
 	"github.com/gorilla/mux"
 )
 

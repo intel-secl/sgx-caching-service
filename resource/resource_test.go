@@ -11,8 +11,8 @@ import (
 	"net/http/httptest"
 	"github.com/stretchr/testify/assert"
 	"intel/isecl/lib/common/middleware"
-	"intel/isecl/sgx-caching-service/repository"
-	"intel/isecl/sgx-caching-service/constants"
+	"intel/isecl/scs/repository"
+	"intel/isecl/scs/constants"
 )
 
 type TestData struct {

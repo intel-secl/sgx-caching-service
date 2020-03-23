@@ -6,7 +6,7 @@ package resource
 
 import (
 	"fmt"
-	"intel/isecl/sgx-caching-service/version"
+	"intel/isecl/scs/version"
 	"net/http"
 	"github.com/gorilla/mux"
 )

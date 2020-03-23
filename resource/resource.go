@@ -7,7 +7,6 @@ package resource
 import (
 	"fmt"
 	"net/http"
-
 	"github.com/jinzhu/gorm"
 	clog "intel/isecl/lib/common/log"
 )

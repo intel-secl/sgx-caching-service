@@ -6,7 +6,7 @@ package config
 
 import (
 	"errors"
-	"intel/isecl/sgx-caching-service/constants"
+	"intel/isecl/scs/constants"
 	commLog "intel/isecl/lib/common/log"
 	"intel/isecl/lib/common/setup"
 	"os"

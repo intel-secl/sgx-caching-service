@@ -5,7 +5,7 @@
 package main
 
 import (
-	"intel/isecl/sgx-caching-service/constants"
+	"intel/isecl/scs/constants"
 	"os"
 	"os/user"
 	"strconv"

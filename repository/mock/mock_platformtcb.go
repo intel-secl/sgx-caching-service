@@ -5,7 +5,7 @@
 package mock
 
 import (
-	"intel/isecl/sgx-caching-service/types"
+	"intel/isecl/scs/types"
 )
 
 type MockPlatformTcbRepository struct {

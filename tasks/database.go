@@ -7,9 +7,9 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"intel/isecl/sgx-caching-service/config"
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/sgx-caching-service/repository/postgres"
+	"intel/isecl/scs/config"
+	"intel/isecl/scs/constants"
+	"intel/isecl/scs/repository/postgres"
 	cos "intel/isecl/lib/common/os"
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"

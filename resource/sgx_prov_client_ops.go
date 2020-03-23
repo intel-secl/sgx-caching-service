@@ -5,7 +5,7 @@ import (
 	"time"
 	"net/http"
 	"github.com/pkg/errors"
-	"intel/isecl/sgx-caching-service/config"
+	"intel/isecl/scs/config"
 )
 
 func GetProvClientObj()(*http.Client, *config.Configuration, error){

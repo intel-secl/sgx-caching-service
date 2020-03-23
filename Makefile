@@ -7,7 +7,7 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 
 scs:
 	cp libPCKCertSelection.so /usr/lib64/
-	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/sgx-caching-service/version.BuildDate=$(BUILDDATE) -X intel/isecl/sgx-caching-service/version.Version=$(VERSION) -X intel/isecl/sgx-caching-service/version.GitHash=$(GITCOMMIT)" -o out/scs
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/version.Version=$(VERSION) -X intel/isecl/scs/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 test:
 	go test ./... -coverprofile cover.out

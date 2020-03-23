@@ -4,7 +4,7 @@
  */
 package repository
 
-import "intel/isecl/sgx-caching-service/types"
+import "intel/isecl/scs/types"
 
 type PlatformRepository interface {
 	Create(types.Platform) (*types.Platform, error)

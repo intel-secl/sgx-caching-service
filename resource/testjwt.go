@@ -6,7 +6,6 @@ package resource
 
 import (
 	"net/http"
-
 	"github.com/gorilla/mux"
 )
 

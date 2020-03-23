@@ -7,7 +7,7 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"intel/isecl/sgx-caching-service/repository"
+	"intel/isecl/scs/repository"
 	"intel/isecl/lib/common/setup"
 	"io"
 	commLog "intel/isecl/lib/common/log"

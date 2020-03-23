@@ -7,8 +7,8 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"intel/isecl/sgx-caching-service/config"
-	"intel/isecl/sgx-caching-service/constants"
+	"intel/isecl/scs/config"
+	"intel/isecl/scs/constants"
 	"intel/isecl/lib/common/setup"
 	"io"
 	"time"

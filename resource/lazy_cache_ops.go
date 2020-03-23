@@ -6,8 +6,8 @@ package resource
 
 import (
 
-        "intel/isecl/sgx-caching-service/repository"
-        "intel/isecl/sgx-caching-service/types"
+        "intel/isecl/scs/repository"
+        "intel/isecl/scs/types"
 	"github.com/pkg/errors"
 )
 

@@ -30,9 +30,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/sgx-caching-service/repository"
-	"intel/isecl/sgx-caching-service/types"
+	"intel/isecl/scs/constants"
+	"intel/isecl/scs/repository"
+	"intel/isecl/scs/types"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )

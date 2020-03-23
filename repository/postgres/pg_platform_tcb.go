@@ -5,7 +5,7 @@
 package postgres
 
 import (
-	"intel/isecl/sgx-caching-service/types"
+	"intel/isecl/scs/types"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
