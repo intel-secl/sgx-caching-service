@@ -8,9 +8,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509/pkix"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -77,15 +79,15 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall scs. --purge option needs to be applied to remove configuration and data files")
 	fmt.Fprintln(w, "    -v|--version          	Show the version of scs")
 	fmt.Fprintln(w, "")
-        fmt.Fprintln(w, "Setup command usage:     scs setup [task] [--arguments=<argument_value>] [--force]")
-        fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "Setup command usage:     scs setup [task] [--arguments=<argument_value>] [--force]")
+	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Avaliable Tasks for setup:")
-        fmt.Fprintln(w, "    all                       Runs all setup tasks")
-        fmt.Fprintln(w, "                              Required env variables:")
-        fmt.Fprintln(w, "                                  - get required env variables from all the setup tasks")
-        fmt.Fprintln(w, "                              Optional env variables:")
-        fmt.Fprintln(w, "                                  - get optional env variables from all the setup tasks")
-        fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "    all                       Runs all setup tasks")
+	fmt.Fprintln(w, "                              Required env variables:")
+	fmt.Fprintln(w, "                                  - get required env variables from all the setup tasks")
+	fmt.Fprintln(w, "                              Optional env variables:")
+	fmt.Fprintln(w, "                                  - get optional env variables from all the setup tasks")
+	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    scs setup database [-force] [--arguments=<argument_value>]")
 	fmt.Fprintln(w, "        - Avaliable arguments are:")
 	fmt.Fprintln(w, "            - db-host    alternatively, set environment variable SCS_DB_HOSTNAME")
@@ -135,7 +137,6 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "                              - KEY_PATH=<key_path>              : Path of file where TLS key needs to be stored")
 	fmt.Fprintln(w, "                              - CERT_PATH=<cert_path>            : Path of file/directory where TLS certificate needs to be stored")
 	fmt.Fprintln(w, "")
-
 }
 
 func (a *App) consoleWriter() io.Writer {
@@ -305,7 +306,6 @@ func (a *App) Run(args []string) error {
 			args[2] != "database" &&
 			args[2] != "server" &&
 			args[2] != "all" &&
-			args[2] != "jwt" &&
 			args[2] != "tls" {
 			a.printUsage()
 			return errors.New("No such setup task")
@@ -380,11 +380,6 @@ func (a *App) Run(args []string) error {
 					Config:        a.configuration(),
 					ConsoleWriter: os.Stdout,
 				},
-				tasks.JWT{
-					Flags:         flags,
-					Config:        a.configuration(),
-					ConsoleWriter: os.Stdout,
-				},
 			},
 			AskInput: false,
 		}
@@ -445,21 +440,21 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
 		defer ticker.Stop()
 		for {
-		      select {
-		      case <-stop:
+		    select {
+			case <-stop:
 				fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
-		           return
+			return
 			case t := <-ticker.C:
-			   log.Debug("Timer started", t)
-			   err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
-			   if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
-			   }
-			   err = resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Tcb)
-			   if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
-			   }
-		      }
+				log.Debug("Timer started", t)
+				err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
+				}
+				err = resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Tcb)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
+				}
+			}
 		}
 	}()
 	return nil
@@ -773,7 +768,52 @@ func (a *App) DatabaseFactory() (repository.SCSDatabase, error) {
 	return p, nil
 }
 
-//To be implemented if JWT certificate is needed from any other services
 func fnGetJwtCerts() error {
+	conf := config.Global()
+
+	if !strings.HasSuffix(conf.AuthServiceUrl, "/") {
+		conf.AuthServiceUrl = conf.AuthServiceUrl + "/"
+	}
+	url := conf.AuthServiceUrl + "noauth/jwt-certificates"
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return errors.Wrap(err, "Could not create http request")
+	}
+	req.Header.Add("accept", "application/x-pem-file")
+	rootCaCertPems, err := cos.GetDirFileContents(constants.TrustedCAsStoreDir, "*.pem")
+	if err != nil {
+		return errors.Wrap(err, "Could not read root CA certificate")
+	}
+
+	// Get the SystemCertPool, continue with an empty pool on error
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+	for _, rootCACert := range rootCaCertPems {
+		if ok := rootCAs.AppendCertsFromPEM(rootCACert); !ok {
+			return err
+		}
+	}
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: false,
+				RootCAs:            rootCAs,
+			},
+		},
+	}
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "Could not retrieve jwt certificate")
+	}
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+	err = crypt.SavePemCertWithShortSha1FileName(body, constants.TrustedJWTSigningCertsDir)
+	if err != nil {
+		return errors.Wrap(err, "Could not store Certificate")
+	}
+
 	return nil
 }
