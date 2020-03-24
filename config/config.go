@@ -115,7 +115,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.CmsTlsCertDigest = tlsCertDigest
 	} else if conf.CmsTlsCertDigest == "" {
 		commLog.GetDefaultLogger().Error("CMS_TLS_CERT_SHA384 is not defined in environment")
-		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
+		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "SaveConfiguration() ENV variable not found")
 	}
 
 	cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
@@ -123,15 +123,15 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.CMSBaseUrl = cmsBaseUrl
 	} else if conf.CMSBaseUrl == "" {
 		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
-		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
+		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
         }
 
-        aasBaseUrl, err := c.GetenvString("AAS_BASE_URL", "AAS Base URL")
-	if err == nil && aasBaseUrl != "" {
-		conf.AuthServiceUrl = aasBaseUrl
+        aasApiUrl, err := c.GetenvString("AAS_API_URL", "AAS API URL")
+	if err == nil && aasApiUrl != "" {
+		conf.AuthServiceUrl = aasApiUrl
 	} else if conf.AuthServiceUrl == "" {
-		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
-		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "config/config:SaveConfiguration() ENV variable not found")
+		commLog.GetDefaultLogger().Error("AAS_API_URL is not defined in environment")
+		return errorLog.Wrap(errors.New("AAS_API_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
 	}
 
         tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")

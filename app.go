@@ -76,7 +76,7 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "    status			Show the status of scs")
 	fmt.Fprintln(w, "    stop			Stop scs")
 	fmt.Fprintln(w, "    tlscertsha384		Show the SHA384 digest of the certificate used for TLS")
-	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall scs. --purge option needs to be applied to remove configuration and data files")
+	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall SCS. --purge option needs to be applied to remove configuration and data files")
 	fmt.Fprintln(w, "    -v|--version          	Show the version of scs")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Setup command usage:     scs setup [task] [--arguments=<argument_value>] [--force]")
@@ -463,7 +463,7 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 func (a *App) startServer() error {
 	c := a.configuration()
 
-	log.Info("Starting sSCSUserNameerver")
+	log.Info("Starting SCS Server")
 	// verify the database connection. If this does not succeed then we want to exit right here
 	// the Open method has a retry operation that takes a long time
 	if err := postgres.VerifyConnection(c.Postgres.Hostname, c.Postgres.Port, c.Postgres.DBName,
@@ -799,7 +799,7 @@ func fnGetJwtCerts() error {
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
-				RootCAs:            rootCAs,
+				RootCAs: rootCAs,
 			},
 		},
 	}
