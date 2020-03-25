@@ -12,9 +12,6 @@ import (
 )
 
 func SetVersion(r *mux.Router) {
-	log.Trace("resource/version:SetVersion() Entering")
-	defer log.Trace("resource/version:SetVersion() Leaving")
-
 	r.Handle("/version", getVersion()).Methods("GET")
 }
 

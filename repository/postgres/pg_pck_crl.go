@@ -15,17 +15,11 @@ type PostgresPckCrlRepository struct {
 }
 
 func (r *PostgresPckCrlRepository) Create(crl types.PckCrl) (*types.PckCrl, error) {
-	log.Trace("repository/postgres/pg_pck_crl: Create() Entering")
-	defer log.Trace("repository/postgres/pg_pck_crl: Create() Leaving")
-
 	err := r.db.Create(&crl).Error
 	return &crl, errors.Wrap(err, "create: Failed to create PckCrl")
 }
 
 func (r *PostgresPckCrlRepository) Retrieve(crl types.PckCrl) (*types.PckCrl, error) {
-	log.Trace("repository/postgres/pg_pck_crl: Retrieve() Entering")
-	defer log.Trace("repository/postgres/pg_pck_crl: Retrieve() Leaving")
-
 	err := r.db.Where(&crl).First(&crl).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: Failed to Retrieve PckCrl")
@@ -34,9 +28,6 @@ func (r *PostgresPckCrlRepository) Retrieve(crl types.PckCrl) (*types.PckCrl, er
 }
 
 func (r *PostgresPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls, error) {
-	log.Trace("repository/postgres/pg_pck_crl: RetrieveAll() Entering")
-	defer log.Trace("repository/postgres/pg_pck_crl: RetrieveAll() Leaving")
-
 	var crls types.PckCrls
 	err := r.db.Where(&crl).Find(&crls).Error
 	if err != nil {
@@ -48,9 +39,6 @@ func (r *PostgresPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls,
 }
 
 func (r *PostgresPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
-	log.Trace("repository/postgres/pg_pck_crl: RetrieveAllPckCrls() Entering")
-	defer log.Trace("repository/postgres/pg_pck_crl: RetrieveAllPckCrls() Leaving")
-
 	var crls types.PckCrls
         err := r.db.Find(&crls).Error
         if err != nil {
@@ -62,9 +50,6 @@ func (r *PostgresPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
 }
 
 func (r *PostgresPckCrlRepository) Update(crl types.PckCrl) error {
-	log.Trace("repository/postgres/pg_pck_crl: Update() Entering")
-	defer log.Trace("repository/postgres/pg_pck_crl: Update() Leaving")
-
 	if err := r.db.Save(&crl).Error; err != nil {
 		return errors.Wrap(err, "Update: Failed to Update PckCrl")
 	}
@@ -72,9 +57,6 @@ func (r *PostgresPckCrlRepository) Update(crl types.PckCrl) error {
 }
 
 func (r *PostgresPckCrlRepository) Delete(crl types.PckCrl) error {
-	log.Trace("repository/postgres/pg_pck_crl: Delete() Entering")
-	defer log.Trace("repository/postgres/pg_pck_crl: Delete() Leaving")
-
 	if err := r.db.Delete(&crl).Error; err != nil {
 		return errors.Wrap(err, "Delete: Failed to Delete PckCrl")
 	}

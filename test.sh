@@ -11,7 +11,7 @@ subscription_key=ec73a0f55ca348cb9f02371f2b9ca614
 
 v_encppid="b9632b61a767df16e7417db63c56770ce782babc231e83dd54ec2e9287232c958a3a0f00054980e4d6a709c7f202248f79af1d6247e71fefbd3a2f9fd444eff80d54ae73d1277d9d86805091fe23fc81dc4aa8be604147dbaadb7aaaf6cf5b8d6c7e56207cdf0b4c6f5d7ae6c3ec97d0fcfc0cb0dc4cb4eca6598beed7191a53dee367df1df53cfa12fbb481b6fc9ec7779bf6013016878ba0ecbe1c8e39274a1e2319056da6b3028201f5d2e37179140261514e27370e6047ff758d8e8e1bc45cf9eaaeaf67b9244ff4655675764b8e6e0d236f67f3b0f1dcd35286566330b91e02030abcba7a0d32a96d5c111b645fc6b1af152f4799228d1e1081938d25e38d39cabf65a0a41337752ab65924d3d08476368c7acb0a26d841ce5c03b3eccc06d1897ca06e152b6025d35208847c033dca757065f77ddb19843f66d959f38d99f66e2929d0f01aaa26b590298d22a58f870f7316d92ac9d42a489fd10e0fc0f928450389372498a7fee9d3a1b2d10c6ea15c180c6b58f352e59c72588fef24"
 
-Bearer_token="eyJhbGciOiJSUzM4NCIsImtpZCI6IjZmMGQ4ZTk5NWMwYTFkOTI1ZjQwZTJlYzk4ZjM3NjE4NTNkMDBiYzQiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0QXBwcm92ZXIiLCJjb250ZXh0IjoiQ049U0NTIFRMUyBDZXJ0aWZpY2F0ZTtTQU49MTAuMTA1LjE2Ny4xODQsMTI3LjAuMC4xLGxvY2FsaG9zdDtDRVJUVFlQRT1UTFMifV0sImV4cCI6MTU4NTE3NjAwOSwiaWF0IjoxNTg1MDAzMTc5LCJpc3MiOiJBQVMgSldUIElzc3VlciIsInN1YiI6InNjc3VzZXJAc2NzIn0.ar_sy57mz6eL2BGfVWEnf6KZ9OZ4aZxgkFD2wGdYWxjht9pxOgQ4LAZ-rigjZIipdvr2Fk50eU8t_zhcTm0z0sFbGVrQhLhCIHyt6dxUFy4tmxd2MCDqz12LrqlMnTw8CZKC8Rj9jelYycYnNonGeJQd_FF-hWYIcPMS-AsoEUIaKnFrWlSWAoUcywIFFTbcN8kH1H5yffUFDHd0Jq92gsqGmdUGoqM9LF-Lcd2kBkhJfRkQERnkLoVuRj49KKwinXpC-nxGNfIIfIgMr8yHvYZihdgPMB9ftqILdP07MeZYdWs055AEq1gRHw1JQgnBzV3s89zB78HgfzqTPnXlruTQNySdE_zCWksjh40l_WAzhJHZyT5qHZ0vk_GhB8fxF7FTp9hGLy1gPv-bcNNBQm8WmixnGzjKK_69f4d7XrbwNm4PU32_u_DeVrX-dRZuYJhALu6KpMRsPleHxb1ZaPwuYJd6dn_jwOWhVosoNBhfVgfXGRatvlFTeKWhzvpg"
+Bearer_token="eyJhbGciOiJSUzM4NCIsImtpZCI6IjFhOTQ3OTc4NjVkNDk0ODJmMDM1OGE0OGYzY2Q3MDMxOGVjOWM1OGEiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W3sic2VydmljZSI6IkNNUyIsIm5hbWUiOiJDZXJ0QXBwcm92ZXIiLCJjb250ZXh0IjoiQ049U0NTIFRMUyBDZXJ0aWZpY2F0ZTtTQU49MTAuMTA1LjE2Ny4xODQsMTI3LjAuMC4xLGxvY2FsaG9zdDtDRVJUVFlQRT1UTFMifV0sImV4cCI6MTU4NTMzMzAzNywiaWF0IjoxNTg1MTYwMjA3LCJpc3MiOiJBQVMgSldUIElzc3VlciIsInN1YiI6InNjc3VzZXJAc2NzIn0.EkJ09pNgoa1zjNX-uYAv9rT-rdA5sWNZRFjmZlPE985WKULUefES9OwBVwDenRvnE1q92KK0AJWdGNxDmBjd3uCQd6mNlF26TKtN_vHdWDOWfTjiY5H5Dm0dYdPwo1IXSUkXNZm-xd8QNANOvWYVDcDcDZdQ_Pm0j6tIwTXSeLEvBBbJXqDQJN9MTfc8MTDpM-4PD1figyCQoLdIDVgqac0nVhQgK-XfGLT_Sc3RdJjdNDyC-e05XFZwYh9SZm2UlHEDZ9oF8bVDVSHPWVWZKP-4Ljz3-ssJov0-vY9V_nd4f22mGdNymv031LLHBTia8NjKZGCtnTFbfJxHwF8obwGKGvsLUF2pFK067Zhz2xerYMToOl7sD6hjpK0ri3BNTDg_E3BHOEjPvURQnZ82FxLyahvBkeRR3vMgh1WMyuKs0bYVfx0V7qJTXXsAyMc2DaLUTqEUx_7DSsu-vQSWPovDd-gj8PQOTTYwxeuVxN_5zKN83wPumStQ4GiIoqH2"
 
 intel_pcs_server="https://api.trustedservices.intel.com/sgx/certification/v2/"
 
@@ -60,7 +60,7 @@ printf "{
 \"pce_id\": \"$v_pceid\",
 \"qe_id\": \"$v_qeid\"
 }" > $PF_CREATE_JSON_FILE
-	curl -X POST --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json"  -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -k
+	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/push" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$PF_CREATE_JSON_FILE -k
 fi
 
 if [[ "$op" = "refresh" ]]; then
@@ -68,5 +68,5 @@ if [[ "$op" = "refresh" ]]; then
 fi
 
 if [[ "$op" = "tcbstatus" ]]; then
-	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/tcbstatus?qeid=$v_qeid" -H "Content-Type: application/json"  -H "Authorization: Bearer ${Bearer_token}" -k
+	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/platforminfo/tcbstatus?qeid=$v_qeid" -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" -k
 fi

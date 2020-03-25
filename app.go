@@ -115,9 +115,6 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "        - Option [--force] overwrites any existing files, and always generate self-signed keypair")
 	fmt.Fprintln(w, "        - Argument <host_names> is a list of host names used by local machine, seperated by comma")
 	fmt.Fprintln(w, "        - Environment variable SCS_TLS_HOST_NAMES=<host_names> can be set alternatively")
-	fmt.Fprintln(w, "    scs setup admin [--user=<username>] [--pass=<password>]")
-	fmt.Fprintln(w, "        - Environment variable SCS_ADMIN_USERNAME=<username> can be set alternatively")
-	fmt.Fprintln(w, "        - Environment variable SCS_ADMIN_PASSWORD=<password> can be set alternatively")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    download_ca_cert      Download CMS root CA certificate")
 	fmt.Fprintln(w, "                          - Option [--force] overwrites any existing files, and always downloads new root CA cert")
@@ -249,7 +246,8 @@ func (a *App) Run(args []string) error {
 	switch cmd {
 	default:
 		a.printUsage()
-		return errors.New("Unrecognized command: " + args[1])
+		fmt.Fprintf(os.Stderr, "Unrecognized command: %s\n", args[1])
+		os.Exit(1)
 	case "list":
 		if len(args) < 3 {
 			a.printUsage()
@@ -257,51 +255,53 @@ func (a *App) Run(args []string) error {
 		}
 		return a.PrintDirFileContents(args[2])
 	case "tlscertsha384":
-		a.configureLogs(false, true)
+		a.configureLogs(a.configuration().LogEnableStdout, true)
 		hash, err := crypt.GetCertHexSha384(config.Global().TLSCertFile)
 		if err != nil {
 			fmt.Println(err.Error())
-			return err
+			return errors.Wrap(err, "app:Run() Could not derive tls certificate digest")
 		}
 		fmt.Println(hash)
 		return nil
 	case "run":
-		a.configureLogs(config.Global().LogEnableStdout, true)
+		a.configureLogs(a.configuration().LogEnableStdout, true)
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
 			time.Sleep(10 * time.Millisecond)
-			return err
+			return errors.Wrap(err, "app:Run() Error starting SCS service")
 		}
 	case "-h", "--help":
 		a.printUsage()
+		return nil
 	case "start":
-		a.configureLogs(false, true)
+		a.configureLogs(a.configuration().LogEnableStdout, true)
 		return a.start()
 	case "stop":
-		a.configureLogs(false, true)
+		a.configureLogs(a.configuration().LogEnableStdout, true)
 		return a.stop()
 	case "status":
-		a.configureLogs(false, true)
 		return a.status()
 	case "uninstall":
 		var purge bool
 		flag.CommandLine.BoolVar(&purge, "purge", false, "purge config when uninstalling")
 		flag.CommandLine.Parse(args[2:])
 		a.uninstall(purge)
+		log.Info("app:Run() Uninstalled SGX Caching Service")
 		os.Exit(0)
 	case "--version", "-v":
 		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
+		return nil
 	case "setup":
-		a.configureLogs(false, true)
+		a.configureLogs(a.configuration().LogEnableStdout, true)
 		var context setup.Context
 		if len(args) <= 2 {
 			a.printUsage()
+			log.Error("app:Run() Invalid command")
 			os.Exit(1)
 		}
 
-		if args[2] != "admin" &&
-			args[2] != "download_ca_cert" &&
+		if args[2] != "download_ca_cert" &&
 			args[2] != "download_cert" &&
 			args[2] != "database" &&
 			args[2] != "server" &&
@@ -313,7 +313,7 @@ func (a *App) Run(args []string) error {
 
 		err := validateSetupArgs(args[2], args[3:])
 		if err != nil {
-			return err
+			return errors.Wrap(err, "app:Run() Invalid setup task arguments")
 		}
 
 		a.Config = config.Global()
@@ -361,20 +361,6 @@ func (a *App) Run(args []string) error {
 					Config:        a.configuration(),
 					ConsoleWriter: os.Stdout,
 				},
-				tasks.Admin{
-					Flags: flags,
-					DatabaseFactory: func() (repository.SCSDatabase, error) {
-						pg := &a.configuration().Postgres
-						p, err := postgres.Open(pg.Hostname, pg.Port, pg.DBName, pg.Username, pg.Password, pg.SSLMode, pg.SSLCert)
-						if err != nil {
-							log.WithError(err).Error("failed to open postgres connection for setup task")
-							return nil, err
-						}
-						p.Migrate()
-						return p, nil
-					},
-					ConsoleWriter: os.Stdout,
-				},
 				tasks.Server{
 					Flags:         flags,
 					Config:        a.configuration(),
@@ -391,7 +377,7 @@ func (a *App) Run(args []string) error {
 		if err != nil {
 			log.WithError(err).Error("Error running setup")
 			fmt.Fprintf(os.Stderr, "Error running setup: %s\n", err)
-			return err
+			return errors.Wrap(err, "app:Run() Error running setup")
 	        }
 
 		scsUser, err := user.Lookup(constants.SCSUserName)
@@ -431,9 +417,6 @@ func (a *App) Run(args []string) error {
 }
 
 func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
-	log.Trace("app:initRefreshRoutine() Entering")
-	defer log.Trace("app:initRefreshRoutine() Leaving")
-
 	stop := make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -479,15 +462,15 @@ func (a *App) startServer() error {
 		return err
 	}
 	defer scsDB.Close()
-	log.Trace("Migrating Database")
+	log.Info("Migrating Database")
 	scsDB.Migrate()
 
-	// Create public routes that does not need any authentication
 	r := mux.NewRouter()
 
 	r.SkipClean(true)
 
 	// Create Router, set routes
+	// no JWT token authentication for this url as its invoked by QPL lib
 	sr := r.PathPrefix("/scs/sgx/certification/v1/").Subrouter()
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
@@ -495,6 +478,7 @@ func (a *App) startServer() error {
 		}
 	}(resource.QuoteProviderOps)
 
+	// Use token based auth for platform data push api
 	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
 	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
 					constants.TrustedCAsStoreDir, fnGetJwtCerts,
@@ -504,13 +488,6 @@ func (a *App) startServer() error {
 			setter(sr, scsDB)
 		}
 	}(resource.PlatformInfoOps)
-
-	sr = r.PathPrefix("/scs/test/").Subrouter()
-	func(setters ...func(*mux.Router)) {
-		for _, setter := range setters {
-			setter(sr)
-		}
-	}(resource.SetTestJwt)
 
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -641,9 +618,6 @@ func removeService() {
 }
 
 func validateCmdAndEnv(env_names_cmd_opts map[string]string, flags *flag.FlagSet) error {
-	log.Trace("app:validateCmdAndEnv() Entering")
-	defer log.Trace("app:validateCmdAndEnv() Leaving")
-
 	env_names := make([]string, 0)
 	for k, _ := range env_names_cmd_opts {
 		env_names = append(env_names, k)
@@ -694,22 +668,6 @@ func validateSetupArgs(cmd string, args []string) error {
 		fs.String("db-sslmode", "", "Database SSL Mode")
 		fs.String("db-sslcert", "", "Database SSL Cert Destination")
 		fs.String("db-sslcertsrc", "", "Database SSL Cert Source File")
-
-		err := fs.Parse(args)
-		if err != nil {
-			return fmt.Errorf("Fail to parse arguments: %s", err.Error())
-		}
-		return validateCmdAndEnv(env_names_cmd_opts, fs)
-
-	case "admin":
-		env_names_cmd_opts := map[string]string{
-			"SCS_ADMIN_USERNAME": "user",
-			"SCS_ADMIN_PASSWORD": "pass",
-		}
-
-		fs = flag.NewFlagSet("admin", flag.ContinueOnError)
-		fs.String("user", "", "Username for admin authentication")
-		fs.String("pass", "", "Password for admin authentication")
 
 		err := fs.Parse(args)
 		if err != nil {
