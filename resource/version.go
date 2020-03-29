@@ -6,15 +6,12 @@ package resource
 
 import (
 	"fmt"
-	"intel/isecl/sgx-caching-service/version"
+	"intel/isecl/scs/version"
 	"net/http"
 	"github.com/gorilla/mux"
 )
 
 func SetVersion(r *mux.Router) {
-	log.Trace("resource/version:SetVersion() Entering")
-	defer log.Trace("resource/version:SetVersion() Leaving")
-
 	r.Handle("/version", getVersion()).Methods("GET")
 }
 

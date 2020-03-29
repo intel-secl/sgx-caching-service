@@ -6,34 +6,36 @@ package config
 
 import (
 	"errors"
-	"intel/isecl/sgx-caching-service/constants"
+	"intel/isecl/scs/constants"
+	commLog "intel/isecl/lib/common/log"
+	"intel/isecl/lib/common/setup"
 	"os"
 	"path"
 	"sync"
-	"intel/isecl/lib/common/setup"
+	"time"
+	errorLog "github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
-
-// should move this into lib common, as its duplicated across SCS and SVS
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
 type Configuration struct {
 	configFile string
 	Port       int
+	CmsTlsCertDigest string
 	Postgres   struct {
 		DBName   string
 		Username string
 		Password string
 		Hostname string
-		Port     int
-		SSLMode  string
-		SSLCert  string
+		Port	int
+		SSLMode	string
+		SSLCert	string
 	}
-	LogMaxLength     int
-	LogLevel log.Level
+	LogMaxLength	int
 	LogEnableStdout  bool
+	LogLevel	log.Level
 
 	AuthDefender struct {
 		MaxAttempts         int
@@ -50,16 +52,22 @@ type Configuration struct {
 	RefreshHours int
 
 	ProvServerInfo struct {
-		ProvServerUrl string
+		ProvServerUrl	string
 		ApiSubscriptionkey string
 	}
-	Subject    struct {
-                TLSCertCommonName string
-                Organization      string
-                Country           string
-                Province          string
-                Locality          string
+	Subject struct {
+		TLSCertCommonName string
+		JWTCertCommonName string
         }
+	TLSKeyFile	string
+	TLSCertFile	string
+	CertSANList	string
+	ReadTimeout       time.Duration
+	ReadHeaderTimeout time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+	MaxHeaderBytes    int
+
 	CachingModel	int
 }
 
@@ -68,9 +76,6 @@ var mu sync.Mutex
 var global *Configuration
 
 func Global() *Configuration {
-	log.Trace("config/config:Global() Entering")
-	defer log.Trace("config/config:Global() Leaving")
-
 	if global == nil {
 		global = Load(path.Join(constants.ConfigDir, constants.ConfigFile))
 	}
@@ -80,9 +85,6 @@ func Global() *Configuration {
 var ErrNoConfigFile = errors.New("no config file")
 
 func (c *Configuration) Save() error {
-	log.Trace("config/config:Save() Entering")
-	defer log.Trace("config/config:Save() Leaving")
-
 	if c.configFile == "" {
 		return ErrNoConfigFile
 	}
@@ -106,74 +108,71 @@ func (c *Configuration) Save() error {
 }
 
 func (conf *Configuration) SaveConfiguration(c setup.Context) error {
-	log.Trace("config/config:SaveConfiguration() Entering")
-	defer log.Trace("config/config:SaveConfiguration() Leaving")
-
         var err error = nil
 
-        cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
-        if err == nil && cmsBaseUrl != "" {
-                conf.CMSBaseUrl = cmsBaseUrl
-        } else if conf.CMSBaseUrl == "" {
-                    log.Error("CMS_BASE_URL is not defined in environment")
+	tlsCertDigest, err := c.GetenvString(constants.CmsTlsCertDigestEnv, "TLS certificate digest")
+	if err == nil && tlsCertDigest != "" {
+		conf.CmsTlsCertDigest = tlsCertDigest
+	} else if conf.CmsTlsCertDigest == "" {
+		commLog.GetDefaultLogger().Error("CMS_TLS_CERT_SHA384 is not defined in environment")
+		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "SaveConfiguration() ENV variable not found")
+	}
+
+	cmsBaseUrl, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
+	if err == nil && cmsBaseUrl != "" {
+		conf.CMSBaseUrl = cmsBaseUrl
+	} else if conf.CMSBaseUrl == "" {
+		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
+		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
         }
 
-        aasBaseUrl, err := c.GetenvString("AAS_BASE_URL", "AAS Base URL")
-        if err == nil && aasBaseUrl != "" {
-                conf.AuthServiceUrl = aasBaseUrl
-        } else if conf.AuthServiceUrl == "" {
-                    log.Error("AAS_BASE_URL is not defined in environment")
-        }
+        aasApiUrl, err := c.GetenvString("AAS_API_URL", "AAS API URL")
+	if err == nil && aasApiUrl != "" {
+		conf.AuthServiceUrl = aasApiUrl
+	} else if conf.AuthServiceUrl == "" {
+		commLog.GetDefaultLogger().Error("AAS_API_URL is not defined in environment")
+		return errorLog.Wrap(errors.New("AAS_API_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
+	}
 
         tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
-        if err == nil && tlsCertCN != "" {
-                conf.Subject.TLSCertCommonName = tlsCertCN
-        } else if conf.Subject.TLSCertCommonName == "" {
-                        conf.Subject.TLSCertCommonName = constants.DefaultScsTlsCn
-        }
+	if err == nil && tlsCertCN != "" {
+		conf.Subject.TLSCertCommonName = tlsCertCN
+	} else if conf.Subject.TLSCertCommonName == "" {
+		conf.Subject.TLSCertCommonName = constants.DefaultScsTlsCn
+	}
 
-        certOrg, err := c.GetenvString("SCS_CERT_ORG", "SCS Certificate Organization")
-        if err == nil && certOrg != "" {
-                conf.Subject.Organization = certOrg
-        } else if conf.Subject.Organization == "" {
-                        conf.Subject.Organization = constants.DefaultScsCertOrganization
-        }
+	tlsKeyPath, err := c.GetenvString("KEY_PATH", "Path of file where TLS key needs to be stored")
+	if err == nil && tlsKeyPath != "" {
+		conf.TLSKeyFile = tlsKeyPath
+	} else if conf.TLSKeyFile == "" {
+		conf.TLSKeyFile = constants.DefaultTLSKeyFile
+	}
 
-        certCountry, err := c.GetenvString("SCS_CERT_COUNTRY", "SCS Certificate Country")
-        if err == nil &&  certCountry != "" {
-                conf.Subject.Country = certCountry
-        } else if conf.Subject.Country == "" {
-                        conf.Subject.Country = constants.DefaultScsCertCountry
-        }
+	tlsCertPath, err := c.GetenvString("CERT_PATH", "Path of file/directory where TLS certificate needs to be stored")
+	if err == nil && tlsCertPath != "" {
+		conf.TLSCertFile = tlsCertPath
+	} else if conf.TLSCertFile == "" {
+		conf.TLSCertFile = constants.DefaultTLSCertFile
+	}
 
-        certProvince, err := c.GetenvString("SCS_CERT_PROVINCE", "SCS Certificate Province")
-        if err == nil && certProvince != "" {
-                conf.Subject.Province = certProvince
-        } else if err != nil || conf.Subject.Province == "" {
-                        conf.Subject.Province = constants.DefaultScsCertProvince
-        }
+	sanList, err := c.GetenvString("SAN_LIST", "SAN list for TLS")
+	if err == nil && sanList != "" {
+		conf.CertSANList = sanList
+	} else if conf.CertSANList == "" {
+		conf.CertSANList = constants.DefaultScsTlsSan
+	}
 
-        certLocality, err := c.GetenvString("SCS_CERT_LOCALITY", "SCS Certificate Locality")
-        if err == nil && certLocality != "" {
-                conf.Subject.Locality = certLocality
-        } else if conf.Subject.Locality == "" {
-                        conf.Subject.Locality = constants.DefaultScsCertLocality
-        }
-
-        refreshHours, err := c.GetenvInt("SCS_REFRESH_HOURS", "SCS Automatic Refresh of SGX Data")
-        if err == nil && refreshHours < 1  {
-                conf.RefreshHours = refreshHours
-        } else if err != nil || conf.RefreshHours < 1 {
-                        conf.RefreshHours = constants.DefaultScsRefreshHours
-        }
+	refreshHours, err := c.GetenvInt("SCS_REFRESH_HOURS", "SCS Automatic Refresh of SGX Data")
+	if err == nil && refreshHours < 1  {
+		conf.RefreshHours = refreshHours
+	} else if err != nil || conf.RefreshHours < 1 {
+		conf.RefreshHours = constants.DefaultScsRefreshHours
+	}
 
         return conf.Save()
 }
 
 func Load(path string) *Configuration {
-	log.Trace("config/config:Load() Entering")
-	defer log.Trace("config/config:Load() Leaving")
-
 	var c Configuration
 	file, err := os.Open(path)
 	if err == nil {
@@ -184,7 +183,6 @@ func Load(path string) *Configuration {
 		c.LogLevel = log.InfoLevel
 	}
 
-	c.LogLevel = log.DebugLevel
 	c.configFile = path
 	return &c
 }

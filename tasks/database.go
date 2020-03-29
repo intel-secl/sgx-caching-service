@@ -5,19 +5,18 @@
 package tasks
 
 import (
-	//"errors"
 	"flag"
 	"fmt"
-	"intel/isecl/sgx-caching-service/config"
-	"intel/isecl/sgx-caching-service/constants"
-	"intel/isecl/sgx-caching-service/repository/postgres"
+	"intel/isecl/scs/config"
+	"intel/isecl/scs/constants"
+	"intel/isecl/scs/repository/postgres"
 	cos "intel/isecl/lib/common/os"
 	"intel/isecl/lib/common/setup"
 	"intel/isecl/lib/common/validation"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"strings"
+	"github.com/pkg/errors"
 )
 
 type Database struct {
@@ -48,7 +47,7 @@ func (db Database) Run(c setup.Context) error {
 	fs.StringVar(&envDBSSLCertSrc, "db-sslcertsrc", envDBSSLCertSrc, "DB SSL certificate to be copied from")
 	err := fs.Parse(db.Flags)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "setup database: failed to parse cmd flags")
 	}
 
 	var valid_err error

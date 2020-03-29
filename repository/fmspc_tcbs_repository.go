@@ -4,7 +4,7 @@
  */
 package repository
 
-import "intel/isecl/sgx-caching-service/types"
+import "intel/isecl/scs/types"
 
 type FmspcTcbInfoRepository interface {
 	Create(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)

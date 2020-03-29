@@ -4,7 +4,7 @@
  */
 package repository
 
-import "intel/isecl/sgx-caching-service/types"
+import "intel/isecl/scs/types"
 
 type PckCertChainRepository interface {
 	Create(types.PckCertChain) (*types.PckCertChain, error)

@@ -6,16 +6,13 @@ package resource
 
 import (
 
-        "intel/isecl/sgx-caching-service/repository"
-        "intel/isecl/sgx-caching-service/types"
+        "intel/isecl/scs/repository"
+        "intel/isecl/scs/types"
 	"github.com/pkg/errors"
 )
 
 func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn string,
 			PceSvn string, pceId string, qeId string) (*types.Platform, error) {
-	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Entering")
-	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCert() Leaving")
-
 	var data SgxData
 	data.PlatformInfo.EncPpid = encryptedPPID
 	data.PlatformInfo.CpuSvn = cpuSvn
@@ -58,9 +55,6 @@ func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 }
 
 func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*types.FmspcTcbInfo, error) {
-	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Entering")
-	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCacheFmspcTcbInfo() Leaving")
-
 	var data SgxData
 	data.FmspcTcbInfo.Fmspc = fmspcType
 
@@ -79,9 +73,6 @@ func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*typ
 }
 
 func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl, error) {
-	log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Entering")
-	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCachePckCrl() Leaving")
-
 	var data SgxData
 	data.PckCRLInfo.Ca = CaType
 
@@ -100,9 +91,6 @@ func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl
 }
 
 func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) (types.QEIdentities, error) {
-	log.Trace("resource/lazy_cache_ops.go:GetLazyCacheQEIdentityInfo() Entering")
-	defer log.Trace("resource/lazy_cache_ops.go:GetLazyCacheQEIdentityInfo() Leaving")
-
 	var data SgxData
 
 	err := FetchQEIdentityInfo(&data)

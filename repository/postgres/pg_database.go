@@ -6,8 +6,8 @@ package postgres
 
 import (
 	"fmt"
-	"intel/isecl/sgx-caching-service/repository"
-	"intel/isecl/sgx-caching-service/types"
+	"intel/isecl/scs/repository"
+	"intel/isecl/scs/types"
 	 commLog "intel/isecl/lib/common/log"
 	"io/ioutil"
 	"strings"
@@ -24,9 +24,6 @@ type PostgresDatabase struct {
 }
 
 func (pd *PostgresDatabase) ExecuteSql(sql *string) error {
-	log.Trace("repository/postgres/pg_database: ExecuteSql() Entering")
-	defer log.Trace("repository/postgres/pg_database: ExecuteSql() Leaving")
-
 	err := pd.DB.Exec(*sql).Error
 	if err != nil {
 		return errors.Wrap(err, "ExecuteSql: failed to execute sql")
@@ -35,9 +32,6 @@ func (pd *PostgresDatabase) ExecuteSql(sql *string) error {
 }
 
 func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
-	log.Trace("repository/postgres/pg_database: ExecuteSqlFile() Entering")
-	defer log.Trace("repository/postgres/pg_database: ExecuteSqlFile() Leaving")
-
 	c, err := ioutil.ReadFile(file)
 	if err != nil {
 		return errors.Wrapf(err, "could not read sql file - %s", file)
@@ -50,9 +44,6 @@ func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
 }
 
 func (pd *PostgresDatabase) Migrate() error {
-	log.Trace("repository/postgres/pg_database: Migrate() Entering")
-	defer log.Trace("repository/postgres/pg_database: Migrate() Leaving")
-
 	pd.DB.AutoMigrate(types.Platform{})
 	pd.DB.AutoMigrate(types.PlatformTcb{})
 	pd.DB.AutoMigrate(types.PckCertChain{})
@@ -98,9 +89,6 @@ func (pd *PostgresDatabase) Close() {
 }
 
 func Open(host string, port int, dbname, user, password, sslMode, sslCert string) (*PostgresDatabase, error) {
-	log.Trace("repository/postgres/pg_database: Open() Entering")
-	defer log.Trace("repository/postgres/pg_database: Open() Leaving")
-
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
 		sslMode = "require"
@@ -133,9 +121,6 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 }
 
 func VerifyConnection(host string, port int, dbname, user, password, sslMode, sslCert string) error {
-	log.Trace("repository/postgres/pg_database: VerifyConnection() Entering")
-	defer log.Trace("repository/postgres/pg_database: VerifyConnection() Leaving")
-
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
 		sslMode = "require"

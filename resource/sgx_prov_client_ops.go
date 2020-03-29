@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019 Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 package resource
 
 import (
@@ -5,16 +9,13 @@ import (
 	"time"
 	"net/http"
 	"github.com/pkg/errors"
-	"intel/isecl/sgx-caching-service/config"
+	"intel/isecl/scs/config"
 )
 
 func GetProvClientObj()(*http.Client, *config.Configuration, error){
-	log.Trace("resource/sgx_prov_client_ops: GetProvClientObj() Entering")
-	defer log.Trace("resource/sgx_prov_client_ops: GetProvClientObj() Leaving")
-
 	conf:= config.Global()
 	if conf == nil {
-		return nil, nil, errors.New("Configuration pointer is null")
+		return nil, nil, errors.New("Configuration details not found")
 	}
 
 	timeout := time.Duration(5 * time.Second)
@@ -26,9 +27,6 @@ func GetProvClientObj()(*http.Client, *config.Configuration, error){
 }
 
 func GetPCKCertFromProvServer(EncryptedPPID string, PceId string) (*http.Response, error) {
-	log.Trace("resource/sgx_prov_client_ops: GetPCKCertFromProvServer() Entering")
-	defer log.Trace("resource/sgx_prov_client_ops: GetPCKCertFromProvServer() Leaving")
-
 	client, conf, err := GetProvClientObj()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetPCKCertFromProvServer: Cannot get provclient Object")
@@ -54,9 +52,6 @@ func GetPCKCertFromProvServer(EncryptedPPID string, PceId string) (*http.Respons
 }
 
 func GetPCKCRLFromProvServer(ca string) (*http.Response, error) {
-	log.Trace("resource/sgx_prov_client_ops: GetPCKCRLFromProvServer() Entering")
-	defer log.Trace("resource/sgx_prov_client_ops: GetPCKCRLFromProvServer() Leaving")
-
 	client, conf, err := GetProvClientObj()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetPCKCRLFromProvServer(): Cannot get provclient Object")
@@ -80,9 +75,6 @@ func GetPCKCRLFromProvServer(ca string) (*http.Response, error) {
 }
 
 func GetFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
-	log.Trace("resource/sgx_prov_client_ops: GetFmspcTcbInfoFromProvServer() Entering")
-	defer log.Trace("resource/sgx_prov_client_ops: GetFmspcTcbInfoFromProvServer() Leaving")
-
 	client, conf, err := GetProvClientObj()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetFmspcTcbInfoFromProvServer(): Cannot get provclient Object")
@@ -106,9 +98,6 @@ func GetFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 }
 
 func GetQEInfoFromProvServer() (*http.Response, error) {
-	log.Trace("resource/sgx_prov_client_ops: GetQEInfoFromProvServer() Entering")
-	defer log.Trace("resource/sgx_prov_client_ops: GetQEInfoFromProvServer() Leaving")
-
 	client, conf, err := GetProvClientObj()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetQEInfoFromProvServer(): Cannot get provclient Object")

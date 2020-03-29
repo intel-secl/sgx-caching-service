@@ -5,7 +5,7 @@
 package postgres
 
 import (
-	"intel/isecl/sgx-caching-service/types"
+	"intel/isecl/scs/types"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -16,17 +16,11 @@ type PostgresPlatformRepository struct {
 }
 
 func (r *PostgresPlatformRepository) Create(p types.Platform) (*types.Platform, error) {
-        log.Trace("repository/postgres/pg_platform: Create() Entering")
-        defer log.Trace("repository/postgres/pg_platform: Create() Leaving")
-
 	err := r.db.Create(&p).Error
 	return &p, errors.Wrap(err, "create: failed to create Platform")
 }
 
 func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform, error) {
-        log.Trace("repository/postgres/pg_platform: Retrieve() Entering")
-        defer log.Trace("repository/postgres/pg_platform: Retrieve() Leaving")
-
 	log.WithField("Platform", p).Debug("Retrieve Call")
 	err := r.db.Where(&p).First(&p).Error
 	if err != nil {
@@ -36,9 +30,6 @@ func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform
 }
 
 func (r *PostgresPlatformRepository) RetrieveAll(u types.Platform) (types.Platforms, error) {
-        log.Trace("repository/postgres/pg_platform: RetrieveAll() Entering")
-        defer log.Trace("repository/postgres/pg_platform: RetrieveAll() Leaving")
-
 	var platforminfo types.Platforms
 	err := r.db.Where(&u).Find(&platforminfo).Error
 	if err != nil {
@@ -50,9 +41,6 @@ func (r *PostgresPlatformRepository) RetrieveAll(u types.Platform) (types.Platfo
 }
 
 func (r *PostgresPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms, error) {
-        log.Trace("repository/postgres/pg_platform: RetrieveAllPlatformInfo() Entering")
-        defer log.Trace("repository/postgres/pg_platform: RetrieveAllPlatformInfo() Leaving")
-
         var p types.Platforms
         err := r.db.Find(&p).Error
         if err != nil {
@@ -64,9 +52,6 @@ func (r *PostgresPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms,
 }
 
 func (r *PostgresPlatformRepository) Update(u types.Platform) error {
-        log.Trace("repository/postgres/pg_platform: Update() Entering")
-        defer log.Trace("repository/postgres/pg_platform: Update() Leaving")
-
 	if err := r.db.Save(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update Platform")
 	}
@@ -74,9 +59,6 @@ func (r *PostgresPlatformRepository) Update(u types.Platform) error {
 }
 
 func (r *PostgresPlatformRepository) Delete(u types.Platform) error {
-        log.Trace("repository/postgres/pg_platform: Delete() Entering")
-        defer log.Trace("repository/postgres/pg_platform: Delete() Leaving")
-
 	if err := r.db.Delete(&u).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to Delete Platform")
 	}

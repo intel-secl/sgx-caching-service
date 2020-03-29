@@ -6,7 +6,7 @@ package tasks
 
 import (
 	"intel/isecl/lib/common/setup"
-	"intel/isecl/sgx-caching-service/config"
+	"intel/isecl/scs/config"
 	"os"
 	"testing"
 	"github.com/stretchr/testify/assert"

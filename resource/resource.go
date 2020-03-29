@@ -7,7 +7,6 @@ package resource
 import (
 	"fmt"
 	"net/http"
-
 	"github.com/jinzhu/gorm"
 	clog "intel/isecl/lib/common/log"
 )
@@ -17,9 +16,6 @@ var log = clog.GetDefaultLogger()
 type errorHandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Trace("resource/resource:ServeHTTP() Entering")
-	defer log.Trace("resource/resource:ServeHTTP() Leaving")
-
 	if err := ehf(w, r); err != nil {
 		log.WithError(err).Error("HTTP Error")
 		if gorm.IsRecordNotFoundError(err) {
