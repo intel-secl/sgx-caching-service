@@ -32,7 +32,7 @@ const (
 	DefaultSSLCertFilePath        = ConfigDir + "scsdbcert.pem"
 	ServiceName                   = "SCS"
 	SCSUserName                   = "scs"
-	DefaultHttpPort               = 9443
+	DefaultHttpPort               = 9000
 	DefaultKeyAlgorithm           = "rsa"
 	DefaultKeyAlgorithmLength     = 3072
 	DefaultScsTlsSan              = "127.0.0.1,localhost"

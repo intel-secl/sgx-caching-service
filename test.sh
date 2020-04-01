@@ -23,7 +23,7 @@ v_ca="processor"
 v_fmspc="00906ed50000"
 
 hostname="127.0.0.1"
-port=9443
+port=9000
 
 if [ "$op" = "pckcert" ] && [ "$env" = "scs" ]; then
 	curl --tlsv1.2 "https://$hostname:$port/scs/sgx/certification/v1/pckcert?encrypted_ppid=$v_encppid&cpusvn=$v_cpusvn&pcesvn=$v_pcesvn&pceid=$v_pceid&qeid=$v_qeid" -k
