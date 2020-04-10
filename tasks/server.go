@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"intel/isecl/scs/config"
 	"intel/isecl/scs/constants"
-	"intel/isecl/lib/common/setup"
+	"intel/isecl/lib/common/v2/setup"
 	"io"
 	"time"
 	"github.com/pkg/errors"

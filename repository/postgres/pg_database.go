@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"intel/isecl/scs/repository"
 	"intel/isecl/scs/types"
-	 commLog "intel/isecl/lib/common/log"
+	 commLog "intel/isecl/lib/common/v2/log"
 	"io/ioutil"
 	"strings"
 	"time"

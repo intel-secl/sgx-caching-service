@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"github.com/jinzhu/gorm"
-	clog "intel/isecl/lib/common/log"
+	clog "intel/isecl/lib/common/v2/log"
 )
 
 var log = clog.GetDefaultLogger()

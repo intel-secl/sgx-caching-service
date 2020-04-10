@@ -7,8 +7,8 @@ package config
 import (
 	"errors"
 	"intel/isecl/scs/constants"
-	commLog "intel/isecl/lib/common/log"
-	"intel/isecl/lib/common/setup"
+	commLog "intel/isecl/lib/common/v2/log"
+	"intel/isecl/lib/common/v2/setup"
 	"os"
 	"path"
 	"sync"
