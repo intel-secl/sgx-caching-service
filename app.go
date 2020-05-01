@@ -471,12 +471,49 @@ func (a *App) startServer() error {
 
 	// Create Router, set routes
 	// no JWT token authentication for this url as its invoked by QPL lib
-	sr := r.PathPrefix("/scs/sgx/certification/v1/").Subrouter()
+	sr := r.PathPrefix("/scs/sgx/certification/v1").Subrouter()
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)
 		}
 	}(resource.QuoteProviderOps)
+
+	sr = r.PathPrefix("/scs/sgx/certification/v1/pckcert").Subrouter()
+	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
+		for _, setter := range setters {
+			setter(sr, scsDB)
+		}
+	}(resource.QuoteProviderOps)
+
+	sr = r.PathPrefix("/scs/sgx/certification/v1/pckcrl").Subrouter()
+	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
+					constants.TrustedCAsStoreDir, fnGetJwtCerts,
+					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
+	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
+		for _, setter := range setters {
+			setter(sr, scsDB)
+		}
+	}(resource.PlatformInfoOps)
+
+	sr = r.PathPrefix("/scs/sgx/certification/v1/qe/identity").Subrouter()
+	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
+					constants.TrustedCAsStoreDir, fnGetJwtCerts,
+					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
+	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
+		for _, setter := range setters {
+			setter(sr, scsDB)
+		}
+	}(resource.PlatformInfoOps)
+
+	sr = r.PathPrefix("/scs/sgx/certification/v1/tcb").Subrouter()
+	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
+					constants.TrustedCAsStoreDir, fnGetJwtCerts,
+					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
+	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
+		for _, setter := range setters {
+			setter(sr, scsDB)
+		}
+	}(resource.PlatformInfoOps)
 
 	// Use token based auth for platform data push api
 	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
