@@ -17,6 +17,8 @@ fi
 
 DEFAULT_CERTSUBJECT="/CN=ISecl Self Sign Cert"
 DEFAULT_CIPHERSUITES="ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
+DEFAULT_CERT_DNS="localhost"
+DEFAULT_CERT_IP="127.0.0.1"
 # Variables Section. Please edit the default value as appropriate or use the iseclpgdb.env file
 
 ISECL_PGDB_IP_INTERFACES="${ISECL_PGDB_IP_INTERFACES:-localhost}"    # network interfaces to listen for connection
@@ -31,6 +33,23 @@ ISECL_PGDB_CERT_VALIDITY_DAYS="${ISECL_PGDB_CERT_VALIDITY_DAYS:-3652}"
 
 ISECL_PGDB_CERTSUBJECT="${ISECL_PGDB_CERTSUBJECT:-$DEFAULT_CERTSUBJECT}"
 ISECL_PGDB_CIPHERSUITES="${ISECL_PGDB_CIPHERSUITES:-$DEFAULT_CIPHERSUITES}"
+
+ISECL_PGDB_CERT_DNS="${ISECL_PGDB_CERT_DNS:-$DEFAULT_CERT_DNS}"
+ISECL_PGDB_CERT_IP="${ISECL_PGDB_CERT_IP:-$DEFAULT_CERT_IP}"
+
+pgdb_cert_dns=""
+for dns in $(echo $ISECL_PGDB_CERT_DNS | tr "," "\n")
+do
+    pgdb_cert_dns=$pgdb_cert_dns"DNS:$dns,"
+done
+pgdb_cert_dns=${pgdb_cert_dns::-1}
+
+pgdb_cert_ip=""
+for ip in $(echo $ISECL_PGDB_CERT_IP | tr "," "\n")
+do
+    pgdb_cert_ip=$pgdb_cert_ip"IP:$ip,"
+done
+pgdb_cert_ip=${pgdb_cert_ip::-1}
 
 echo "Installing postgres database version 11 and its rpm repo for RHEL 7 x86_64 ..."
 
@@ -76,6 +95,7 @@ if [ ! -f $PGDATA/pg_hba.conf ] ; then
 
     # make certificate and key files for TLS
     openssl req -new -x509 -days $ISECL_PGDB_CERT_VALIDITY_DAYS -newkey rsa:4096 \
+        -addext "subjectAltName = $pgdb_cert_dns, $pgdb_cert_ip" \
         -nodes -text -out $PGDATA/server.crt -keyout $PGDATA/server.key -sha384 -subj "$ISECL_PGDB_CERTSUBJECT"
 
     chmod og-rwx $PGDATA/server.key
@@ -108,6 +128,7 @@ if [ ! -f $PGDATA/pg_hba.conf ] ; then
         fi
         echo "# host all all $ISECL_PGDB_SERVICEHOST md5" >> $PGDATA/pg_hba.conf
         echo "hostssl all all $ISECL_PGDB_SERVICEHOST md5" >> $PGDATA/pg_hba.conf
+        echo "hostnossl all all 0.0.0.0/0 reject" >> $PGDATA/pg_hba.conf
     fi
 
     chown -R postgres:postgres /usr/local/pgsql
