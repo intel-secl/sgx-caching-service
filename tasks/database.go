@@ -90,8 +90,8 @@ func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, 
 	sslCert = strings.TrimSpace(sslCert)
 	sslCertSrc = strings.TrimSpace(sslCertSrc)
 
-	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
-		sslMode = "require"
+	if  sslMode != "allow" && sslMode != "prefer" && sslMode != "require" && sslMode != "verify-ca" {
+		sslMode = "verify-full"
 	}
 
 	if sslMode == "verify-ca" || sslMode == "verify-full" {
