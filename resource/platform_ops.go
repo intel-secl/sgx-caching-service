@@ -680,6 +680,11 @@ func CachePckCRLInfo(db repository.SCSDatabase, data *SgxData) error {
 func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
+		err := AuthorizeEndpoint(r, constants.HostDataUpdaterGroupName, true)
+		if err != nil {
+			return err
+		}
+
 		var data SgxData
 		if (r.ContentLength == 0) {
                         return &resourceError{Message: "The request body was not provided",
@@ -688,7 +693,7 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
                 dec := json.NewDecoder(r.Body)
                 dec.DisallowUnknownFields()
-                err := dec.Decode(&data.PlatformInfo)
+                err = dec.Decode(&data.PlatformInfo)
                 if err != nil {
                         return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
                 }
@@ -979,9 +984,15 @@ func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
 
 func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		err := AuthorizeEndpoint(r, constants.CacheManagerGroupName, true)
+		if err != nil {
+			return err
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 
-		err := RefreshPckCerts(db)
+		err = RefreshPckCerts(db)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound) // HTTP 404
 
@@ -1090,6 +1101,12 @@ func GetTcbCompList(TcbLevelList *TcbLevels) []byte {
  */
 func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+
+		err := AuthorizeEndpoint(r, constants.HostDataReaderGroupName, true)
+		if err != nil {
+			return err
+		}
+
 		if ( len(r.URL.Query()) == 0) {
 			return &resourceError{Message: "GetTcbStatusCB: The Request Query not present",
 						StatusCode: http.StatusBadRequest}
