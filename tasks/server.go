@@ -7,12 +7,12 @@ package tasks
 import (
 	"flag"
 	"fmt"
+	"github.com/pkg/errors"
+	"intel/isecl/lib/common/v2/setup"
 	"intel/isecl/scs/config"
 	"intel/isecl/scs/constants"
-	"intel/isecl/lib/common/v2/setup"
 	"io"
 	"time"
-	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -99,7 +99,7 @@ func (s Server) Run(c setup.Context) error {
 	}
 
 	s.Config.LogEnableStdout = false
-        logEnableStdout, err := c.GetenvString("SCS_ENABLE_CONSOLE_LOG", "SGX Caching Service Enable standard output")
+	logEnableStdout, err := c.GetenvString("SCS_ENABLE_CONSOLE_LOG", "SGX Caching Service Enable standard output")
 	if err != nil || len(logEnableStdout) == 0 {
 		s.Config.LogEnableStdout = false
 	} else {

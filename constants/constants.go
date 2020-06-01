@@ -52,16 +52,16 @@ const (
 	Fmspc_Key		      = "fmspc"
 	DefaultScsRefreshHours	      = 24
 	DefaultJwtValidateCacheKeyMins = 60
-	CmsTlsCertDigestEnv           = "CMS_TLS_CERT_SHA384"
+	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
 	DefaultReadTimeout             = 30 * time.Second
 	DefaultReadHeaderTimeout       = 10 * time.Second
 	DefaultWriteTimeout            = 10 * time.Second
 	DefaultIdleTimeout             = 10 * time.Second
 	DefaultMaxHeaderBytes          = 1 << 20
-	DefaultLogEntryMaxLength      = 300
-	Type_Refresh_Cert	      = "certs"
-	Type_Refresh_Tcb	      = "tcbs"
-	MaxTcbLevels		      = 16
+	DefaultLogEntryMaxLength       = 300
+	Type_Refresh_Cert              = "certs"
+	Type_Refresh_Tcb               = "tcbs"
+	MaxTcbLevels                   = 16
 )
 
 // State represents whether or not a daemon is running or not
