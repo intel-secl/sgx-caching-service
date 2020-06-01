@@ -5,22 +5,25 @@
 package resource
 
 import (
-
-        "intel/isecl/scs/repository"
-        "intel/isecl/scs/types"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/repository"
+	"intel/isecl/scs/types"
 )
 
 func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn string,
-			PceSvn string, pceId string, qeId string) (*types.Platform, error) {
+	PceSvn string, pceId string, qeId string, manifest string) (*types.PckCert, error) {
+	log.Trace("resource/lazy_cache_ops: GetLazyCachePckCert() Entering")
+	defer log.Trace("resource/lazy_cache_ops: GetLazyCachePckCert() Leaving")
+
 	var data SgxData
 	data.PlatformInfo.EncPpid = encryptedPPID
 	data.PlatformInfo.CpuSvn = cpuSvn
 	data.PlatformInfo.PceSvn = PceSvn
 	data.PlatformInfo.PceId = pceId
 	data.PlatformInfo.QeId = qeId
+	data.PlatformInfo.PlatformManifest = manifest
 
-        err := FetchPCKCertInfo(&data)
+	err := FetchPCKCertInfo(&data)
 	if err != nil {
 		return nil, errors.New("FetchPCKCertInfo:" + err.Error())
 	}
@@ -51,10 +54,12 @@ func GetLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 	}
 
 	log.Debug("GetLazyCachePckCert: Pck Cert best suited for current tcb level is fetched")
-	return data.Platform, nil
+	return data.PckCert, nil
 }
 
 func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*types.FmspcTcbInfo, error) {
+	log.Trace("resource/lazy_cache_ops: GetLazyCacheFmspcTcbInfo() Entering")
+	defer log.Trace("resource/lazy_cache_ops: GetLazyCacheFmspcTcbInfo() Leaving")
 	var data SgxData
 	data.FmspcTcbInfo.Fmspc = fmspcType
 
@@ -73,6 +78,9 @@ func GetLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*typ
 }
 
 func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl, error) {
+	log.Trace("resource/lazy_cache_ops: GetLazyCachePckCrl() Entering")
+	defer log.Trace("resource/lazy_cache_ops: GetLazyCachePckCrl() Leaving")
+
 	var data SgxData
 	data.PckCRLInfo.Ca = CaType
 
@@ -91,6 +99,9 @@ func GetLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl
 }
 
 func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) (types.QEIdentities, error) {
+	log.Trace("resource/lazy_cache_ops: GetLazyCacheQEIdentityInfo() Entering")
+	defer log.Trace("resource/lazy_cache_ops: GetLazyCacheQEIdentityInfo() Leaving")
+
 	var data SgxData
 
 	err := FetchQEIdentityInfo(&data)
@@ -105,7 +116,7 @@ func GetLazyCacheQEIdentityInfo(db repository.SCSDatabase) (types.QEIdentities, 
 
 	existingQeInfo, err := db.QEIdentityRepository().RetrieveAll()
 	if existingQeInfo == nil && err == nil {
-		return nil, errors.New("GetLazyCacheQEIdentityInfo: Retrive data error" +  err.Error() )
+		return nil, errors.New("GetLazyCacheQEIdentityInfo: Retrive data error" + err.Error())
 	}
 
 	log.Debug("GetLazyCacheQEIdentityInfo fetch and cache operation completed")
