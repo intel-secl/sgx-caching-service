@@ -31,6 +31,9 @@ const (
 	DefaultAuthDefendLockoutMins  = 15
 	DefaultSSLCertFilePath        = ConfigDir + "scsdbcert.pem"
 	ServiceName                   = "SCS"
+	HostDataUpdaterGroupName      = "HostDataUpdater"
+	HostDataReaderGroupName       = "HostDataReader"
+	CacheManagerGroupName         = "CacheManager"
 	SCSUserName                   = "scs"
 	DefaultHttpPort               = 9000
 	DefaultKeyAlgorithm           = "rsa"

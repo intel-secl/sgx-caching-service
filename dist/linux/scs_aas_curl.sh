@@ -5,9 +5,9 @@
 echo "Setting up SCS Related roles and user in AAS Database"
 
 #Get the value of AAS IP address and port. Default vlue is also provided.
-aas_hostname=${AAS_URL:-"https://10.105.167.184:8443"}
+aas_hostname=${AAS_URL:-"https://10.80.245.104:8444"}
 CURL_OPTS="-s -k"
-IPADDR="10.105.167.184,127.0.0.1,localhost"
+IPADDR="10.80.245.104,127.0.0.1,localhost"
 CN="SCS TLS Certificate"
 
 mkdir -p /tmp/setup/scs
@@ -94,7 +94,8 @@ echo "$role_id"
 create_roles() {
 
 	local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
-	ROLE_ID_TO_MAP=`echo \"$cms_role_id\"`
+	local scs_role_id=$( create_user_roles "SCS" "CacheManager" "" )
+	ROLE_ID_TO_MAP=`echo \"$cms_role_id\",\"$scs_role_id\"`
 	echo $ROLE_ID_TO_MAP
 }
 
