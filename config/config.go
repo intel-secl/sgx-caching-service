@@ -18,6 +18,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var slog = commLog.GetSecurityLogger()
+
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
 type Configuration struct {
@@ -153,6 +155,21 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.TLSCertFile = tlsCertPath
 	} else if conf.TLSCertFile == "" {
 		conf.TLSCertFile = constants.DefaultTLSCertFile
+	}
+
+	logLevel, err := c.GetenvString("SCS_LOGLEVEL", "SCS Log Level")
+	if err != nil {
+		slog.Infof("config/config:SaveConfiguration() %s not defined, using default log level: Info", constants.SCSLogLevel)
+		conf.LogLevel = log.InfoLevel
+	} else {
+		llp, err := log.ParseLevel(logLevel)
+		if err != nil {
+			slog.Info("config/config:SaveConfiguration() Invalid log level specified in env, using default log level: Info")
+			conf.LogLevel = log.InfoLevel
+		} else {
+			conf.LogLevel = llp
+			slog.Infof("config/config:SaveConfiguration() Log level set %s\n", logLevel)
+		}
 	}
 
 	sanList, err := c.GetenvString("SAN_LIST", "SAN list for TLS")
