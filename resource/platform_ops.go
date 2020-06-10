@@ -180,12 +180,12 @@ type cpu_svn struct {
 }
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
-	r.Handle("/push", handlers.ContentTypeHandler(PushPlatformInfoCB(db), "application/json")).Methods("POST")
-	r.Handle("/refresh", handlers.ContentTypeHandler(RefreshPlatformInfoCB(db), "application/json")).Methods("GET")
-	r.Handle("/tcbstatus", handlers.ContentTypeHandler(GetTcbStatusCB(db), "application/json")).Methods("GET")
+	r.Handle("/push", handlers.ContentTypeHandler(pushPlatformInfo(db), "application/json")).Methods("POST")
+	r.Handle("/refresh", handlers.ContentTypeHandler(refreshPlatformInfo(db), "application/json")).Methods("GET")
+	r.Handle("/tcbstatus", handlers.ContentTypeHandler(getTcbStatus(db), "application/json")).Methods("GET")
 }
 
-func MapPCKCertSelectErrorToSCSError(pckErr uint) string {
+func mapPckCertSelectErrorToSCSError(pckErr uint) string {
 	var errorStr string
 
 	switch pckErr {
@@ -229,7 +229,7 @@ func MapPCKCertSelectErrorToSCSError(pckErr uint) string {
 // C++ library chooses best suited PCK certificate for the current TCB level
 // and returns index to the certificate
 
-func GetBestPckCert(in *SgxData) (uint, error) {
+func getBestPckCert(in *SgxData) (uint, error) {
 	var err error
 	var cpusvn cpu_svn
 
@@ -251,7 +251,7 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pce_svn),
 		C.ushort(pce_id), (*C.char)(unsafe.Pointer(tcbInfo)),
 		(**C.char)(unsafe.Pointer(&certs[0])), C.uint(TotalPckPcerts), &certIdx)
-	errorStr := MapPCKCertSelectErrorToSCSError(uint(ret))
+	errorStr := mapPckCertSelectErrorToSCSError(uint(ret))
 
 	if ret != 0 {
 		err = errors.New(errorStr)
@@ -260,7 +260,7 @@ func GetBestPckCert(in *SgxData) (uint, error) {
 }
 
 // parse the PCK certificate and parse Intel custom extensions to extract the fmpsc value
-func GetFmspcVal(CertBuf *pem.Block) (string, error) {
+func getFmspcVal(CertBuf *pem.Block) (string, error) {
 	var fmspcHex string
 	cert, err := x509.ParseCertificate(CertBuf.Bytes)
 	if err != nil {
@@ -277,7 +277,7 @@ func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 			var asn1Extensions []asn1.RawValue
 			_, err := asn1.Unmarshal(ext.Value, &asn1Extensions)
 			if err != nil {
-				log.Warn("Could not parse extension")
+				log.Debug("Could not parse extension")
 				return fmspcHex, err
 			}
 
@@ -285,7 +285,7 @@ func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 			for j := 0; j < len(asn1Extensions); j++ {
 				_, err = asn1.Unmarshal(asn1Extensions[j].FullBytes, &fmspcExt)
 				if err != nil {
-					log.Warn("Could not parse sub extension")
+					log.Debug("Could not parse sub extension")
 				}
 				if FmspcSgxExtensionsOid.Equal(fmspcExt.Id) == true {
 					fmspcHex = hex.EncodeToString(fmspcExt.Value)
@@ -298,49 +298,49 @@ func GetFmspcVal(CertBuf *pem.Block) (string, error) {
 	return fmspcHex, errors.New("Fmspc value not found in PCK Certificate")
 }
 
-func FetchPCKCertInfo(in *SgxData) error {
-	log.Trace("resource/platform_ops: FetchPCKCertInfo() Entering")
-	defer log.Trace("resource/platform_ops: FetchPCKCertInfo() Leaving")
+func fetchPckCertInfo(in *SgxData) error {
+	log.Trace("resource/platform_ops: fetchPckCertInfo() Entering")
+	defer log.Trace("resource/platform_ops: fetchPckCertInfo() Leaving")
 
 	// Using the Platform SGX Values, fetch the PCK Certs from Intel PCS Server
 	var resp *http.Response
 	var err error
 	if in.PlatformInfo.PceId == "" && in.PlatformInfo.PlatformManifest == "" {
 		log.Error("invalid request")
-		return errors.New("invalid request as either enc_ppid or platform_manifest is null")
+		return errors.New("invalid request, enc_ppid or platform_manifest is null")
 	}
 
 	if in.PlatformInfo.PlatformManifest != "" && getPcsVersion() >= 3 {
-		resp, err = GetPCKCertsWithManifestFromProvServer(in.PlatformInfo.PlatformManifest,
+		resp, err = getPckCertsWithManifestFromProvServer(in.PlatformInfo.PlatformManifest,
 			in.PlatformInfo.PceId)
 	} else {
-		resp, err = GetPCKCertFromProvServer(in.PlatformInfo.EncPpid,
+		resp, err = getPckCertFromProvServer(in.PlatformInfo.EncPpid,
 			in.PlatformInfo.PceId)
 	}
 
 	if err != nil {
-		log.WithError(err).Error("Intel PCS Server getPCKCerts curl failed")
+		log.WithError(err).Error("Intel PCS Server getPckCerts api failed")
 		return err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		dump, _ := httputil.DumpResponse(resp, true)
 		log.WithField("Status Code", resp.StatusCode).Error(string(dump))
-		return errors.New("Could not Fetch PCKCertificates from Intel PCS Server")
+		return errors.New("could not fetch pck certs from Intel PCS Server")
 	}
 
 	headers := resp.Header
 	// read the PCKCertChain from HTTP response header
 	in.PckCertChainInfo.PckCertChain = headers["Sgx-Pck-Certificate-Issuer-Chain"][0]
 	if resp.ContentLength == 0 {
-		return errors.New("No content found in getPCkCerts Http Response")
+		return errors.New("no content found in getPCkCerts Http Response")
 	}
 
 	defer resp.Body.Close()
 	// read the set  of PCKCerts blob sent as part of HTTP response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithError(err).Error("Could not Read GetPckCerts Http Response")
+		log.WithError(err).Error("could not read getPckCerts http Response body")
 		return err
 	}
 
@@ -371,39 +371,39 @@ func FetchPCKCertInfo(in *SgxData) error {
 	}
 
 	// extract fmpsc value from randomly chosen PCK certificate
-	in.FmspcTcbInfo.Fmspc, err = GetFmspcVal(CertBuf)
+	in.FmspcTcbInfo.Fmspc, err = getFmspcVal(CertBuf)
 	if err != nil {
-		log.WithError(err).Error("Failed to get FMSPC value from PCK Certificate")
+		log.WithError(err).Error("failed to get fmspc value from pck cert")
 		return err
 	}
 	in.PlatformInfo.Fmspc = in.FmspcTcbInfo.Fmspc
 	// using the extacted fmspc value, get the TCBInfo structure fo platform
-	err = FetchFmspcTcbInfo(in)
+	err = fetchFmspcTcbInfo(in)
 	if err != nil {
 		return err
 	}
 
 	// From bunch of PCK certificates, choose best suited PCK certificate for the
 	// current raw TCB level
-	in.PckCertInfo.CertIndex, err = GetBestPckCert(in)
+	in.PckCertInfo.CertIndex, err = getBestPckCert(in)
 	if err != nil {
-		log.WithError(err).Error("Failed to get PCK cert for the platform")
+		log.WithError(err).Error("failed to get pck cert for the current tcb level")
 		return err
 	}
 	return nil
 }
 
 // Fetches the latest PCK Certificate Revocation List for the sgx intel processor
-// SVS will make use of this to verify if PCK certificate in a  quote is valid
+// SVS will make use of this to verify if PCK certificate in a quote is valid
 // by comparing against this CRL
-func FetchPCKCRLInfo(in *SgxData) error {
-	resp, err := GetPCKCRLFromProvServer(in.PckCRLInfo.Ca)
+func fetchPckCrlInfo(in *SgxData) error {
+	resp, err := getPckCrlFromProvServer(in.PckCRLInfo.Ca)
 	if err != nil {
-		log.WithError(err).Error("Intel PCS Server getPCKCrl curl failed")
+		log.WithError(err).Error("Intel PCS Server getPckCrl api failed")
 		return err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
 		return errors.New("invalid response received from intel SGX provisioning server")
 	}
@@ -419,7 +419,7 @@ func FetchPCKCRLInfo(in *SgxData) error {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithError(err).Error("Could not Read GetPckCrl Http Response")
+		log.WithError(err).Error("could not read getPckCrl http response")
 		return err
 	}
 	in.PckCRLInfo.PckCrl = string(body)
@@ -432,14 +432,14 @@ func FetchPCKCRLInfo(in *SgxData) error {
 }
 
 // for a platform FMSPC value, fetches corresponding TCBInfo structure from Intel PCS server
-func FetchFmspcTcbInfo(in *SgxData) error {
-	resp, err := GetFmspcTcbInfoFromProvServer(in.FmspcTcbInfo.Fmspc)
+func fetchFmspcTcbInfo(in *SgxData) error {
+	resp, err := getFmspcTcbInfoFromProvServer(in.FmspcTcbInfo.Fmspc)
 	if err != nil {
-		log.WithError(err).Error("Intel PCS Server getTCBInfo curl failed")
+		log.WithError(err).Error("Intel PCS Server getTCBInfo api failed")
 		return err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
 		return errors.New("Invalid response from Intel SGX Provisioning Server")
 	}
@@ -454,7 +454,7 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithError(err).Error("Could not Read GetTCBInfo Http Response")
+		log.WithError(err).Error("could not read getTCBInfo http response")
 		return err
 	}
 	in.FmspcTcbInfo.TcbInfo = string(body)
@@ -462,14 +462,14 @@ func FetchFmspcTcbInfo(in *SgxData) error {
 }
 
 // Fetches Quoting Enclave ID details for a platform from intel PCS server
-func FetchQEIdentityInfo(in *SgxData) error {
-	resp, err := GetQEInfoFromProvServer()
+func fetchQeIdentityInfo(in *SgxData) error {
+	resp, err := getQeInfoFromProvServer()
 	if err != nil {
-		log.WithError(err).Error("Intel PCS Server getQEIdentity curl failed")
+		log.WithError(err).Error("Intel PCS Server getQEIdentity api failed")
 		return err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
 		return errors.New("Invalid response from Intel SGX Provisioning Server")
 	}
@@ -479,13 +479,13 @@ func FetchQEIdentityInfo(in *SgxData) error {
 	log.WithField("QEIssuerChain", in.QEInfo.QeIssuerChain).Debug("Values")
 
 	if resp.ContentLength == 0 {
-		return errors.New("No content found in getQEIdentity Http Response")
+		return errors.New("No content found in getQeIdentity Http Response")
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.WithError(err).Error("Could not Read GetQEIdentity Http Response")
+		log.WithError(err).Error("could not read getQeIdentity http response")
 		return err
 	}
 	in.QEInfo.QeInfo = string(body)
@@ -493,13 +493,13 @@ func FetchQEIdentityInfo(in *SgxData) error {
 	return nil
 }
 
-func CachePckCertInfo(db repository.SCSDatabase, data *SgxData) error {
+func cachePckCertInfo(db repository.SCSDatabase, data *SgxData) error {
 	var err error
 	data.PckCert = &types.PckCert{
-		PceId:          strings.ToLower(data.PckCertInfo.PceId),
-		QeId:           strings.ToLower(data.PckCertInfo.QeId),
+		PceId:          data.PckCertInfo.PceId,
+		QeId:           data.PckCertInfo.QeId,
 		Tcbms:          data.PckCertInfo.Tcbms,
-		Fmspc:          strings.ToLower(data.PlatformInfo.Fmspc),
+		Fmspc:          data.PlatformInfo.Fmspc,
 		CertIndex:      data.PckCertInfo.CertIndex,
 		PckCerts:       data.PckCertInfo.PckCerts,
 		PckCertChainId: data.PckCertChain.ID}
@@ -524,7 +524,7 @@ func CachePckCertInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func CacheQEIdentityInfo(db repository.SCSDatabase, data *SgxData) error {
+func cacheQeIdentityInfo(db repository.SCSDatabase, data *SgxData) error {
 	data.QEIdentity = &types.QEIdentity{
 		QeInfo:        data.QEInfo.QeInfo,
 		QeIssuerChain: data.QEInfo.QeIssuerChain,
@@ -553,7 +553,7 @@ func CacheQEIdentityInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func CachePckCertChainInfo(db repository.SCSDatabase, data *SgxData) error {
+func cachePckCertChainInfo(db repository.SCSDatabase, data *SgxData) error {
 	var err error
 	data.PckCertChain = &types.PckCertChain{
 		PckCertChain: data.PckCertChainInfo.PckCertChain}
@@ -580,9 +580,9 @@ func CachePckCertChainInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func CacheFmspcTcbInfo(db repository.SCSDatabase, data *SgxData) error {
+func cacheFmspcTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 	data.FmspcTcb = &types.FmspcTcbInfo{
-		Fmspc:              strings.ToLower(data.FmspcTcbInfo.Fmspc),
+		Fmspc:              data.FmspcTcbInfo.Fmspc,
 		TcbInfo:            data.FmspcTcbInfo.TcbInfo,
 		TcbInfoIssuerChain: data.FmspcTcbInfo.TcbInfoIssuerChain}
 	var err error
@@ -608,14 +608,14 @@ func CacheFmspcTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func CachePlatformInfo(db repository.SCSDatabase, data *SgxData) error {
+func cachePlatformInfo(db repository.SCSDatabase, data *SgxData) error {
 	data.Platform = &types.Platform{
-		Encppid:          strings.ToLower(data.PlatformInfo.EncPpid),
-		CpuSvn:           strings.ToLower(data.PlatformInfo.CpuSvn),
-		PceSvn:           strings.ToLower(data.PlatformInfo.PceSvn),
-		PceId:            strings.ToLower(data.PlatformInfo.PceId),
-		QeId:             strings.ToLower(data.PlatformInfo.QeId),
-		Fmspc:            strings.ToLower(data.PlatformInfo.Fmspc),
+		Encppid:          data.PlatformInfo.EncPpid,
+		CpuSvn:           data.PlatformInfo.CpuSvn,
+		PceSvn:           data.PlatformInfo.PceSvn,
+		PceId:            data.PlatformInfo.PceId,
+		QeId:             data.PlatformInfo.QeId,
+		Fmspc:            data.PlatformInfo.Fmspc,
 		PlatformManifest: data.PlatformInfo.PlatformManifest}
 
 	var err error
@@ -639,13 +639,13 @@ func CachePlatformInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func CachePlatformTcbInfo(db repository.SCSDatabase, data *SgxData) error {
+func cachePlatformTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 	data.PlatformTcb = &types.PlatformTcb{
-		Tcbm:   strings.ToLower(data.PckCertInfo.Tcbms[data.PckCertInfo.CertIndex]),
-		CpuSvn: strings.ToLower(data.PlatformInfo.CpuSvn),
-		PceSvn: strings.ToLower(data.PlatformInfo.PceSvn),
-		PceId:  strings.ToLower(data.PlatformInfo.PceId),
-		QeId:   strings.ToLower(data.PlatformInfo.QeId),
+		Tcbm:   data.PckCertInfo.Tcbms[data.PckCertInfo.CertIndex],
+		CpuSvn: data.PlatformInfo.CpuSvn,
+		PceSvn: data.PlatformInfo.PceSvn,
+		PceId:  data.PlatformInfo.PceId,
+		QeId:   data.PlatformInfo.QeId,
 	}
 
 	var err error
@@ -669,7 +669,7 @@ func CachePlatformTcbInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func CachePckCRLInfo(db repository.SCSDatabase, data *SgxData) error {
+func cachePckCrlInfo(db repository.SCSDatabase, data *SgxData) error {
 	data.PckCrl = &types.PckCrl{
 		Ca:              data.PckCRLInfo.Ca,
 		PckCrl:          data.PckCRLInfo.PckCrl,
@@ -695,7 +695,7 @@ func CachePckCRLInfo(db repository.SCSDatabase, data *SgxData) error {
 	return nil
 }
 
-func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
+func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		err := AuthorizeEndpoint(r, constants.HostDataUpdaterGroupName, true)
@@ -704,40 +704,47 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		var data SgxData
-		if (r.ContentLength == 0) {
-                        return &resourceError{Message: "The request body was not provided",
-						 StatusCode: http.StatusBadRequest}
-                }
+		var platform PlatformInfo
+		if r.ContentLength == 0 {
+			return &resourceError{Message: "platform data not provided",
+				StatusCode: http.StatusBadRequest}
+		}
 
-                dec := json.NewDecoder(r.Body)
-                dec.DisallowUnknownFields()
-                err = dec.Decode(&data.PlatformInfo)
-                if err != nil {
-                        return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
-                }
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		err = dec.Decode(&platform)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
+		}
 
-		if !ValidateInputString(constants.EncPPID_Key, data.PlatformInfo.EncPpid) ||
-			!ValidateInputString(constants.CpuSvn_Key, data.PlatformInfo.CpuSvn) ||
-			!ValidateInputString(constants.PceSvn_Key, data.PlatformInfo.PceSvn) ||
-			!ValidateInputString(constants.PceId_Key, data.PlatformInfo.PceId) ||
-			!ValidateInputString(constants.QeId_Key, data.PlatformInfo.QeId) {
-			return &resourceError{Message: "Invalid query Param Data",
+		data.PlatformInfo.EncPpid = platform.EncPpid
+		data.PlatformInfo.CpuSvn = platform.CpuSvn
+		data.PlatformInfo.PceSvn = platform.PceSvn
+		data.PlatformInfo.PceId = platform.PceId
+		data.PlatformInfo.QeId = platform.QeId
+
+		if !validateInputString(constants.EncPPID_Key, data.PlatformInfo.EncPpid) ||
+			!validateInputString(constants.CpuSvn_Key, data.PlatformInfo.CpuSvn) ||
+			!validateInputString(constants.PceSvn_Key, data.PlatformInfo.PceSvn) ||
+			!validateInputString(constants.PceId_Key, data.PlatformInfo.PceId) ||
+			!validateInputString(constants.QeId_Key, data.PlatformInfo.QeId) {
+			return &resourceError{Message: "invalid query param Data",
 				StatusCode: http.StatusBadRequest}
 		}
 
 		data.Platform = &types.Platform{
-			Encppid:          strings.ToLower(data.PlatformInfo.EncPpid),
-			CpuSvn:           strings.ToLower(data.PlatformInfo.CpuSvn),
-			PceSvn:           strings.ToLower(data.PlatformInfo.PceSvn),
-			PceId:            strings.ToLower(data.PlatformInfo.PceId),
-			QeId:             strings.ToLower(data.PlatformInfo.QeId),
+			Encppid:          data.PlatformInfo.EncPpid,
+			CpuSvn:           data.PlatformInfo.CpuSvn,
+			PceSvn:           data.PlatformInfo.PceSvn,
+			PceId:            data.PlatformInfo.PceId,
+			QeId:             data.PlatformInfo.QeId,
 			PlatformManifest: data.PlatformInfo.PlatformManifest}
 
 		existingPlaformData, err := db.PlatformRepository().Retrieve(*data.Platform)
 		if existingPlaformData != nil {
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK) // HTTP 200
-			res := Response{Status: "Success", Message: "Platform Info Already cached"}
+			w.WriteHeader(http.StatusOK)
+			res := Response{Status: "Success", Message: "platform info already cached"}
 			js, err := json.Marshal(res)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -747,27 +754,27 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		data.Type = constants.CacheInsert
-		err = FetchPCKCertInfo(&data)
+		err = fetchPckCertInfo(&data)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		err = CachePlatformTcbInfo(db, &data)
+		err = cachePlatformTcbInfo(db, &data)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		err = CachePlatformInfo(db, &data)
+		err = cachePlatformInfo(db, &data)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		err = CachePckCertChainInfo(db, &data)
+		err = cachePckCertChainInfo(db, &data)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		err = CachePckCertInfo(db, &data)
+		err = cachePckCertInfo(db, &data)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
@@ -776,26 +783,26 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 		if existingPckCrl == nil {
 			data.PckCRLInfo.Ca = constants.Ca_Processor
-			err = FetchPCKCRLInfo(&data)
+			err = fetchPckCrlInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
 
-			err = CachePckCRLInfo(db, &data)
+			err = cachePckCrlInfo(db, &data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{Fmspc: strings.ToLower(data.PlatformInfo.Fmspc)}
+		TcbInfo := types.FmspcTcbInfo{Fmspc: data.PlatformInfo.Fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
-			err = FetchFmspcTcbInfo(&data)
+			err = fetchFmspcTcbInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
 
-			err = CacheFmspcTcbInfo(db, &data)
+			err = cacheFmspcTcbInfo(db, &data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -803,27 +810,27 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		existingQEData, err := db.QEIdentityRepository().RetrieveAll()
 		if existingPlaformData != nil {
-			return &resourceError{Message: "Platform Info Already exist", StatusCode: http.StatusBadRequest}
+			return &resourceError{Message: "platform info already cached", StatusCode: http.StatusBadRequest}
 		}
 
 		if len(existingQEData) == 0 {
-			err = FetchQEIdentityInfo(&data)
+			err = fetchQeIdentityInfo(&data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
 
-			err = CacheQEIdentityInfo(db, &data)
+			err = cacheQeIdentityInfo(db, &data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
 		} else {
-			log.WithField("Tcb Data count", len(existingQEData)).Debug("QE Data already present")
+			log.WithField("qe data count", len(existingQEData)).Debug("qe identity already cached")
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated) // HTTP 201
+		w.WriteHeader(http.StatusCreated)
 
-		res := Response{Status: "Created", Message: "Platform Data pushed Successfully"}
+		res := Response{Status: "Created", Message: "platform data pushed to scs"}
 		js, err := json.Marshal(res)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -833,10 +840,10 @@ func PushPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-func RefreshPckCerts(db repository.SCSDatabase) error {
+func refreshPckCerts(db repository.SCSDatabase) error {
 	existingPlaformData, err := db.PlatformRepository().RetrieveAllPlatformInfo()
 	if len(existingPlaformData) == 0 {
-		return errors.New("No Platform values are cached in SCS, cannot perform refresh")
+		return errors.New("no platform value records are found in db, cannot perform refresh")
 	}
 
 	var data SgxData
@@ -852,14 +859,14 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 		data.PlatformInfo.CreatedTime = tmp.CreatedTime
 		data.PlatformInfo.PlatformManifest = tmp.PlatformManifest
 
-		err = FetchPCKCertInfo(&data)
+		err = fetchPckCertInfo(&data)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error in Refresh Pck Cert Info: %s", string(err.Error())))
+			return errors.New(fmt.Sprintf("pck cert refresh failed: %s", string(err.Error())))
 		}
 
-		err = CachePlatformTcbInfo(db, &data)
+		err = cachePlatformTcbInfo(db, &data)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error in Cache Platform TcbInfo: %s", err.Error()))
+			return errors.New(fmt.Sprintf("tcbinfo refresh failed: %s", err.Error()))
 		}
 
 		existingPckCertData := &types.PckCert{
@@ -873,12 +880,12 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 		data.PckCertChainInfo.Id = existingPckCertData.PckCertChainId
 		data.PckCertChainInfo.CreatedTime = existingPckCertData.CreatedTime
 
-		err = CachePckCertChainInfo(db, &data)
+		err = cachePckCertChainInfo(db, &data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Cache Pck CertChain Info: %s", err.Error()))
 		}
 
-		err = CachePckCertInfo(db, &data)
+		err = cachePckCertInfo(db, &data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Cache Pck Cert Info: %s", err.Error()))
 		}
@@ -887,35 +894,35 @@ func RefreshPckCerts(db repository.SCSDatabase) error {
 	return nil
 }
 
-func RefreshAllPckCrl(db repository.SCSDatabase) error {
+func refreshAllPckCrl(db repository.SCSDatabase) error {
 	existingPckCrlData, err := db.PckCrlRepository().RetrieveAllPckCrls()
 	if len(existingPckCrlData) == 0 {
-		return errors.New("Cached PCK Crl count is 0, cannot perform refresh operation")
+		return errors.New("no pck crl record found in db, cannot perform refresh operation")
 	}
 
 	var data SgxData
 	data.Type = constants.CacheRefresh
 	for n := 0; n < len(existingPckCrlData); n++ {
 		data.PckCRLInfo.Ca = existingPckCrlData[n].Ca
-		err = FetchPCKCRLInfo(&data)
+		err = fetchPckCrlInfo(&data)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error in Fetch Pck CRL info: %s", err.Error()))
+			return errors.New(fmt.Sprintf("refresh of pckcrl failed: %s", err.Error()))
 		}
 
 		data.PckCRLInfo.CreatedTime = existingPckCrlData[n].CreatedTime
-		err = CachePckCRLInfo(db, &data)
+		err = cachePckCrlInfo(db, &data)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error in Cache Pck CRL info: %s", err.Error()))
+			return errors.New(fmt.Sprintf("refresh of pckcrl failed: %s", err.Error()))
 		}
 	}
 	log.Debug("All PckCrls for the platform refeteched from PCS as part of refresh")
 	return nil
 }
 
-func RefreshAllTcbInfo(db repository.SCSDatabase) error {
+func refreshAllTcbInfo(db repository.SCSDatabase) error {
 	existingTcbInfoData, err := db.FmspcTcbInfoRepository().RetrieveAllFmspcTcbInfos()
 	if len(existingTcbInfoData) == 0 {
-		return errors.New("Cached Tcb Info count is 0, cannot perform refresh operation")
+		return errors.New("no tcbinfo record found in db, cannot perform refresh operation")
 	}
 
 	log.Debug("Existing Fmspc count:", len(existingTcbInfoData))
@@ -923,13 +930,13 @@ func RefreshAllTcbInfo(db repository.SCSDatabase) error {
 	data.Type = constants.CacheRefresh
 	for n := 0; n < len(existingTcbInfoData); n++ {
 		data.FmspcTcbInfo.Fmspc = existingTcbInfoData[n].Fmspc
-		err = FetchFmspcTcbInfo(&data)
+		err = fetchFmspcTcbInfo(&data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Fetch Tcb info: %s", err.Error()))
 		}
 
 		data.FmspcTcbInfo.CreatedTime = existingTcbInfoData[n].CreatedTime
-		err = CacheFmspcTcbInfo(db, &data)
+		err = cacheFmspcTcbInfo(db, &data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Cache Fmspc Tcb info: %s", err.Error()))
 		}
@@ -938,23 +945,23 @@ func RefreshAllTcbInfo(db repository.SCSDatabase) error {
 	return nil
 }
 
-func RefreshAllQE(db repository.SCSDatabase) error {
+func refreshAllQE(db repository.SCSDatabase) error {
 	existingQEData, err := db.QEIdentityRepository().RetrieveAll()
 	if len(existingQEData) == 0 {
-		return errors.New("Cached QEIdentity count is 0, cannot perform refresh operation")
+		return errors.New("no qe identity record found in db, cannot perform refresh operation")
 	}
 
 	log.Debug("Existing QEIdentity count:", len(existingQEData))
 	var data SgxData
 	data.Type = constants.CacheRefresh
 	for n := 0; n < len(existingQEData); n++ {
-		err = FetchQEIdentityInfo(&data)
+		err = fetchQeIdentityInfo(&data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Fetch QEIdentity info: %s", err.Error()))
 		}
 		data.QEInfo.CreatedTime = existingQEData[n].CreatedTime
 		data.QEInfo.ID = existingQEData[n].ID
-		err = CacheQEIdentityInfo(db, &data)
+		err = cacheQeIdentityInfo(db, &data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Cache QEIdentity info: %s", err.Error()))
 		}
@@ -963,47 +970,47 @@ func RefreshAllQE(db repository.SCSDatabase) error {
 	return nil
 }
 
-func RefreshTcbInfos(db repository.SCSDatabase) error {
-	err := RefreshAllPckCrl(db)
+func refreshTcbInfos(db repository.SCSDatabase) error {
+	err := refreshAllPckCrl(db)
 	if err != nil {
-		log.WithError(err).Error("Could not complete refresh of PCK Crl")
+		log.WithError(err).Error("could not complete refresh of PCK Crl")
 		return err
 	}
 
-	err = RefreshAllTcbInfo(db)
+	err = refreshAllTcbInfo(db)
 	if err != nil {
-		log.WithError(err).Error("Could not complete refresh of TcbInfo")
+		log.WithError(err).Error("could not complete refresh of TcbInfo")
 		return err
 	}
 
-	err = RefreshAllQE(db)
+	err = refreshAllQE(db)
 	if err != nil {
-		log.WithError(err).Error("Could not complete refresh of QE Identity")
+		log.WithError(err).Error("could not complete refresh of QE Identity")
 		return err
 	}
 	return nil
 }
 
-func RefreshPlatformInfoTimerCB(db repository.SCSDatabase, rtype string) error {
+func RefreshPlatformInfoTimer(db repository.SCSDatabase, rtype string) error {
 	var err error
 	if strings.Compare(rtype, constants.Type_Refresh_Cert) == 0 {
-		err = RefreshPckCerts(db)
+		err = refreshPckCerts(db)
 		if err != nil {
-			log.WithError(err).Error("Could not complete refresh of Pck Certificates")
+			log.WithError(err).Error("could not complete refresh of Pck Certificates")
 			return err
 		}
 	} else if strings.Compare(rtype, constants.Type_Refresh_Tcb) == 0 {
-		err = RefreshTcbInfos(db)
+		err = refreshTcbInfos(db)
 		if err != nil {
-			log.WithError(err).Error("Could not complete refresh of TcbInfo")
+			log.WithError(err).Error("could not complete refresh of TcbInfo")
 			return err
 		}
 	}
-	log.Debug("Timer CB: RefreshPlatformInfoTimerCB, completed")
+	log.Debug("Refresh Timer Callback: refreshPlatformInfoTimer, completed")
 	return nil
 }
 
-func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
+func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		err := AuthorizeEndpoint(r, constants.CacheManagerGroupName, true)
@@ -1013,11 +1020,11 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		err = RefreshPckCerts(db)
+		err = refreshPckCerts(db)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound) // HTTP 404
+			w.WriteHeader(http.StatusNotFound)
 
-			res := Response{Status: "Failure", Message: "Could not find platform info in database"}
+			res := Response{Status: "Failure", Message: "could not find platform info in database"}
 			js, err := json.Marshal(res)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
@@ -1026,11 +1033,11 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			return err
 		}
 
-		err = RefreshTcbInfos(db)
+		err = refreshTcbInfos(db)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound) // HTTP 404
+			w.WriteHeader(http.StatusNotFound)
 
-			res := Response{Status: "Failure", Message: "Could not find platform info in database"}
+			res := Response{Status: "Failure", Message: "could not find platform info in database"}
 			js, err := json.Marshal(res)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
@@ -1039,9 +1046,9 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 			return err
 		}
 
-		w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK)
 
-		res := Response{Status: "Success", Message: "All Platform Data refreshed Successfully"}
+		res := Response{Status: "Success", Message: "sgx collaterals refreshed successfully"}
 		js, err := json.Marshal(res)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -1052,7 +1059,7 @@ func RefreshPlatformInfoCB(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-func CompareTcbComponents(pckComponents []byte, pckpcesvn uint16, tcbComponents []byte, tcbpcesvn uint16) int {
+func compareTcbComponents(pckComponents []byte, pckpcesvn uint16, tcbComponents []byte, tcbpcesvn uint16) int {
 	left_lower := false
 	right_lower := false
 
@@ -1084,7 +1091,7 @@ func CompareTcbComponents(pckComponents []byte, pckpcesvn uint16, tcbComponents 
 	return EqualOrGreater
 }
 
-func GetTcbCompList(TcbLevelList *TcbLevels) []byte {
+func getTcbCompList(TcbLevelList *TcbLevels) []byte {
 	TcbCompLevel := make([]byte, constants.MaxTcbLevels)
 
 	TcbCompLevel[0] = byte(TcbLevelList.SgxTcbComp01Svn)
@@ -1120,7 +1127,7 @@ func GetTcbCompList(TcbLevelList *TcbLevels) []byte {
  *    Otherwise, move to the next item on TCB Levels list
  * 6. If no TCB level matches SGX PCK Certificate, then TCB Level is not supported
  */
-func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
+func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		err := AuthorizeEndpoint(r, constants.HostDataReaderGroupName, true)
@@ -1128,21 +1135,21 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 			return err
 		}
 
-		if ( len(r.URL.Query()) == 0) {
-			return &resourceError{Message: "GetTcbStatusCB: The Request Query not present",
+		if len(r.URL.Query()) == 0 {
+			return &resourceError{Message: "query data not provided",
 				StatusCode: http.StatusBadRequest}
 		}
-		QeId, _ := r.URL.Query()["qeid"]
-		if !ValidateInputString(constants.QeId_Key, QeId[0]) {
-			return &resourceError{Message: "GetTcbStatusCB: Invalid QeId",
+		QeId := r.URL.Query().Get("qeid")
+		if !validateInputString(constants.QeId_Key, QeId) {
+			return &resourceError{Message: "invalid qeid",
 				StatusCode: http.StatusBadRequest}
 		}
 		var data SgxData
 
-		pckinfo := &types.PckCert{QeId: QeId[0]}
+		pckinfo := &types.PckCert{QeId: QeId}
 		existingPckCertData, err := db.PckCertRepository().Retrieve(*pckinfo)
 		if existingPckCertData == nil {
-			return &resourceError{Message: "GetTcbStatusCB: No PckCert record found: " + err.Error(),
+			return &resourceError{Message: "no pck cert record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 
@@ -1150,10 +1157,10 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		data.PckCertInfo.Tcbms = existingPckCertData.Tcbms
 		data.PckCertInfo.TotalPckCerts = len(existingPckCertData.PckCerts)
 
-		existingPlatformData := &types.Platform{QeId: QeId[0]}
+		existingPlatformData := &types.Platform{QeId: QeId}
 		existingPlatformData, err = db.PlatformRepository().Retrieve(*existingPlatformData)
 		if existingPlatformData == nil {
-			return &resourceError{Message: "GetTcbStatusCB: No Platform record found: " + err.Error(),
+			return &resourceError{Message: "no platform record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 
@@ -1162,24 +1169,24 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		data.PlatformInfo.PceId = existingPlatformData.PceId
 		data.PlatformInfo.Fmspc = existingPlatformData.Fmspc
 
-		TcbInfo := types.FmspcTcbInfo{Fmspc: strings.ToLower(data.PlatformInfo.Fmspc)}
+		TcbInfo := types.FmspcTcbInfo{Fmspc: data.PlatformInfo.Fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
-			return &resourceError{Message: "GetTcbStatusCB: No FmspcTcb record found: " + err.Error(),
+			return &resourceError{Message: "no tcb info record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 		data.FmspcTcbInfo.TcbInfo = existingFmspc.TcbInfo
 
-		certIdx, err := GetBestPckCert(&data)
+		certIdx, err := getBestPckCert(&data)
 		if err != nil {
-			return &resourceError{Message: "GetBestPckCert: No best suited pck cert for current tcb level: " + err.Error(),
+			return &resourceError{Message: "cannot select pck cert for current tcb level: " + err.Error(),
 				StatusCode: http.StatusInternalServerError}
 		}
 
-		// for the selectd pck cert, select corresponding raw tcb level (tcbm)
+		// for the selected pck cert, select corresponding raw tcb level (tcbm)
 		tcbm, err1 := hex.DecodeString(data.PckCertInfo.Tcbms[certIdx])
 		if err1 != nil {
-			return &resourceError{Message: "DecodeTcmbString: Hex Decode Error: " + err1.Error(),
+			return &resourceError{Message: "cannot decode tcbm: " + err1.Error(),
 				StatusCode: http.StatusInternalServerError}
 		}
 
@@ -1193,7 +1200,7 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		// unmarshal the json encoded TcbInfo response for a platform
 		err = json.Unmarshal([]byte(data.FmspcTcbInfo.TcbInfo), &tcbInfo)
 		if err != nil {
-			return &resourceError{Message: "GetTcbInfo: Json Unmarshal error: " + err.Error(),
+			return &resourceError{Message: "cannot unmarshal tcbinfo: " + err.Error(),
 				StatusCode: http.StatusInternalServerError}
 		}
 
@@ -1206,8 +1213,8 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		// iterate through all TCB Levels present in TCBInfo
 		for i := 0; i < len(tcbInfo.TcbInfo.TcbLevels); i++ {
 			TcbPceSvn := tcbInfo.TcbInfo.TcbLevels[i].Tcb.PceSvn
-			TcbComponents = GetTcbCompList(&tcbInfo.TcbInfo.TcbLevels[i].Tcb)
-			TcbError := CompareTcbComponents(PckComponents, PckPceSvn, TcbComponents, TcbPceSvn)
+			TcbComponents = getTcbCompList(&tcbInfo.TcbInfo.TcbLevels[i].Tcb)
+			TcbError := compareTcbComponents(PckComponents, PckPceSvn, TcbComponents, TcbPceSvn)
 			if TcbError == EqualOrGreater {
 				Status = tcbInfo.TcbInfo.TcbLevels[i].TcbStatus
 				break
@@ -1220,7 +1227,7 @@ func GetTcbStatusCB(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK) // HTTP 200
+		w.WriteHeader(http.StatusOK)
 
 		res := Response{Status: response.Status, Message: response.Message}
 		js, err := json.Marshal(res)
@@ -1242,7 +1249,7 @@ func getPcsVersion() int {
 		version, _ := strconv.Atoi(str[3])
 		return version
 	} else {
-		log.Error("Failed to get version")
+		log.Error("failed to get pcs server version")
 		return 0
 	}
 }

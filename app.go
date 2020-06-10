@@ -7,39 +7,39 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509/pkix"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
+	stdlog "log"
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"os/signal"
+	"os/user"
+	"strconv"
 	"strings"
 	"syscall"
-	"strconv"
 	"time"
-	stdlog "log"
 
-	"intel/isecl/lib/common/v2/middleware"
-	"intel/isecl/scs/config"
-	"intel/isecl/scs/constants"
-	"intel/isecl/scs/repository/postgres"
-	"intel/isecl/scs/repository"
-	"intel/isecl/scs/resource"
-	"intel/isecl/scs/tasks"
-	"intel/isecl/scs/version"
 	"intel/isecl/lib/common/v2/crypt"
-	"intel/isecl/lib/common/v2/setup"
-	"intel/isecl/lib/common/v2/validation"
 	e "intel/isecl/lib/common/v2/exec"
-	cos "intel/isecl/lib/common/v2/os"
 	commLog "intel/isecl/lib/common/v2/log"
 	commLogMsg "intel/isecl/lib/common/v2/log/message"
 	commLogInt "intel/isecl/lib/common/v2/log/setup"
+	"intel/isecl/lib/common/v2/middleware"
+	cos "intel/isecl/lib/common/v2/os"
+	"intel/isecl/lib/common/v2/setup"
+	"intel/isecl/lib/common/v2/validation"
+	"intel/isecl/scs/config"
+	"intel/isecl/scs/constants"
+	"intel/isecl/scs/repository"
+	"intel/isecl/scs/repository/postgres"
+	"intel/isecl/scs/resource"
+	"intel/isecl/scs/tasks"
+	"intel/isecl/scs/version"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -221,7 +221,7 @@ func (a *App) configureLogs(stdOut, logFile bool) {
 	if stdOut {
 		if logFile {
 			ioWriterDefault = io.MultiWriter(os.Stdout, a.LogWriter)
-	} else {
+		} else {
 			ioWriterDefault = os.Stdout
 		}
 	}
@@ -334,11 +334,11 @@ func (a *App) Run(args []string) error {
 		setupRunner := &setup.Runner{
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
-					Flags:         flags,
-					CmsBaseURL:    a.Config.CMSBaseUrl,
-					CaCertDirPath: constants.TrustedCAsStoreDir,
+					Flags:                flags,
+					CmsBaseURL:           a.Config.CMSBaseUrl,
+					CaCertDirPath:        constants.TrustedCAsStoreDir,
 					TrustedTlsCertDigest: a.Config.CmsTlsCertDigest,
-					ConsoleWriter: os.Stdout,
+					ConsoleWriter:        os.Stdout,
 				},
 				setup.Download_Cert{
 					Flags:              flags,
@@ -348,7 +348,7 @@ func (a *App) Run(args []string) error {
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
 					CmsBaseURL:         a.Config.CMSBaseUrl,
 					Subject: pkix.Name{
-						CommonName:   a.Config.Subject.TLSCertCommonName,
+						CommonName: a.Config.Subject.TLSCertCommonName,
 					},
 					SanList:       a.Config.CertSANList,
 					CertType:      "TLS",
@@ -378,28 +378,28 @@ func (a *App) Run(args []string) error {
 			log.WithError(err).Error("Error running setup")
 			fmt.Fprintf(os.Stderr, "Error running setup: %s\n", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
-	        }
+		}
 
 		scsUser, err := user.Lookup(constants.SCSUserName)
 		if err != nil {
-			return errors.Wrapf(err,"Could not find user '%s'", constants.SCSUserName)
+			return errors.Wrapf(err, "Could not find user '%s'", constants.SCSUserName)
 		}
 
 		uid, err := strconv.Atoi(scsUser.Uid)
 		if err != nil {
-			return errors.Wrapf(err,"Could not parse scs user uid '%s'", scsUser.Uid)
+			return errors.Wrapf(err, "Could not parse scs user uid '%s'", scsUser.Uid)
 		}
 
 		gid, err := strconv.Atoi(scsUser.Gid)
 		if err != nil {
-			return errors.Wrapf(err,"Could not parse scs user gid '%s'", scsUser.Gid)
+			return errors.Wrapf(err, "Could not parse scs user gid '%s'", scsUser.Gid)
 		}
 
 		//Change the fileownership to scs user
 
 		err = cos.ChownR(constants.ConfigDir, uid, gid)
 		if err != nil {
-			return errors.Wrap(err,"Error while changing file ownership")
+			return errors.Wrap(err, "Error while changing file ownership")
 		}
 		if task == "download_cert" {
 			err = os.Chown(a.Config.TLSKeyFile, uid, gid)
@@ -423,19 +423,19 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
 		defer ticker.Stop()
 		for {
-		    select {
+			select {
 			case <-stop:
 				fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
-			return
+				return
 			case t := <-ticker.C:
 				log.Debug("Timer started", t)
-				err := resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Cert)
+				err := resource.RefreshPlatformInfoTimer(db, constants.Type_Refresh_Cert)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error: Refresh Cert ends with error:%s", err.Error())
+					fmt.Fprintf(os.Stderr, "Error: refresh pck cert failed  with error:%s", err.Error())
 				}
-				err = resource.RefreshPlatformInfoTimerCB(db, constants.Type_Refresh_Tcb)
+				err = resource.RefreshPlatformInfoTimer(db, constants.Type_Refresh_Tcb)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error: Refresh TCB ends with error:%s", err.Error())
+					fmt.Fprintf(os.Stderr, "Error: refresh tcbinfo failed  with error:%s", err.Error())
 				}
 			}
 		}
@@ -478,48 +478,11 @@ func (a *App) startServer() error {
 		}
 	}(resource.QuoteProviderOps)
 
-	sr = r.PathPrefix("/scs/sgx/certification/v1/pckcert").Subrouter()
-	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
-		for _, setter := range setters {
-			setter(sr, scsDB)
-		}
-	}(resource.QuoteProviderOps)
-
-	sr = r.PathPrefix("/scs/sgx/certification/v1/pckcrl").Subrouter()
-	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
-					constants.TrustedCAsStoreDir, fnGetJwtCerts,
-					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
-	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
-		for _, setter := range setters {
-			setter(sr, scsDB)
-		}
-	}(resource.PlatformInfoOps)
-
-	sr = r.PathPrefix("/scs/sgx/certification/v1/qe/identity").Subrouter()
-	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
-					constants.TrustedCAsStoreDir, fnGetJwtCerts,
-					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
-	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
-		for _, setter := range setters {
-			setter(sr, scsDB)
-		}
-	}(resource.PlatformInfoOps)
-
-	sr = r.PathPrefix("/scs/sgx/certification/v1/tcb").Subrouter()
-	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
-					constants.TrustedCAsStoreDir, fnGetJwtCerts,
-					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
-	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
-		for _, setter := range setters {
-			setter(sr, scsDB)
-		}
-	}(resource.PlatformInfoOps)
-
 	// Use token based auth for platform data push api
 	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
 	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
-					constants.TrustedCAsStoreDir, fnGetJwtCerts,
-					time.Minute*constants.DefaultJwtValidateCacheKeyMins))
+		constants.TrustedCAsStoreDir, fnGetJwtCerts,
+		time.Minute*constants.DefaultJwtValidateCacheKeyMins))
 	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
 		for _, setter := range setters {
 			setter(sr, scsDB)
@@ -543,10 +506,10 @@ func (a *App) startServer() error {
 		return err
 	}
 	h := &http.Server{
-		Addr:      fmt.Sprintf(":%d", c.Port),
-		Handler:   handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
-		ErrorLog:	   httpLog,
-		TLSConfig:	   tlsconfig,
+		Addr:              fmt.Sprintf(":%d", c.Port),
+		Handler:           handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
+		ErrorLog:          httpLog,
+		TLSConfig:         tlsconfig,
 		ReadTimeout:       c.ReadTimeout,
 		ReadHeaderTimeout: c.ReadHeaderTimeout,
 		WriteTimeout:      c.WriteTimeout,
@@ -656,7 +619,7 @@ func removeService() {
 
 func validateCmdAndEnv(env_names_cmd_opts map[string]string, flags *flag.FlagSet) error {
 	env_names := make([]string, 0)
-	for k, _ := range env_names_cmd_opts {
+	for k := range env_names_cmd_opts {
 		env_names = append(env_names, k)
 	}
 
@@ -682,7 +645,7 @@ func validateSetupArgs(cmd string, args []string) error {
 		return nil
 
 	case "download_cert":
-	     return nil
+		return nil
 
 	case "database":
 		env_names_cmd_opts := map[string]string{
@@ -738,19 +701,19 @@ func validateSetupArgs(cmd string, args []string) error {
 
 	return nil
 }
-func (a* App) PrintDirFileContents(dir string) error {
-        if dir == "" {
-                return fmt.Errorf("PrintDirFileContents needs a directory path to look for files")
-        }
-        data, err := cos.GetDirFileContents(dir, "")
-        if err != nil {
-                return err
-        }
-        for i, fileData := range data {
-                fmt.Println("File :", i)
-                fmt.Printf("%s",fileData)
-        }
-        return nil
+func (a *App) PrintDirFileContents(dir string) error {
+	if dir == "" {
+		return fmt.Errorf("PrintDirFileContents needs a directory path to look for files")
+	}
+	data, err := cos.GetDirFileContents(dir, "")
+	if err != nil {
+		return err
+	}
+	for i, fileData := range data {
+		fmt.Println("File :", i)
+		fmt.Printf("%s", fileData)
+	}
+	return nil
 }
 
 func (a *App) DatabaseFactory() (repository.SCSDatabase, error) {
@@ -794,7 +757,7 @@ func fnGetJwtCerts() error {
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
-				RootCAs: rootCAs,
+				RootCAs:            rootCAs,
 			},
 		},
 	}

@@ -5,19 +5,19 @@
 package tasks
 
 import (
+	"github.com/stretchr/testify/assert"
 	"intel/isecl/lib/common/v2/setup"
 	"intel/isecl/scs/config"
 	"os"
 	"testing"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDatabaseSetup(t *testing.T) {
 	assert := assert.New(t)
 	c := config.Configuration{}
 	s := Database{
-		Flags: []string{"-db-host=hostname", "-db-port=5432", "-db-user=user", "-db-pass=password", "-db-name=scs_db"},
-		Config: &c,
+		Flags:         []string{"-db-host=hostname", "-db-port=5432", "-db-user=user", "-db-pass=password", "-db-name=scs_db"},
+		Config:        &c,
 		ConsoleWriter: os.Stdout,
 	}
 	ctx := setup.Context{}
@@ -39,8 +39,8 @@ func TestDatabaseSetupEnv(t *testing.T) {
 	os.Setenv("SCS_DB_NAME", "scs_db")
 	c := config.Configuration{}
 	s := Database{
-		Flags: nil,
-		Config: &c,
+		Flags:         nil,
+		Config:        &c,
 		ConsoleWriter: os.Stdout,
 	}
 	ctx := setup.Context{}

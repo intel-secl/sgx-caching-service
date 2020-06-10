@@ -5,9 +5,9 @@
 package postgres
 
 import (
-	"intel/isecl/scs/types"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/types"
 )
 
 type PostgresQEIdentityRepository struct {

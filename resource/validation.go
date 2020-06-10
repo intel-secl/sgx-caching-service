@@ -19,7 +19,7 @@ var regExMap = map[string]*regexp.Regexp{
 	constants.Fmspc_Key:   regexp.MustCompile(`^[0-9a-fA-F]{12}$`),
 	constants.QeId_Key:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`)}
 
-func ValidateInputString(key string, inString string) bool {
+func validateInputString(key string, inString string) bool {
 	regEx := regExMap[key]
 	if len(key) <= 0 || !regEx.MatchString(inString) {
 		log.WithField(key, inString).Error("Input Validation")

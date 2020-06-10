@@ -5,9 +5,9 @@
 package postgres
 
 import (
-	"intel/isecl/scs/types"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/types"
 )
 
 type PostgresPckCertRepository struct {
@@ -22,7 +22,7 @@ func (r *PostgresPckCertRepository) Create(u types.PckCert) (*types.PckCert, err
 func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckCert, error) {
 	var p types.PckCert
 	log.WithField("PckCert", pckcert).Debug("Retrieve Call")
-	err := r.db.Where("qe_id = ?",pckcert.QeId).First(&p).Error
+	err := r.db.Where("qe_id = ?", pckcert.QeId).First(&p).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to Retrieve PckCert record")
 	}

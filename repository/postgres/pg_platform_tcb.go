@@ -41,14 +41,14 @@ func (r *PostgresPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.
 }
 
 func (r *PostgresPlatformTcbRepository) RetrieveAllPlatformTcbInfo() (types.PlatformTcbs, error) {
-        var p types.PlatformTcbs
-        err := r.db.Find(&p).Error
-        if err != nil {
-                return nil, errors.Wrap(err, "RetrieveAllPlatformTcbInfo: failed to retrieve all PlatformTcbInfo")
-        }
+	var p types.PlatformTcbs
+	err := r.db.Find(&p).Error
+	if err != nil {
+		return nil, errors.Wrap(err, "RetrieveAllPlatformTcbInfo: failed to retrieve all PlatformTcbInfo")
+	}
 
-        log.WithField("db PlatformTcbInfo", p).Trace("RetrieveAll")
-        return p, nil
+	log.WithField("db PlatformTcbInfo", p).Trace("RetrieveAll")
+	return p, nil
 }
 
 func (r *PostgresPlatformTcbRepository) Update(u types.PlatformTcb) error {

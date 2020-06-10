@@ -74,7 +74,7 @@ func AuthorizeEndpoint(r *http.Request, roleName string, retNilCtxForEmptyCtx bo
 		return &resourceError{Message: "Could not get user roles from http context", StatusCode: http.StatusInternalServerError}
 	}
 
-	_, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, []ct.RoleInfo{ct.RoleInfo{Service: constants.ServiceName, Name: roleName}}, retNilCtxForEmptyCtx)
+	_, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, []ct.RoleInfo{{Service: constants.ServiceName, Name: roleName}}, retNilCtxForEmptyCtx)
 	if !foundRole {
 		slog.Infof("resource/resource: AuthorizeEndpoint() %s: endpoint access unauthorized, request role: %v", commLogMsg.UnauthorizedAccess, roleName)
 		return &privilegeError{Message: "", StatusCode: http.StatusForbidden}

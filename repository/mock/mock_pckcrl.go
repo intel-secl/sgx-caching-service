@@ -9,12 +9,12 @@ import (
 )
 
 type MockPckCrlRepository struct {
-	CreateFunc      func(types.PckCrl) (*types.PckCrl, error)
-	RetrieveFunc    func(types.PckCrl) (*types.PckCrl, error)
-	RetrieveAllFunc func(types.PckCrl) (types.PckCrls, error)
+	CreateFunc             func(types.PckCrl) (*types.PckCrl, error)
+	RetrieveFunc           func(types.PckCrl) (*types.PckCrl, error)
+	RetrieveAllFunc        func(types.PckCrl) (types.PckCrls, error)
 	RetrieveAllPckCrlsFunc func() (types.PckCrls, error)
-	UpdateFunc      func(types.PckCrl) error
-	DeleteFunc      func(types.PckCrl) error
+	UpdateFunc             func(types.PckCrl) error
+	DeleteFunc             func(types.PckCrl) error
 }
 
 func (m *MockPckCrlRepository) Create(crl types.PckCrl) (*types.PckCrl, error) {
