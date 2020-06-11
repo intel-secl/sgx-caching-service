@@ -5,9 +5,9 @@
 package postgres
 
 import (
-	"intel/isecl/scs/types"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/types"
 )
 
 type PostgresFmspcTcbInfoRepository struct {
@@ -15,12 +15,12 @@ type PostgresFmspcTcbInfoRepository struct {
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Create(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
-	err := r.db.Create(&tcb ).Error
+	err := r.db.Create(&tcb).Error
 	return &tcb, errors.Wrap(err, "create: failed to create fmspcTcbInfo")
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Retrieve(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
-	err := r.db.Where(&tcb ).First(&tcb ).Error
+	err := r.db.Where(&tcb).First(&tcb).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrive fmspcTcbInfo")
 	}
@@ -57,7 +57,7 @@ func (r *PostgresFmspcTcbInfoRepository) Update(tcb types.FmspcTcbInfo) error {
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Delete(tcb types.FmspcTcbInfo) error {
-	if err := r.db.Delete(&tcb ).Error; err != nil {
+	if err := r.db.Delete(&tcb).Error; err != nil {
 		return errors.Wrap(err, "Delete: failed to Delete fmspcTcbInfo")
 	}
 	return nil

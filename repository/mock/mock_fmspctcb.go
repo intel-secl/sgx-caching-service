@@ -9,12 +9,12 @@ import (
 )
 
 type MockFmspcTcbInfoRepository struct {
-	CreateFunc      func(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
-	RetrieveFunc    func(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
-	RetrieveAllFunc func(types.FmspcTcbInfo) (types.FmspcTcbInfos, error)
+	CreateFunc                   func(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
+	RetrieveFunc                 func(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
+	RetrieveAllFunc              func(types.FmspcTcbInfo) (types.FmspcTcbInfos, error)
 	RetrieveAllFmspcTcbInfosFunc func() (types.FmspcTcbInfos, error)
-	UpdateFunc      func(types.FmspcTcbInfo) error
-	DeleteFunc      func(types.FmspcTcbInfo) error
+	UpdateFunc                   func(types.FmspcTcbInfo) error
+	DeleteFunc                   func(types.FmspcTcbInfo) error
 }
 
 func (m *MockFmspcTcbInfoRepository) Create(fmspc types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {

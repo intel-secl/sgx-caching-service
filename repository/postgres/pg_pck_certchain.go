@@ -5,9 +5,9 @@
 package postgres
 
 import (
-	"intel/isecl/scs/types"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/types"
 )
 
 type PostgresPckCertChainRepository struct {
@@ -51,4 +51,3 @@ func (r *PostgresPckCertChainRepository) Delete(certchain types.PckCertChain) er
 	}
 	return nil
 }
-

@@ -41,14 +41,14 @@ func (r *PostgresPlatformRepository) RetrieveAll(u types.Platform) (types.Platfo
 }
 
 func (r *PostgresPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms, error) {
-        var p types.Platforms
-        err := r.db.Find(&p).Error
-        if err != nil {
-                return nil, errors.Wrap(err, "RetrieveAllPlatformInfo: failed to retrieve all PlatformInfo")
-        }
+	var p types.Platforms
+	err := r.db.Find(&p).Error
+	if err != nil {
+		return nil, errors.Wrap(err, "RetrieveAllPlatformInfo: failed to retrieve all PlatformInfo")
+	}
 
-        log.WithField("db PlatformInfo", p).Trace("RetrieveAll")
-        return p, nil
+	log.WithField("db PlatformInfo", p).Trace("RetrieveAll")
+	return p, nil
 }
 
 func (r *PostgresPlatformRepository) Update(u types.Platform) error {

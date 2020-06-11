@@ -5,9 +5,9 @@
 package postgres
 
 import (
-	"intel/isecl/scs/types"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/types"
 )
 
 type PostgresPckCrlRepository struct {
@@ -40,13 +40,13 @@ func (r *PostgresPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls,
 
 func (r *PostgresPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
 	var crls types.PckCrls
-        err := r.db.Find(&crls).Error
-        if err != nil {
-                return nil, errors.Wrap(err, "RetrieveAllPckCrls: Failed to RetrieveAllPckCrls")
-        }
+	err := r.db.Find(&crls).Error
+	if err != nil {
+		return nil, errors.Wrap(err, "RetrieveAllPckCrls: Failed to RetrieveAllPckCrls")
+	}
 
-        log.WithField("DB Crls", crls).Trace("RetrieveAllPckCrls")
-        return crls, errors.Wrap(err, "RetrieveAllPckCrls: Failed to RetrieveAllPckCrls")
+	log.WithField("DB Crls", crls).Trace("RetrieveAllPckCrls")
+	return crls, errors.Wrap(err, "RetrieveAllPckCrls: Failed to RetrieveAllPckCrls")
 }
 
 func (r *PostgresPckCrlRepository) Update(crl types.PckCrl) error {

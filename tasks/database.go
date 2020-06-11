@@ -7,16 +7,16 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"intel/isecl/scs/config"
-	"intel/isecl/scs/constants"
-	"intel/isecl/scs/repository/postgres"
+	"github.com/pkg/errors"
 	cos "intel/isecl/lib/common/v2/os"
 	"intel/isecl/lib/common/v2/setup"
 	"intel/isecl/lib/common/v2/validation"
+	"intel/isecl/scs/config"
+	"intel/isecl/scs/constants"
+	"intel/isecl/scs/repository/postgres"
 	"io"
 	"os"
 	"strings"
-	"github.com/pkg/errors"
 )
 
 type Database struct {
@@ -80,7 +80,7 @@ func (db Database) Run(c setup.Context) error {
 	p.Migrate()
 	err = db.Config.Save()
 	if err != nil {
-		 return errors.Wrap(err, "setup database: failed to save config")
+		return errors.Wrap(err, "setup database: failed to save config")
 	}
 	return nil
 }
@@ -90,7 +90,7 @@ func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, 
 	sslCert = strings.TrimSpace(sslCert)
 	sslCertSrc = strings.TrimSpace(sslCertSrc)
 
-	if  sslMode != "allow" && sslMode != "prefer" && sslMode != "require" && sslMode != "verify-ca" {
+	if sslMode != "allow" && sslMode != "prefer" && sslMode != "require" && sslMode != "verify-ca" {
 		sslMode = "verify-full"
 	}
 

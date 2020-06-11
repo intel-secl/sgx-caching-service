@@ -6,16 +6,16 @@ package config
 
 import (
 	"errors"
-	"intel/isecl/scs/constants"
+	errorLog "github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	commLog "intel/isecl/lib/common/v2/log"
 	"intel/isecl/lib/common/v2/setup"
+	"intel/isecl/scs/constants"
 	"os"
 	"path"
 	"sync"
 	"time"
-	errorLog "github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 var slog = commLog.GetSecurityLogger()
@@ -23,21 +23,21 @@ var slog = commLog.GetSecurityLogger()
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
 type Configuration struct {
-	configFile string
-	Port       int
+	configFile       string
+	Port             int
 	CmsTlsCertDigest string
-	Postgres   struct {
+	Postgres         struct {
 		DBName   string
 		Username string
 		Password string
 		Hostname string
-		Port	int
-		SSLMode	string
-		SSLCert	string
+		Port     int
+		SSLMode  string
+		SSLCert  string
 	}
-	LogMaxLength	int
-	LogEnableStdout  bool
-	LogLevel	log.Level
+	LogMaxLength    int
+	LogEnableStdout bool
+	LogLevel        log.Level
 
 	AuthDefender struct {
 		MaxAttempts         int
@@ -49,28 +49,28 @@ type Configuration struct {
 		IncludeKid        bool
 		TokenDurationMins int
 	}
-	CMSBaseUrl string
+	CMSBaseUrl     string
 	AuthServiceUrl string
-	RefreshHours int
+	RefreshHours   int
 
 	ProvServerInfo struct {
-		ProvServerUrl	string
+		ProvServerUrl      string
 		ApiSubscriptionkey string
 	}
 	Subject struct {
 		TLSCertCommonName string
 		JWTCertCommonName string
-        }
-	TLSKeyFile	string
-	TLSCertFile	string
-	CertSANList	string
+	}
+	TLSKeyFile        string
+	TLSCertFile       string
+	CertSANList       string
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
 	MaxHeaderBytes    int
 
-	CachingModel	int
+	CachingModel int
 }
 
 var mu sync.Mutex
@@ -110,7 +110,7 @@ func (c *Configuration) Save() error {
 }
 
 func (conf *Configuration) SaveConfiguration(c setup.Context) error {
-        var err error = nil
+	var err error = nil
 
 	tlsCertDigest, err := c.GetenvString(constants.CmsTlsCertDigestEnv, "TLS certificate digest")
 	if err == nil && tlsCertDigest != "" {
@@ -126,9 +126,9 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	} else if conf.CMSBaseUrl == "" {
 		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
 		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
-        }
+	}
 
-        aasApiUrl, err := c.GetenvString("AAS_API_URL", "AAS API URL")
+	aasApiUrl, err := c.GetenvString("AAS_API_URL", "AAS API URL")
 	if err == nil && aasApiUrl != "" {
 		conf.AuthServiceUrl = aasApiUrl
 	} else if conf.AuthServiceUrl == "" {
@@ -136,7 +136,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		return errorLog.Wrap(errors.New("AAS_API_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
 	}
 
-        tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
+	tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
 	if err == nil && tlsCertCN != "" {
 		conf.Subject.TLSCertCommonName = tlsCertCN
 	} else if conf.Subject.TLSCertCommonName == "" {
@@ -180,13 +180,13 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	}
 
 	refreshHours, err := c.GetenvInt("SCS_REFRESH_HOURS", "SCS Automatic Refresh of SGX Data")
-	if err == nil && refreshHours < 1  {
+	if err == nil && refreshHours < 1 {
 		conf.RefreshHours = refreshHours
 	} else if err != nil || conf.RefreshHours < 1 {
 		conf.RefreshHours = constants.DefaultScsRefreshHours
 	}
 
-        return conf.Save()
+	return conf.Save()
 }
 
 func Load(path string) *Configuration {
