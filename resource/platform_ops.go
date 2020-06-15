@@ -722,6 +722,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		data.PlatformInfo.PceSvn = platform.PceSvn
 		data.PlatformInfo.PceId = platform.PceId
 		data.PlatformInfo.QeId = platform.QeId
+		data.PlatformInfo.PlatformManifest = platform.PlatformManifest
 
 		if !validateInputString(constants.EncPPID_Key, data.PlatformInfo.EncPpid) ||
 			!validateInputString(constants.CpuSvn_Key, data.PlatformInfo.CpuSvn) ||
