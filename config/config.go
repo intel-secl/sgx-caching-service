@@ -180,9 +180,13 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	}
 
 	refreshHours, err := c.GetenvInt("SCS_REFRESH_HOURS", "SCS Automatic Refresh of SGX Data")
-	if err == nil && refreshHours < 1 {
-		conf.RefreshHours = refreshHours
-	} else if err != nil || conf.RefreshHours < 1 {
+	if err == nil {
+		if refreshHours > 0 {
+			conf.RefreshHours = refreshHours
+		} else {
+			conf.RefreshHours = constants.DefaultScsRefreshHours
+		}
+	} else {
 		conf.RefreshHours = constants.DefaultScsRefreshHours
 	}
 
