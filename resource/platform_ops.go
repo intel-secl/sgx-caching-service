@@ -734,7 +734,6 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		data.Platform = &types.Platform{
-			Encppid:          data.PlatformInfo.EncPpid,
 			CpuSvn:           data.PlatformInfo.CpuSvn,
 			PceSvn:           data.PlatformInfo.PceSvn,
 			PceId:            data.PlatformInfo.PceId,
