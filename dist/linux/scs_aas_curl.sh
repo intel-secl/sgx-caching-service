@@ -7,7 +7,7 @@ echo "Setting up SCS Related roles and user in AAS Database"
 #Get the value of AAS IP address and port. Default vlue is also provided.
 aas_hostname=${AAS_URL:-"https://10.80.245.104:8444"}
 CURL_OPTS="-s -k"
-IPADDR="10.80.245.104,127.0.0.1,localhost"
+IPADDR="10.80.245.104"
 CN="SCS TLS Certificate"
 
 mkdir -p /tmp/setup/scs
