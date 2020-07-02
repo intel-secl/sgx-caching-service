@@ -864,6 +864,8 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 			return errors.New(fmt.Sprintf("pck cert refresh failed: %s", string(err.Error())))
 		}
 
+		data.PlatformTcbInfo.CreatedTime = tmp.CreatedTime
+
 		err = cachePlatformTcbInfo(db, &data)
 		if err != nil {
 			return errors.New(fmt.Sprintf("tcbinfo refresh failed: %s", err.Error()))
@@ -884,6 +886,8 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Cache Pck CertChain Info: %s", err.Error()))
 		}
+
+		data.PckCertInfo.CreatedTime = existingPckCertData.CreatedTime
 
 		err = cachePckCertInfo(db, &data)
 		if err != nil {
