@@ -64,21 +64,21 @@ func (e resourceError) Error() string {
 	return fmt.Sprintf("%d: %s", e.StatusCode, e.Message)
 }
 
-func AuthorizeEndpoint(r *http.Request, roleName string, retNilCtxForEmptyCtx bool) error {
-	log.Trace("resource/resource:AuthorizeEndpoint() Entering")
-	defer log.Trace("resource/resource:AuthorizeEndpoint() Leaving")
+func authorizeEndpoint(r *http.Request, roleName string, retNilCtxForEmptyCtx bool) error {
+	log.Trace("resource/resource:authorizeEndpoint() Entering")
+	defer log.Trace("resource/resource:authorizeEndpoint() Leaving")
 
 	privileges, err := context.GetUserRoles(r)
 	if err != nil {
-		slog.WithError(err).Error("resource/resource: AuthorizeEndpoint() Failed to read roles and permissions")
+		slog.WithError(err).Error("resource/resource: authorizeEndpoint() Failed to read roles and permissions")
 		return &resourceError{Message: "Could not get user roles from http context", StatusCode: http.StatusInternalServerError}
 	}
 
 	_, foundRole := auth.ValidatePermissionAndGetRoleContext(privileges, []ct.RoleInfo{{Service: constants.ServiceName, Name: roleName}}, retNilCtxForEmptyCtx)
 	if !foundRole {
-		slog.Infof("resource/resource: AuthorizeEndpoint() %s: endpoint access unauthorized, request role: %v", commLogMsg.UnauthorizedAccess, roleName)
+		slog.Infof("resource/resource: authorizeEndpoint() %s: endpoint access unauthorized, request role: %v", commLogMsg.UnauthorizedAccess, roleName)
 		return &privilegeError{Message: "", StatusCode: http.StatusForbidden}
 	}
-	slog.Infof("resource/resource: AuthorizeEndpoint() %s - %s", commLogMsg.AuthorizedAccess, r.RequestURI)
+	slog.Infof("resource/resource: authorizeEndpoint() %s - %s", commLogMsg.AuthorizedAccess, r.RequestURI)
 	return nil
 }
