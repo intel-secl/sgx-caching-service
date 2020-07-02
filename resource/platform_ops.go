@@ -698,7 +698,7 @@ func cachePckCrlInfo(db repository.SCSDatabase, data *SgxData) error {
 func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
-		err := AuthorizeEndpoint(r, constants.HostDataUpdaterGroupName, true)
+		err := authorizeEndpoint(r, constants.HostDataUpdaterGroupName, true)
 		if err != nil {
 			return err
 		}
@@ -1017,7 +1017,7 @@ func RefreshPlatformInfoTimer(db repository.SCSDatabase, rtype string) error {
 func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
-		err := AuthorizeEndpoint(r, constants.CacheManagerGroupName, true)
+		err := authorizeEndpoint(r, constants.CacheManagerGroupName, true)
 		if err != nil {
 			return err
 		}
@@ -1134,7 +1134,7 @@ func getTcbCompList(TcbLevelList *TcbLevels) []byte {
 func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
-		err := AuthorizeEndpoint(r, constants.HostDataReaderGroupName, true)
+		err := authorizeEndpoint(r, constants.HostDataReaderGroupName, true)
 		if err != nil {
 			return err
 		}
