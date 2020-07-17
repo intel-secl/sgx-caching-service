@@ -13,7 +13,7 @@ require (
 	golang.org/x/crypto master
 	golang.org/x/time master
 	gopkg.in/yaml.v2 v2.2.8
-	intel/isecl/lib/common/v2 v2.0.0
+	intel/isecl/lib/common/v2 v2.2.0
 )
 
-replace intel/isecl/lib/common/v2 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v2 v2.1/develop
+replace intel/isecl/lib/common/v2 => github.com/intel-secl/common/v2 v2.2.0
