@@ -146,3 +146,5 @@ else
 	export BEARER_TOKEN=`cat $tmpdir/scs_token-response.json`
 	echo $BEARER_TOKEN
 fi
+# cleanup
+rm -rf $tmpdir

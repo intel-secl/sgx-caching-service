@@ -26,6 +26,9 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+echo "Setting up SGX Caching Service Linux User..."
+id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
+
 echo "Installing SGX Caching Service..."
 
 COMPONENT_NAME=scs
@@ -39,9 +42,6 @@ CERTDIR_TOKENSIGN=$CERTS_PATH/tokensign
 CERTDIR_TRUSTEDJWTCERTS=$CERTS_PATH/trustedjwt
 CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
 CERTDIR_CMSROOTCAS=$CERTS_PATH/cms-root-ca
-
-echo "Setting up SGX Caching Service Linux User..."
-id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
 
 for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TOKENSIGN $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS $CERTDIR_CMSROOTCAS; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
@@ -78,9 +78,9 @@ systemctl daemon-reload
 auto_install() {
   local component=${1}
   local cprefix=${2}
-  local yum_packages=$(eval "echo \$${cprefix}_YUM_PACKAGES")
+  local dnf_packages=$(eval "echo \$${cprefix}_YUM_PACKAGES")
   # detect available package management tools. start with the less likely ones to differentiate.
-  yum -y install $yum_packages
+  dnf -y install $dnf_packages
 }
 
 # SCRIPT EXECUTION
@@ -138,6 +138,7 @@ fi
 # check if SCS_NOSETUP is defined
 if [ "${SCS_NOSETUP,,}" == "true" ]; then
     echo "SCS_NOSETUP is true, skipping setup"
+    echo "Run \"scs setup all\" for manual setup"
     echo "Installation completed successfully!"
 else 
     $COMPONENT_NAME setup all
