@@ -26,9 +26,6 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "Setting up SGX Caching Service Linux User..."
-id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
-
 echo "Installing SGX Caching Service..."
 
 COMPONENT_NAME=scs
@@ -42,6 +39,9 @@ CERTDIR_TOKENSIGN=$CERTS_PATH/tokensign
 CERTDIR_TRUSTEDJWTCERTS=$CERTS_PATH/trustedjwt
 CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
 CERTDIR_CMSROOTCAS=$CERTS_PATH/cms-root-ca
+
+echo "Setting up SGX Caching Service Linux User..."
+id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
 
 for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TOKENSIGN $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS $CERTDIR_CMSROOTCAS; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
