@@ -33,6 +33,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 	"intel/isecl/scs/config"
 	"intel/isecl/scs/constants"
 	"intel/isecl/scs/repository"
@@ -706,6 +707,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		var data SgxData
 		var platform PlatformInfo
 		if r.ContentLength == 0 {
+			slog.Error("resource/platform_ops: pushPlatformInfo() The request body was not provided")
 			return &resourceError{Message: "platform data not provided",
 				StatusCode: http.StatusBadRequest}
 		}
@@ -714,6 +716,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		dec.DisallowUnknownFields()
 		err = dec.Decode(&platform)
 		if err != nil {
+			slog.WithError(err).Errorf("resource/platform_ops: pushPlatformInfo() %s :  Failed to decode request body", commLogMsg.InvalidInputBadEncoding)
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
 
@@ -729,6 +732,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			!validateInputString(constants.PceSvn_Key, data.PlatformInfo.PceSvn) ||
 			!validateInputString(constants.PceId_Key, data.PlatformInfo.PceId) ||
 			!validateInputString(constants.QeId_Key, data.PlatformInfo.QeId) {
+			slog.Error("resource/platform_ops: pushPlatformInfo() Input validation failed")
 			return &resourceError{Message: "invalid query param Data",
 				StatusCode: http.StatusBadRequest}
 		}
@@ -836,6 +840,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 		w.Write(js)
+		slog.Infof("%s: platform data pushed by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -1058,7 +1063,7 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 		w.Write(js)
-
+		slog.Infof("%s: Platform data refreshed by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -1145,6 +1150,7 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 		}
 		QeId := r.URL.Query().Get("qeid")
 		if !validateInputString(constants.QeId_Key, QeId) {
+			slog.Errorf("resource/platform_ops: getTcbStatus() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid qeid",
 				StatusCode: http.StatusBadRequest}
 		}
@@ -1239,7 +1245,7 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 		w.Write(js)
-
+		slog.Infof("%s: TCB status retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }

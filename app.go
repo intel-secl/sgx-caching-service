@@ -375,7 +375,6 @@ func (a *App) Run(args []string) error {
 			err = setupRunner.RunTasks(task)
 		}
 		if err != nil {
-			log.WithError(err).Error("Error running setup")
 			fmt.Fprintf(os.Stderr, "Error running setup: %s\n", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
 		}

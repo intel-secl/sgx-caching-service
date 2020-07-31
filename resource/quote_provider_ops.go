@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 	"intel/isecl/scs/constants"
 	"intel/isecl/scs/repository"
 	"intel/isecl/scs/types"
@@ -53,6 +54,7 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 			!validateInputString(constants.PceSvn_Key, pcesvn) ||
 			!validateInputString(constants.PceId_Key, pceid) ||
 			!validateInputString(constants.QeId_Key, qeid) {
+			slog.Errorf("resource/quote_provider_ops: getPckCertificate() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param",
 				StatusCode: http.StatusBadRequest}
 		}
@@ -116,8 +118,8 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["sgx-tcbm"] = []string{existingPckCert.Tcbms[certIndex]}
 
 		w.WriteHeader(http.StatusOK)
-
 		w.Write([]byte(existingPckCert.PckCerts[certIndex]))
+		slog.Infof("%s: PCK certificate retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -133,6 +135,7 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 		Ca := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("ca")))
 
 		if !validateInputString(constants.Ca_Key, Ca) {
+			slog.Errorf("resource/quote_provider_ops: getPckCrl() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param",
 				StatusCode: http.StatusBadRequest}
 		}
@@ -157,6 +160,7 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["SGX-PCK-CRL-Issuer-Chain"] = []string{string(existingPckCrl.PckCrlCertChain)}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(existingPckCrl.PckCrl))
+		slog.Infof("%s: PCK CRL retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -178,6 +182,7 @@ func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["Sgx-Qe-Identity-Issuer-Chain"] = []string{string(existingQeInfo[0].QeIssuerChain)}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(existingQeInfo[0].QeInfo))
+		slog.Infof("%s: QE Identity info retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
@@ -192,6 +197,7 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		Fmspc := strings.ToLower(r.URL.Query().Get("fmspc"))
 
 		if !validateInputString(constants.Fmspc_Key, Fmspc) {
+			slog.Errorf("resource/quote_provider_ops: getTcbInfo() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 		log.WithField("Fmspc", Fmspc[0]).Debug("Value")
@@ -209,6 +215,7 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["SGX-TCB-Info-Issuer-Chain"] = []string{string(existingFmspc.TcbInfoIssuerChain)}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(existingFmspc.TcbInfo))
+		slog.Infof("%s: TCB Info retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
 }
