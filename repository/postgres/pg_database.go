@@ -7,6 +7,7 @@ package postgres
 import (
 	"fmt"
 	commLog "intel/isecl/lib/common/v2/log"
+	commLogMsg "intel/isecl/lib/common/v2/log/message"
 	"intel/isecl/scs/repository"
 	"intel/isecl/scs/types"
 	"io/ioutil"
@@ -18,6 +19,7 @@ import (
 )
 
 var log = commLog.GetDefaultLogger()
+var slog = commLog.GetSecurityLogger()
 
 type PostgresDatabase struct {
 	DB *gorm.DB
@@ -107,15 +109,15 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 		db, dbErr = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s%s",
 			host, port, user, dbname, password, sslMode, sslCertParams))
 		if dbErr != nil {
-			log.WithError(dbErr).Infof("Failed to connect to DB, retrying attempt %d/%d", i, numAttempts)
+			slog.Warningf("Failed to connect to DB, retrying attempt %d/%d", i, numAttempts)
 		} else {
 			break
 		}
 		time.Sleep(retryTime * time.Second)
 	}
 	if dbErr != nil {
-		log.WithError(dbErr).Infof("Failed to connect to db after %d attempts\n", numAttempts)
-		return nil, errors.Wrapf(dbErr, "Failed to connect to db after %d attempts", numAttempts)
+		slog.Errorf("%s: Failed to connect to db after %d attempts", commLogMsg.BadConnection, numAttempts)
+		return nil, dbErr
 	}
 	return &PostgresDatabase{DB: db}, nil
 }
@@ -135,7 +137,8 @@ func VerifyConnection(host string, port int, dbname, user, password, sslMode, ss
 		host, port, user, dbname, password, sslMode, sslCertParams))
 
 	if dbErr != nil {
-		return errors.Wrap(dbErr, "could not connect to database")
+		slog.Errorf("%s: Failed to connect to db while verifying db connection", commLogMsg.BadConnection)
+		return dbErr
 	}
 	db.Close()
 	return nil
