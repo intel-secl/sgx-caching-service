@@ -71,6 +71,9 @@ type Configuration struct {
 	MaxHeaderBytes    int
 
 	CachingModel int
+
+	Timebetweenretries int
+        NretyPCSConn  int
 }
 
 var mu sync.Mutex
@@ -188,6 +191,33 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		}
 	} else {
 		conf.RefreshHours = constants.DefaultScsRefreshHours
+	}
+
+	nretyPCSConn, err := c.GetenvInt("NUM_RETRY_PCS_CONN", "Number of retry to PCS server")
+        if err == nil {
+                if nretyPCSConn >= 0 {
+                        conf.NretyPCSConn = nretyPCSConn
+                } else {
+                        conf.NretyPCSConn = constants.DefaultNRetryPCSConn
+                }
+        } else {
+                conf.NretyPCSConn = constants.DefaultNRetryPCSConn
+        }
+
+        timebetweenretries, err := c.GetenvInt("TIME_BW_RETRY_TO_PCS", "time between each retries to PCS")
+        if err == nil {
+                if timebetweenretries >= 0 {
+                        conf.Timebetweenretries = timebetweenretries
+                } else {
+                        conf.Timebetweenretries = constants.DefaultTimebetweenretries
+                }
+        } else {
+                conf.Timebetweenretries = constants.DefaultTimebetweenretries
+        }
+
+	if (conf.Timebetweenretries * constants.DefaultNRetryPCSConn) >= 10 {
+		conf.Timebetweenretries = constants.DefaultTimebetweenretries
+		conf.NretyPCSConn = constants.DefaultNRetryPCSConn
 	}
 
 	return conf.Save()

@@ -20,12 +20,36 @@ func getProvClientObj() (*http.Client, *config.Configuration, error) {
 		return nil, nil, errors.New("Configuration details not found")
 	}
 
-	timeout := time.Duration(500 * time.Second)
+	timeout := time.Duration(3 * time.Second)
 	client := &http.Client{
 		Timeout: timeout,
 	}
 
 	return client, conf, nil
+}
+
+func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.Configuration) (*http.Response, error){
+        var err      error
+        var resp *http.Response
+        var retries int = conf.NretyPCSConn
+        var time_bw_calls int = conf.Timebetweenretries
+
+        for retries > 0 {
+                resp, err := client.Do(req)
+
+                if err == nil {
+                         return resp, err
+                }
+
+                if resp != nil && resp.StatusCode < 500 {
+                        return resp, err
+                }
+
+                time.Sleep(time.Duration(time_bw_calls) * time.Second)
+                retries -= 1
+
+        }
+	return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")	
 }
 
 func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Response, error) {
@@ -50,7 +74,8 @@ func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Respons
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := client.Do(req)
+	resp, err := getRespFromProvServer(req, client, conf)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCertFromProvServer: Getpckcerts call to PCS Server Failed")
 	}
@@ -83,7 +108,7 @@ func getPckCertsWithManifestFromProvServer(manifest string, pceId string) (*http
 	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.ApiSubscriptionkey)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := getRespFromProvServer(req, client, conf)
 	if err != nil {
 		log.Error("error came: ", err)
 		return nil, errors.Wrap(err, "getPckCertsWithManifestFromProvServer: Getpckcerts call to PCS Server Failed")
@@ -109,7 +134,8 @@ func getPckCrlFromProvServer(ca string) (*http.Response, error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := client.Do(req)
+	resp, err := getRespFromProvServer(req, client, conf)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCrlFromProvServer(): GetPckCrl call to PCS Server Failed")
 	}
@@ -134,7 +160,8 @@ func getFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := client.Do(req)
+	resp, err := getRespFromProvServer(req, client, conf)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "getFmspcTcbInfoFromProvServer(): GetTcb call to PCS Server Failed")
 	}
@@ -154,7 +181,8 @@ func getQeInfoFromProvServer() (*http.Response, error) {
 		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): getQeIdentity http request Failed")
 	}
 
-	resp, err := client.Do(req)
+	resp, err := getRespFromProvServer(req, client, conf)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): getQeIdentity call to PCS Server Failed")
 	}

@@ -63,6 +63,9 @@ const (
 	Type_Refresh_Cert              = "certs"
 	Type_Refresh_Tcb               = "tcbs"
 	MaxTcbLevels                   = 16
+	DefaultNRetryPCSConn           = 3
+        DefaultTimebetweenretries      = 1
+
 )
 
 // State represents whether or not a daemon is running or not
