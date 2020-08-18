@@ -72,8 +72,8 @@ type Configuration struct {
 
 	CachingModel int
 
-	Timebetweenretries int
-        NretyPCSConn  int
+	WaitTime int
+        RetryCount  int
 }
 
 var mu sync.Mutex
@@ -193,31 +193,31 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.RefreshHours = constants.DefaultScsRefreshHours
 	}
 
-	nretyPCSConn, err := c.GetenvInt("NUM_RETRY_PCS_CONN", "Number of retry to PCS server")
+	retrycount, err := c.GetenvInt("RETRY_COUNT", "Number of retry to PCS server")
         if err == nil {
-                if nretyPCSConn >= 0 {
-                        conf.NretyPCSConn = nretyPCSConn
+                if retrycount >= 0 {
+                        conf.RetryCount = retrycount
                 } else {
-                        conf.NretyPCSConn = constants.DefaultNRetryPCSConn
+                        conf.RetryCount = constants.DefaultRetrycount
                 }
         } else {
-                conf.NretyPCSConn = constants.DefaultNRetryPCSConn
+                conf.RetryCount = constants.DefaultRetrycount
         }
 
-        timebetweenretries, err := c.GetenvInt("TIME_BW_RETRY_TO_PCS", "time between each retries to PCS")
+        waittime, err := c.GetenvInt("WAIT_TIME", "time between each retries to PCS")
         if err == nil {
-                if timebetweenretries >= 0 {
-                        conf.Timebetweenretries = timebetweenretries
+                if waittime >= 0 {
+                        conf.WaitTime = waittime
                 } else {
-                        conf.Timebetweenretries = constants.DefaultTimebetweenretries
+                        conf.WaitTime = constants.DefaultWaitTime
                 }
         } else {
-                conf.Timebetweenretries = constants.DefaultTimebetweenretries
+                conf.WaitTime = constants.DefaultWaitTime
         }
 
-	if (conf.Timebetweenretries * constants.DefaultNRetryPCSConn) >= 10 {
-		conf.Timebetweenretries = constants.DefaultTimebetweenretries
-		conf.NretyPCSConn = constants.DefaultNRetryPCSConn
+	if (conf.WaitTime * constants.DefaultRetrycount) >= 10 {
+		conf.WaitTime = constants.DefaultWaitTime
+		conf.RetryCount = constants.DefaultRetrycount
 	}
 
 	return conf.Save()

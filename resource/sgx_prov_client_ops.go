@@ -31,8 +31,8 @@ func getProvClientObj() (*http.Client, *config.Configuration, error) {
 func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.Configuration) (*http.Response, error){
         var err      error
         var resp *http.Response
-        var retries int = conf.NretyPCSConn
-        var time_bw_calls int = conf.Timebetweenretries
+        var retries int = conf.RetryCount
+        var time_bw_calls int = conf.WaitTime
 
         for retries > 0 {
                 resp, err := client.Do(req)
@@ -41,15 +41,17 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
                          return resp, err
                 }
 
-                if resp != nil && resp.StatusCode < 500 {
+                if resp != nil && resp.StatusCode < http.StatusInternalServerError {
                         return resp, err
                 }
 
                 time.Sleep(time.Duration(time_bw_calls) * time.Second)
                 retries -= 1
-
+		if retries == 0 {
+                        return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")
+                }
         }
-	return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")	
+        return resp, err
 }
 
 func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Response, error) {
