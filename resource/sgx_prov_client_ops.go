@@ -33,8 +33,8 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
         var resp *http.Response
         var retries int = conf.RetryCount
         var time_bw_calls int = conf.WaitTime
-
-        for retries > 0 {
+	
+	 for retries >= 0 {
                 resp, err := client.Do(req)
 
                 if err == nil {
@@ -45,9 +45,13 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
                         return resp, err
                 }
 
-                time.Sleep(time.Duration(time_bw_calls) * time.Second)
+                select {
+                case <-time.After(time.Duration(time_bw_calls) * time.Second):
+                }
+
                 retries -= 1
-		if retries == 0 {
+                if retries <= 0 {
+                        log.Error("getRespFromProvServer:ERROR ", err)
                         return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")
                 }
         }

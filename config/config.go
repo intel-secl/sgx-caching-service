@@ -203,16 +203,20 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
         } else {
                 conf.RetryCount = constants.DefaultRetrycount
         }
-
-        waittime, err := c.GetenvInt("WAIT_TIME", "time between each retries to PCS")
-        if err == nil {
-                if waittime >= 0 {
-                        conf.WaitTime = waittime
+	
+        if conf.RetryCount == 0 {
+                conf.WaitTime = 0
+        } else {
+                waittime, err := c.GetenvInt("WAIT_TIME", "time between each retries to PCS")
+                if err == nil {
+                        if waittime >= 0 {
+                                 conf.WaitTime = waittime
+                        } else {
+                                conf.WaitTime = constants.DefaultWaitTime
+                        }
                 } else {
                         conf.WaitTime = constants.DefaultWaitTime
                 }
-        } else {
-                conf.WaitTime = constants.DefaultWaitTime
         }
 
 	if (conf.WaitTime * constants.DefaultRetrycount) >= 10 {
