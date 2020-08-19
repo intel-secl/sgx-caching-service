@@ -44,15 +44,14 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
                 if resp != nil && resp.StatusCode < http.StatusInternalServerError {
                         return resp, err
                 }
-
-                select {
-                case <-time.After(time.Duration(time_bw_calls) * time.Second):
-                }
-
-                retries -= 1
+		retries -= 1
                 if retries <= 0 {
                         log.Error("getRespFromProvServer:ERROR ", err)
                         return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")
+                }
+
+                select {
+                case <-time.After(time.Duration(time_bw_calls) * time.Second):
                 }
         }
         return resp, err
