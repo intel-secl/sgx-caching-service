@@ -124,6 +124,7 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
+// api to get PCKCRL pem file form PCS server for a sgx platform
 func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
@@ -165,6 +166,7 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
+// api to get quoting enclave identity information for a sgx platform
 func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		existingQeInfo, err := db.QEIdentityRepository().RetrieveAll()
@@ -187,6 +189,7 @@ func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
+// api to get trusted computing base information for a sgx platform using platfrom fmspc value
 func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if len(r.URL.Query()) == 0 {

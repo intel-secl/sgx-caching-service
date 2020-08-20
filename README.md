@@ -12,7 +12,7 @@
 - Fetch and cache Quoting Enclave Identity information
 - Periodically (configurable) refreshes above data
 - Provide TCB UpToDate Status for current Raw TCB Level
-- Supports Intel PCS Server V2 APIs
+- Supports Intel PCS Server V3 APIs for multipackage systems
 - RESTful APIs for easy and versatile access to above features
 
 ## System Requirements

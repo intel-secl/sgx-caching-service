@@ -10,6 +10,7 @@ import (
 	"intel/isecl/scs/types"
 )
 
+// perform an api call to pcs server to get PCK Certificate for a sgx platform and store in db
 func getLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn string,
 	PceSvn string, pceId string, qeId string, manifest string) (*types.PckCert, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Entering")
@@ -57,6 +58,7 @@ func getLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 	return data.PckCert, nil
 }
 
+// perform an api call to pcs server to get trusted computing base info for a sgx platform and store in db
 func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*types.FmspcTcbInfo, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCacheFmspcTcbInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCacheFmspcTcbInfo() Leaving")

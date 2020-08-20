@@ -115,7 +115,7 @@ func (c *Configuration) Save() error {
 func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	var err error = nil
 
-	tlsCertDigest, err := c.GetenvString(constants.CmsTlsCertDigestEnv, "TLS certificate digest")
+	tlsCertDigest, err := c.GetenvString("CMS_TLS_CERT_SHA384", "TLS certificate digest")
 	if err == nil && tlsCertDigest != "" {
 		conf.CmsTlsCertDigest = tlsCertDigest
 	} else if conf.CmsTlsCertDigest == "" {

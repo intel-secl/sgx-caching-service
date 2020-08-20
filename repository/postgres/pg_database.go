@@ -10,12 +10,10 @@ import (
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"intel/isecl/scs/repository"
 	"intel/isecl/scs/types"
-	"io/ioutil"
 	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 )
 
 var log = commLog.GetDefaultLogger()
@@ -23,26 +21,6 @@ var slog = commLog.GetSecurityLogger()
 
 type PostgresDatabase struct {
 	DB *gorm.DB
-}
-
-func (pd *PostgresDatabase) ExecuteSql(sql *string) error {
-	err := pd.DB.Exec(*sql).Error
-	if err != nil {
-		return errors.Wrap(err, "ExecuteSql: failed to execute sql")
-	}
-	return nil
-}
-
-func (pd *PostgresDatabase) ExecuteSqlFile(file string) error {
-	c, err := ioutil.ReadFile(file)
-	if err != nil {
-		return errors.Wrapf(err, "could not read sql file - %s", file)
-	}
-	sql := string(c)
-	if err := pd.ExecuteSql(&sql); err != nil {
-		return errors.Wrapf(err, "could not execute contents of sql file %s", file)
-	}
-	return nil
 }
 
 func (pd *PostgresDatabase) Migrate() error {

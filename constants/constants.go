@@ -5,14 +5,12 @@
 package constants
 
 import (
-	"crypto"
 	"time"
 )
 
 const (
 	HomeDir                        = "/opt/scs/"
 	ConfigDir                      = "/etc/scs/"
-	ExecutableDir                  = "/opt/scs/bin/"
 	ExecLinkPath                   = "/usr/bin/scs"
 	RunDirPath                     = "/run/scs"
 	LogDir                         = "/var/log/scs/"
@@ -25,7 +23,6 @@ const (
 	TrustedJWTSigningCertsDir      = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir             = ConfigDir + "certs/trustedca/"
 	ServiceRemoveCmd               = "systemctl disable scs"
-	HashingAlgorithm               = crypto.SHA384
 	DefaultAuthDefendMaxAttempts   = 5
 	DefaultAuthDefendIntervalMins  = 5
 	DefaultAuthDefendLockoutMins   = 15
@@ -35,7 +32,7 @@ const (
 	HostDataReaderGroupName        = "HostDataReader"
 	CacheManagerGroupName          = "CacheManager"
 	SCSUserName                    = "scs"
-	DefaultHttpPort                = 9000
+	DefaultHttpsPort                = 9000
 	DefaultKeyAlgorithm            = "rsa"
 	DefaultKeyAlgorithmLength      = 3072
 	DefaultScsTlsSan               = "127.0.0.1,localhost"
@@ -52,7 +49,6 @@ const (
 	Fmspc_Key                      = "fmspc"
 	DefaultScsRefreshHours         = 24
 	DefaultJwtValidateCacheKeyMins = 60
-	CmsTlsCertDigestEnv            = "CMS_TLS_CERT_SHA384"
 	SCSLogLevel                    = "SCS_LOGLEVEL"
 	DefaultReadTimeout             = 30 * time.Second
 	DefaultReadHeaderTimeout       = 10 * time.Second
