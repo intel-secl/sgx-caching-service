@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Intel Corporation
+ * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
 package resource
@@ -28,33 +28,33 @@ func getProvClientObj() (*http.Client, *config.Configuration, error) {
 	return client, conf, nil
 }
 
-func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.Configuration) (*http.Response, error){
-        var err      error
-        var resp *http.Response
-        var retries int = conf.RetryCount
-        var time_bw_calls int = conf.WaitTime
-	
-	 for retries >= 0 {
-                resp, err := client.Do(req)
+func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.Configuration) (*http.Response, error) {
+	var err error
+	var resp *http.Response
+	var retries int = conf.RetryCount
+	var time_bw_calls int = conf.WaitTime
 
-                if err == nil {
-                         return resp, err
-                }
+	for retries >= 0 {
+		resp, err := client.Do(req)
 
-                if resp != nil && resp.StatusCode < http.StatusInternalServerError {
-                        return resp, err
-                }
+		if err == nil {
+			return resp, err
+		}
+
+		if resp != nil && resp.StatusCode < http.StatusInternalServerError {
+			return resp, err
+		}
 		retries -= 1
-                if retries <= 0 {
-                        log.Error("getRespFromProvServer:ERROR ", err)
-                        return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")
-                }
+		if retries <= 0 {
+			log.Error("getRespFromProvServer:ERROR ", err)
+			return resp, errors.Wrap(err, "getRespFromProvServer: Getting reponse from PCS server Failed")
+		}
 
-                select {
-                case <-time.After(time.Duration(time_bw_calls) * time.Second):
-                }
-        }
-        return resp, err
+		select {
+		case <-time.After(time.Duration(time_bw_calls) * time.Second):
+		}
+	}
+	return resp, err
 }
 
 func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Response, error) {

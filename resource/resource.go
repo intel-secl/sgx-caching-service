@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Intel Corporation
+ * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
 package resource
@@ -7,11 +7,11 @@ package resource
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"intel/isecl/lib/common/v2/auth"
-	"intel/isecl/lib/common/v2/context"
-	clog "intel/isecl/lib/common/v2/log"
-	commLogMsg "intel/isecl/lib/common/v2/log/message"
-	ct "intel/isecl/lib/common/v2/types/aas"
+	"intel/isecl/lib/common/v3/auth"
+	"intel/isecl/lib/common/v3/context"
+	clog "intel/isecl/lib/common/v3/log"
+	commLogMsg "intel/isecl/lib/common/v3/log/message"
+	ct "intel/isecl/lib/common/v3/types/aas"
 	"intel/isecl/scs/constants"
 	"net/http"
 )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Intel Corporation
+ * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
 package constants
@@ -40,7 +40,7 @@ const (
 	DefaultKeyAlgorithmLength      = 3072
 	DefaultScsTlsSan               = "127.0.0.1,localhost"
 	DefaultScsTlsCn                = "SCS TLS Certificate"
-	DefaultIntelProvServerURL      = "https://api.trustedservices.intel.com/sgx/certification/v2/"
+	DefaultIntelProvServerURL      = "https://sbx.api.trustedservices.intel.com/sgx/certification/v3/"
 	EncPPID_Key                    = "encrypted_ppid"
 	CpuSvn_Key                     = "cpu_svn"
 	PceSvn_Key                     = "pce_svn"
@@ -63,9 +63,8 @@ const (
 	Type_Refresh_Cert              = "certs"
 	Type_Refresh_Tcb               = "tcbs"
 	MaxTcbLevels                   = 16
-	DefaultRetrycount           = 3
-        DefaultWaitTime      = 1
-
+	DefaultRetrycount              = 3
+	DefaultWaitTime                = 1
 )
 
 // State represents whether or not a daemon is running or not

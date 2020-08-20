@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Intel Corporation
+ * Copyright (C) 2020 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
  */
 package config
@@ -8,9 +8,9 @@ import (
 	"errors"
 	errorLog "github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-	commLog "intel/isecl/lib/common/v2/log"
-	"intel/isecl/lib/common/v2/setup"
+	"gopkg.in/yaml.v3"
+	commLog "intel/isecl/lib/common/v3/log"
+	"intel/isecl/lib/common/v3/setup"
 	"intel/isecl/scs/constants"
 	"os"
 	"path"
@@ -72,8 +72,8 @@ type Configuration struct {
 
 	CachingModel int
 
-	WaitTime int
-        RetryCount  int
+	WaitTime   int
+	RetryCount int
 }
 
 var mu sync.Mutex
@@ -194,30 +194,30 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 	}
 
 	retrycount, err := c.GetenvInt("RETRY_COUNT", "Number of retry to PCS server")
-        if err == nil {
-                if retrycount >= 0 {
-                        conf.RetryCount = retrycount
-                } else {
-                        conf.RetryCount = constants.DefaultRetrycount
-                }
-        } else {
-                conf.RetryCount = constants.DefaultRetrycount
-        }
-	
-        if conf.RetryCount == 0 {
-                conf.WaitTime = 0
-        } else {
-                waittime, err := c.GetenvInt("WAIT_TIME", "time between each retries to PCS")
-                if err == nil {
-                        if waittime >= 0 {
-                                 conf.WaitTime = waittime
-                        } else {
-                                conf.WaitTime = constants.DefaultWaitTime
-                        }
-                } else {
-                        conf.WaitTime = constants.DefaultWaitTime
-                }
-        }
+	if err == nil {
+		if retrycount >= 0 {
+			conf.RetryCount = retrycount
+		} else {
+			conf.RetryCount = constants.DefaultRetrycount
+		}
+	} else {
+		conf.RetryCount = constants.DefaultRetrycount
+	}
+
+	if conf.RetryCount == 0 {
+		conf.WaitTime = 0
+	} else {
+		waittime, err := c.GetenvInt("WAIT_TIME", "time between each retries to PCS")
+		if err == nil {
+			if waittime >= 0 {
+				conf.WaitTime = waittime
+			} else {
+				conf.WaitTime = constants.DefaultWaitTime
+			}
+		} else {
+			conf.WaitTime = constants.DefaultWaitTime
+		}
+	}
 
 	if (conf.WaitTime * constants.DefaultRetrycount) >= 10 {
 		conf.WaitTime = constants.DefaultWaitTime
