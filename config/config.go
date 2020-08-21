@@ -14,7 +14,6 @@ import (
 	"intel/isecl/scs/constants"
 	"os"
 	"path"
-	"sync"
 	"time"
 )
 
@@ -69,8 +68,6 @@ type Configuration struct {
 	WaitTime   int
 	RetryCount int
 }
-
-var mu sync.Mutex
 
 var global *Configuration
 
