@@ -39,12 +39,6 @@ type Configuration struct {
 	LogEnableStdout bool
 	LogLevel        log.Level
 
-	AuthDefender struct {
-		MaxAttempts         int
-		IntervalMins        int
-		LockoutDurationMins int
-	}
-
 	Token struct {
 		IncludeKid        bool
 		TokenDurationMins int

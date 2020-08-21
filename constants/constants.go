@@ -23,9 +23,6 @@ const (
 	TrustedJWTSigningCertsDir      = ConfigDir + "certs/trustedjwt/"
 	TrustedCAsStoreDir             = ConfigDir + "certs/trustedca/"
 	ServiceRemoveCmd               = "systemctl disable scs"
-	DefaultAuthDefendMaxAttempts   = 5
-	DefaultAuthDefendIntervalMins  = 5
-	DefaultAuthDefendLockoutMins   = 15
 	DefaultSSLCertFilePath         = ConfigDir + "scsdbcert.pem"
 	ServiceName                    = "SCS"
 	HostDataUpdaterGroupName       = "HostDataUpdater"
