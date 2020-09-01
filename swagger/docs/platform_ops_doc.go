@@ -3,11 +3,11 @@ package docs
 import "intel/isecl/scs/resource"
 
 type PlatformInfoInput struct {
-	EncPpid		string `json:"enc_ppid"`
-	CpuSvn          string `json:"cpu_svn"`
-	PceSvn          string `json:"pce_svn"`
-	PceId		string `json:"pce_id"`
-	QeId		string `json:"qe_id"`
+	EncPpid          string `json:"enc_ppid"`
+	CpuSvn           string `json:"cpu_svn"`
+	PceSvn           string `json:"pce_svn"`
+	PceId            string `json:"pce_id"`
+	QeId             string `json:"qe_id"`
 	PlatformManifest string `json:"manifest"`
 }
 
@@ -29,8 +29,8 @@ type StatusResponse struct {
 // ---
 //
 // description: |
-//   Pushes the SGX Platform values into the SGX Caching Service (SCS). The SGX Host Verification Service (HVS) retrieves the 
-//   platform values (such as enc_ppi, pceid, cpisvn, pcesvn, qeid and manifest) from the registered SGX Agent and uses this API 
+//   Pushes the SGX Platform values into the SGX Caching Service (SCS). The SGX Host Verification Service (HVS) retrieves the
+//   platform values (such as enc_ppi, pceid, cpisvn, pcesvn, qeid and manifest) from the registered SGX Agent and uses this API
 //   to push the platform values to the SCS.
 //   A valid bearer token should be provided to authorize this REST call.
 //
@@ -144,8 +144,8 @@ type StatusResponse struct {
 // swagger:operation GET /sgx/platforminfo/refresh PlatformInfo refreshPlatformInfo
 // ---
 // description: |
-//   This API is used to refresh the platform collaterals stored in the SGX Caching Service (SCS) database, 
-//   outside of the periodic refresh cycles. An Admin can make use of this REST endpoint to force the refresh of 
+//   This API is used to refresh the platform collaterals stored in the SGX Caching Service (SCS) database,
+//   outside of the periodic refresh cycles. An Admin can make use of this REST endpoint to force the refresh of
 //   PCK Certificates, PCK CRL, TCB info and QE Identity information. This is useful in scenarios like TCB recovery.
 //   A valid bearer token should be provided to authorize this REST call.
 //
@@ -170,7 +170,7 @@ type StatusResponse struct {
 // swagger:operation GET /sgx/platforminfo/tcbstatus PlatformInfo getTcbStatus
 // ---
 // description: |
-//   This API is used by SGX Host Verification Service (HVS) to determine the TCB up-to-date status of a platform. 
+//   This API is used by SGX Host Verification Service (HVS) to determine the TCB up-to-date status of a platform.
 //   A valid bearer token should be provided to authorize this REST call.
 //
 // security:
@@ -178,7 +178,7 @@ type StatusResponse struct {
 // produces:
 //  - application/json
 // parameters:
-// - name: qeid 
+// - name: qeid
 //   description: Quoting Enclave ID specific to a platform.
 //   in: query
 //   type: string

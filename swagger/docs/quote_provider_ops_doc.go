@@ -12,7 +12,7 @@ type TcbInfoJsonResp struct {
 // swagger:operation GET /sgx/certification/v1/pckcert Certificates getPckCertificate
 // ---
 // description: |
-//   Retrieves the Platform Certification Key (PCK) Certificate for the current TCB level of SGX enabled platform 
+//   Retrieves the Platform Certification Key (PCK) Certificate for the current TCB level of SGX enabled platform
 //   with the provided platform values.
 //
 // produces:
@@ -77,14 +77,14 @@ type TcbInfoJsonResp struct {
 // swagger:operation GET /sgx/certification/v1/pckcrl Certificates getPckCrl
 // ---
 // description: |
-//   Retrieves the latest PCK Certificate Revocation List (CRL) for any SGX enabled platforms. 
+//   Retrieves the latest PCK Certificate Revocation List (CRL) for any SGX enabled platforms.
 //   A CRL is a list of revoked SGX PCK Certificates that are issued by Intel SGX Processor CA.
 //   The query parameter 'ca' should be provided as mandatory for this REST call.
 //
 // produces:
 //  - application/x-pem-file
 // parameters:
-// - name: ca 
+// - name: ca
 //   description: PCK CRL issuing Certificate Authority (CA). CA can be either "processor" or "platform".
 //   in: query
 //   type: string
@@ -109,13 +109,13 @@ type TcbInfoJsonResp struct {
 // swagger:operation GET /sgx/certification/v1/tcb Certificates getTcbInfo
 // ---
 // description: |
-//   Retrieves the Trusted Computing Base (TCB) information for all TCB levels of the SGX enabled platform 
+//   Retrieves the Trusted Computing Base (TCB) information for all TCB levels of the SGX enabled platform
 //   with the provided FMPSC value.
 //
 // produces:
 //  - application/json
 // parameters:
-// - name: fmspc 
+// - name: fmspc
 //   description: FMSPC value of the platform.
 //   in: query
 //   type: string

@@ -35,7 +35,7 @@ installer: scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 	cp dist/linux/install_pgscsdb.sh out/install_pgscsdb.sh && chmod +x out/install_pgscsdb.sh
 
-all: clean installer
+all: clean installer test
 
 clean:
 	rm -f cover.*

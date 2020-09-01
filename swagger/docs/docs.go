@@ -1,11 +1,11 @@
 // SGX Caching Service
 //
-// SGX Caching Service (SCS) provides an interface to fetch all the SGX platform collaterals and PCK Certificate 
-// from Intel PCS Server and stores them in a local database. 
-// Every SKC SGX Service that needs platform collaterals and workloads that needs PCK Certificate shall always contact SGX SCS. 
+// SGX Caching Service (SCS) provides an interface to fetch all the SGX platform collaterals and PCK Certificate
+// from Intel PCS Server and stores them in a local database.
+// Every SKC SGX Service that needs platform collaterals and workloads that needs PCK Certificate shall always contact SGX SCS.
 // SGX SCS listening port is user-configurable.
 //
-//  License: Copyright (C) 2020 Intel Corporation. SPDX-License-Identifier: BSD-3-Clause 
+//  License: Copyright (C) 2020 Intel Corporation. SPDX-License-Identifier: BSD-3-Clause
 //
 //  Version: 1.0
 //  Host: scs.server.com:9000
@@ -15,7 +15,7 @@
 //
 //  SecurityDefinitions:
 //   bearerAuth:
-//     type: apiKey 
+//     type: apiKey
 //     in: header
 //     name: Authorization
 //     description: Enter your bearer token in the format **Bearer &lt;token&gt;**
@@ -39,5 +39,3 @@ package docs
 // x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/version
 // x-sample-call-output: skc_M12-SKC_SCS_M10_WW01.01-58-g2efaa71
 // ---
-
-
