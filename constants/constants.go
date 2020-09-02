@@ -29,7 +29,7 @@ const (
 	HostDataReaderGroupName        = "HostDataReader"
 	CacheManagerGroupName          = "CacheManager"
 	SCSUserName                    = "scs"
-	DefaultHttpsPort                = 9000
+	DefaultHttpsPort               = 9000
 	DefaultKeyAlgorithm            = "rsa"
 	DefaultKeyAlgorithmLength      = 3072
 	DefaultScsTlsSan               = "127.0.0.1,localhost"
