@@ -27,7 +27,7 @@ func TestServerSetup(t *testing.T) {
 
 func TestServerSetupEnv(t *testing.T) {
 	os.Setenv("SCS_PORT", "9000")
-	os.Setenv("INTEL_PROVISIONING_SERVER_API_KEY", "ec73a0f55ca348cb9f02371f2b9ca614")
+	os.Setenv("INTEL_PROVISIONING_SERVER_API_KEY", "<provide_pcs_server_api_key>")
 	c := config.Configuration{}
 	s := Server{
 		Flags:         nil,

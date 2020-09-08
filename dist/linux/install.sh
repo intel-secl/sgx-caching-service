@@ -59,6 +59,9 @@ cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_
 chmod 700 $BIN_PATH/*
 ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 
+cp libPCKCertSelection.so /usr/lib64/libPCKCertSelection.so
+chmod 755 /usr/lib64/libPCKCertSelection.so
+
 cp db_rotation.sql $DB_SCRIPT_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $DB_SCRIPT_PATH/*
 
 # Create logging dir in /var/log

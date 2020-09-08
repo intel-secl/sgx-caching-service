@@ -2,11 +2,19 @@ GITTAG := $(shell git describe --tags --abbrev=0 2> /dev/null)
 GITCOMMIT := $(shell git describe --always)
 VERSION := $(or ${GITTAG}, v0.0.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
+PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
 
-.PHONY: scs installer all test clean
+.PHONY: SKCPCKCertSelection scs installer all test clean
 
-scs:
-	cp libPCKCertSelection.so /usr/lib64/
+SKCPCKCertSelection:
+	$(eval TMP := $(shell mktemp -d))
+	git clone $(PCKCERTGITURL) $(TMP)
+	make -C $(TMP)/tools/PCKCertSelection
+	cp $(TMP)/tools/PCKCertSelection/out/libPCKCertSelection.so /usr/lib64/
+	chmod 755 /usr/lib64/libPCKCertSelection.so
+	rm -rf $(TMP)
+
+scs:SKCPCKCertSelection
 	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/version.Version=$(VERSION) -X intel/isecl/scs/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 swagger-get:
@@ -29,6 +37,7 @@ test:
 installer: scs
 	mkdir -p out/installer
 	cp dist/linux/scs.service out/installer/scs.service
+	cp /usr/lib64/libPCKCertSelection.so out/installer/libPCKCertSelection.so
 	cp dist/linux/install.sh out/installer/install.sh && chmod +x out/installer/install.sh
 	cp dist/linux/db_rotation.sql out/installer/db_rotation.sql
 	cp out/scs out/installer/scs
