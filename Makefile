@@ -3,12 +3,13 @@ GITCOMMIT := $(shell git describe --always)
 VERSION := $(or ${GITTAG}, v0.0.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
+PCKCERTGITTAG := DCAP_1.7
 
 .PHONY: SKCPCKCertSelection scs installer all test clean
 
 SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
-	git clone $(PCKCERTGITURL) $(TMP)
+	git clone $(PCKCERTGITURL) $(TMP) --branch=$(PCKCERTGITTAG)
 	make -C $(TMP)/tools/PCKCertSelection
 	cp $(TMP)/tools/PCKCertSelection/out/libPCKCertSelection.so /usr/lib64/
 	chmod 755 /usr/lib64/libPCKCertSelection.so
