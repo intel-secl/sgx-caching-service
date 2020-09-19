@@ -99,25 +99,3 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	}
 	return &PostgresDatabase{DB: db}, nil
 }
-
-func VerifyConnection(host string, port int, dbname, user, password, sslMode, sslCert string) error {
-	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
-	if sslMode != "disable" && sslMode != "require" && sslMode != "allow" && sslMode != "prefer" && sslMode != "verify-ca" && sslMode != "verify-full" {
-		sslMode = "require"
-	}
-
-	var sslCertParams string
-	if sslMode == "verify-ca" || sslMode == "verify-full" {
-		sslCertParams = " sslrootcert=" + sslCert
-	}
-
-	db, dbErr := gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s%s",
-		host, port, user, dbname, password, sslMode, sslCertParams))
-
-	if dbErr != nil {
-		slog.Errorf("%s: Failed to connect to db while verifying db connection", commLogMsg.BadConnection)
-		return dbErr
-	}
-	db.Close()
-	return nil
-}
