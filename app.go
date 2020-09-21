@@ -446,12 +446,6 @@ func (a *App) startServer() error {
 	c := a.configuration()
 
 	log.Info("Starting SCS Server")
-	// verify the database connection. If this does not succeed then we want to exit right here
-	// the Open method has a retry operation that takes a long time
-	if err := postgres.VerifyConnection(c.Postgres.Hostname, c.Postgres.Port, c.Postgres.DBName,
-		c.Postgres.Username, c.Postgres.Password, c.Postgres.SSLMode, c.Postgres.SSLCert); err != nil {
-		return err
-	}
 
 	// Open database
 	scsDB, err := postgres.Open(c.Postgres.Hostname, c.Postgres.Port, c.Postgres.DBName,
