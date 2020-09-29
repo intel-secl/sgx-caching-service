@@ -7,6 +7,8 @@ PCKCERTGITTAG := DCAP_1.7
 
 .PHONY: SKCPCKCertSelection scs installer all test clean
 
+all: clean installer
+
 SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
 	git clone $(PCKCERTGITURL) $(TMP) --branch=$(PCKCERTGITTAG)
@@ -44,8 +46,6 @@ installer: scs
 	cp out/scs out/installer/scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 	cp dist/linux/install_pgscsdb.sh out/install_pgscsdb.sh && chmod +x out/install_pgscsdb.sh
-
-all: clean installer test
 
 clean:
 	rm -f cover.*
