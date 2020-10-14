@@ -245,8 +245,8 @@ func getBestPckCert(in *SgxData) (uint, error) {
 	var certIdx C.uint
 
 	certs := make([]*C.char, TotalPckPcerts)
-	for i, s := range in.PckCertInfo.PckCerts {
-		certs[i] = C.CString(s)
+	for i := 0; i < TotalPckPcerts; i++ {
+		certs[i] = C.CString(in.PckCertInfo.PckCerts[i])
 		defer C.free(unsafe.Pointer(certs[i]))
 	}
 	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pce_svn),
@@ -353,13 +353,32 @@ func fetchPckCertInfo(in *SgxData) error {
 		return err
 	}
 
-	in.PckCertInfo.TotalPckCerts = len(pckCerts)
-	in.PckCertInfo.PckCerts = make([]string, in.PckCertInfo.TotalPckCerts)
-	in.PckCertInfo.Tcbms = make([]string, in.PckCertInfo.TotalPckCerts)
-	// read individual pck certs and corresponding tcbm value
-	for i := 0; i < in.PckCertInfo.TotalPckCerts; i++ {
-		in.PckCertInfo.PckCerts[i], _ = url.QueryUnescape(pckCerts[i].Cert)
-		in.PckCertInfo.Tcbms[i] = pckCerts[i].Tcbm
+	pckCertList := make([]string, len(pckCerts))
+	tcbmList := make([]string, len(pckCerts))
+
+	certCount := 0
+	// PCS Service can return "Not available" string instead of a PCK certificate,
+	// if PCK certificate is not available for a TCB level.
+	// Iterate through the array and filter out TCB levels for which PCK Certs is
+	// marked as "Not available". The filtered bunch is then sent to PCK Cert
+	// Selection Lib to choose best suited PCK cert for the current TCB level
+	for i := 0; i < len(pckCerts); i++ {
+		if pckCerts[i].Cert != "Not available" {
+			pckCertList[certCount], _ = url.QueryUnescape(pckCerts[i].Cert)
+			tcbmList[certCount] = pckCerts[i].Tcbm
+			certCount++
+		}
+	}
+
+	// Now we have the bunch of PCK certificates which can be safely passed
+	// to PCK Cert Selection Lib
+	in.PckCertInfo.TotalPckCerts = certCount
+	in.PckCertInfo.PckCerts = make([]string, certCount)
+	in.PckCertInfo.Tcbms = make([]string, certCount)
+
+	for i := 0; i < certCount; i++ {
+		in.PckCertInfo.PckCerts[i] = pckCertList[i]
+		in.PckCertInfo.Tcbms[i] = tcbmList[i]
 	}
 
 	in.PckCertInfo.QeId = in.PlatformInfo.QeId
