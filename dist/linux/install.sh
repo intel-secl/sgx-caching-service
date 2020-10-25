@@ -115,7 +115,7 @@ logRotate_install() {
 
 logRotate_install
 
-export LOG_ROTATION_PERIOD=${LOG_ROTATION_PERIOD:-hourly}
+export LOG_ROTATION_PERIOD=${LOG_ROTATION_PERIOD:-weekly}
 export LOG_COMPRESS=${LOG_COMPRESS:-compress}
 export LOG_DELAYCOMPRESS=${LOG_DELAYCOMPRESS:-delaycompress}
 export LOG_COPYTRUNCATE=${LOG_COPYTRUNCATE:-copytruncate}
