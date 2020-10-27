@@ -1,13 +1,12 @@
 #!/bin/bash
-#Steps:
-#Get token from AAS
 
 echo "Setting up SCS Related roles and user in AAS Database"
 
+source ~/scs.env
+
 #Get the value of AAS IP address and port.
-aas_hostname=${AAS_URL:-"https://<aas.server.com>:8444"}
+aas_hostname=${AAS_API_URL:-"https://<aas.server.com>:8444"}
 CURL_OPTS="-s -k"
-IPADDR="<comma-separated list of IPs and hostnames for SCS>"
 CN="SCS TLS Certificate"
 
 mkdir -p /tmp/setup/scs
@@ -15,34 +14,29 @@ tmpdir=$(mktemp -d -p /tmp/setup/scs)
 
 cat >$tmpdir/aasAdmin.json <<EOF
 {
-"username": "admin",
-"password": "password"
+"username": "admin@aas",
+"password": "aasAdminPass"
 }
 EOF
 
 #Get the JWT Token
-curl_output=`curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/aasAdmin.json -w "%{http_code}" $aas_hostname/aas/token`
+curl_output=`curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/aasAdmin.json -w "%{http_code}" $aas_hostname/token`
 
 Bearer_token=`echo $curl_output | rev | cut -c 4- | rev`
 response_status=`echo "${curl_output: -3}"`
 
-if rpm -q jq; then
-	echo "JQ package installed"
-else
-	echo "JQ package not installed, please install jq package and try"
-	exit 2
-fi
+dnf install -y jq
 
 #Create scsUser also get user id
 create_scs_user() {
 cat > $tmpdir/user.json << EOF
 {
-	"username":"scsuser@scs",
-	"password":"scspassword"
+	"username":"$SCS_ADMIN_USERNAME",
+	"password":"$SCS_ADMIN_PASSWORD"
 }
 EOF
 
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/user.json -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/aas/users > $tmpdir/createscsuser-response.status
+curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/user.json -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/users > $tmpdir/createscsuser-response.status
 
 local actual_status=$(cat $tmpdir/createscsuser-response.status)
 if [ $actual_status -ne 201 ]; then
@@ -74,7 +68,7 @@ cat > $tmpdir/roles.json << EOF
 }
 EOF
 
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/roles.json -o $tmpdir/role_response.json -w "%{http_code}" $aas_hostname/aas/roles > $tmpdir/role_response-status.json
+curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/roles.json -o $tmpdir/role_response.json -w "%{http_code}" $aas_hostname/roles > $tmpdir/role_response-status.json
 
 local actual_status=$(cat $tmpdir/role_response-status.json)
 if [ $actual_status -ne 201 ]; then
@@ -93,7 +87,7 @@ echo "$role_id"
 
 create_roles() {
 
-	local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
+	local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$SAN_LIST;CERTTYPE=TLS" ) #get roleid
 	local scs_role_id=$( create_user_roles "SCS" "CacheManager" "" )
 	ROLE_ID_TO_MAP=`echo \"$cms_role_id\",\"$scs_role_id\"`
 	echo $ROLE_ID_TO_MAP
@@ -107,7 +101,7 @@ cat >$tmpdir/mapRoles.json <<EOF
 }
 EOF
 
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/mapRoles.json -o $tmpdir/mapRoles_response.json -w "%{http_code}" $aas_hostname/aas/users/$user_id/roles > $tmpdir/mapRoles_response-status.json
+curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/mapRoles.json -o $tmpdir/mapRoles_response.json -w "%{http_code}" $aas_hostname/users/$user_id/roles > $tmpdir/mapRoles_response-status.json
 
 local actual_status=$(cat $tmpdir/mapRoles_response-status.json)
 if [ $actual_status -ne 201 ]; then
@@ -133,11 +127,11 @@ if [ $status -eq 0 ]; then
     echo "SCS Setup for AAS-CMS complete: No errors"
 fi
 if [ $status -eq 2 ]; then
-    echo "SCS Setup for AAS-CMS already exists in AAS Database: No action will be done"
+    echo "SCS Setup for AAS-CMS already exists in AAS Database: No action will be taken"
 fi
 
 #Get Token for SCS USER and configure it in scs config
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/user.json -o $tmpdir/scs_token-response.json -w "%{http_code}" $aas_hostname/aas/token > $tmpdir/getscsusertoken-response.status
+curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/user.json -o $tmpdir/scs_token-response.json -w "%{http_code}" $aas_hostname/token > $tmpdir/getscsusertoken-response.status
 
 status=$(cat $tmpdir/getscsusertoken-response.status)
 if [ $status -ne 200 ]; then
@@ -145,6 +139,7 @@ if [ $status -ne 200 ]; then
 else
 	export BEARER_TOKEN=`cat $tmpdir/scs_token-response.json`
 	echo $BEARER_TOKEN
+	echo "copy the above token and paste it against BEARER_TOKEN in scs.env"
 fi
 # cleanup
 rm -rf $tmpdir
