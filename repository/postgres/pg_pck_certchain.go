@@ -7,7 +7,7 @@ package postgres
 import (
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"intel/isecl/scs/types"
+	"intel/isecl/scs/v3/types"
 )
 
 type PostgresPckCertChainRepository struct {

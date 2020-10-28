@@ -4,7 +4,7 @@
  */
 package docs
 
-import "intel/isecl/scs/resource"
+import "intel/isecl/scs/v3/resource"
 
 type PlatformInfoInput struct {
 	EncPpid          string `json:"enc_ppid"`

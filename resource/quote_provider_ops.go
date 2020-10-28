@@ -12,10 +12,10 @@ import (
 
 	"github.com/gorilla/mux"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"intel/isecl/scs/constants"
-	"intel/isecl/scs/repository"
-	"intel/isecl/scs/types"
-	"intel/isecl/scs/version"
+	"intel/isecl/scs/v3/constants"
+	"intel/isecl/scs/v3/repository"
+	"intel/isecl/scs/v3/types"
+	"intel/isecl/scs/v3/version"
 )
 
 func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {

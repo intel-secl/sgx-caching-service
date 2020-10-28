@@ -1,4 +1,4 @@
-module intel/isecl/scs
+module intel/isecl/scs/v3
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -10,10 +10,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/crypto master
-	golang.org/x/time master
 	gopkg.in/yaml.v2 v2.2.8
-	intel/isecl/lib/common/v3 v3.1.0
+	intel/isecl/lib/common/v3 v3.2.0
 )
 
 replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v3 v3.2/develop

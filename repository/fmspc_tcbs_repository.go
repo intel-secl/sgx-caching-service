@@ -4,7 +4,7 @@
  */
 package repository
 
-import "intel/isecl/scs/types"
+import "intel/isecl/scs/v3/types"
 
 type FmspcTcbInfoRepository interface {
 	Create(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
