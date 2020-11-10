@@ -15,6 +15,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -417,7 +418,7 @@ func fetchPckCertInfo(in *SgxData) error {
 // SVS will make use of this to verify if PCK certificate in a quote is valid
 // by comparing against this CRL
 func fetchPckCrlInfo(in *SgxData) error {
-	resp, err := getPckCrlFromProvServer(in.PckCRLInfo.Ca)
+	resp, err := getPckCrlFromProvServer(in.PckCRLInfo.Ca, constants.Encoding_Value)
 	if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPckCrl api failed")
 		return err
@@ -442,12 +443,7 @@ func fetchPckCrlInfo(in *SgxData) error {
 		log.WithError(err).Error("could not read getPckCrl http response")
 		return err
 	}
-	in.PckCRLInfo.PckCrl = string(body)
-	CrlBuf, _ := pem.Decode(body)
-	if CrlBuf == nil {
-		return errors.New("Failed to parse Crl PEM block")
-	}
-	log.WithField("PckCrl", in.PckCRLInfo.PckCrl).Debug("Values")
+	in.PckCRLInfo.PckCrl = base64.StdEncoding.EncodeToString(body)
 	return nil
 }
 

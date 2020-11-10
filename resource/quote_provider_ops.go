@@ -5,7 +5,6 @@
 package resource
 
 import (
-	"encoding/pem"
 	"fmt"
 	"net/http"
 	"strings"
@@ -152,12 +151,6 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
-		// check if what we read from DB is a certificate
-		block, _ := pem.Decode([]byte(existingPckCrl.PckCrl))
-		if block == nil {
-			return &resourceError{Message: "Cannot Decode PckCrl pem file", StatusCode: http.StatusInternalServerError}
-		}
-		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header()["SGX-PCK-CRL-Issuer-Chain"] = []string{string(existingPckCrl.PckCrlCertChain)}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(existingPckCrl.PckCrl))
