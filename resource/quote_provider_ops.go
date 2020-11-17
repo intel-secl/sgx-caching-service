@@ -5,17 +5,16 @@
 package resource
 
 import (
-	"encoding/pem"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"intel/isecl/scs/constants"
-	"intel/isecl/scs/repository"
-	"intel/isecl/scs/types"
-	"intel/isecl/scs/version"
+	"intel/isecl/scs/v3/constants"
+	"intel/isecl/scs/v3/repository"
+	"intel/isecl/scs/v3/types"
+	"intel/isecl/scs/v3/version"
 )
 
 func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {
@@ -152,12 +151,6 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
-		// check if what we read from DB is a certificate
-		block, _ := pem.Decode([]byte(existingPckCrl.PckCrl))
-		if block == nil {
-			return &resourceError{Message: "Cannot Decode PckCrl pem file", StatusCode: http.StatusInternalServerError}
-		}
-		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header()["SGX-PCK-CRL-Issuer-Chain"] = []string{string(existingPckCrl.PckCrlCertChain)}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(existingPckCrl.PckCrl))

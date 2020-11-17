@@ -12,7 +12,7 @@ import (
 	clog "intel/isecl/lib/common/v3/log"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	ct "intel/isecl/lib/common/v3/types/aas"
-	"intel/isecl/scs/constants"
+	"intel/isecl/scs/v3/constants"
 	"net/http"
 )
 

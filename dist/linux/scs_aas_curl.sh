@@ -1,150 +1,176 @@
 #!/bin/bash
-#Steps:
-#Get token from AAS
 
-echo "Setting up SCS Related roles and user in AAS Database"
+echo "Setting up SGX Caching Related roles and user in AAS Database"
 
-#Get the value of AAS IP address and port.
-aas_hostname=${AAS_URL:-"https://<aas.server.com>:8444"}
+source ~/scs.env 2> /dev/null
+
+#Get the value of AAS IP address and port. Default vlue is also provided.
+aas_hostname=${AAS_API_URL:-"https://<aas.server.com>:8444/aas"}
 CURL_OPTS="-s -k"
-IPADDR="<comma-separated list of IPs and hostnames for SCS>"
+CONTENT_TYPE="Content-Type: application/json"
+ACCEPT="Accept: application/jwt"
 CN="SCS TLS Certificate"
+
+red=`tput setaf 1`
+green=`tput setaf 2`
+reset=`tput sgr0`
 
 mkdir -p /tmp/setup/scs
 tmpdir=$(mktemp -d -p /tmp/setup/scs)
 
 cat >$tmpdir/aasAdmin.json <<EOF
 {
-"username": "admin",
-"password": "password"
+	"username": "admin@aas",
+	"password": "aasAdminPass"
 }
 EOF
 
-#Get the JWT Token
-curl_output=`curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/aasAdmin.json -w "%{http_code}" $aas_hostname/aas/token`
-
+#Get the AAS Admin JWT Token
+curl_output=`curl $CURL_OPTS -X POST -H "$CONTENT_TYPE" -H "$ACCEPT" --data @$tmpdir/aasAdmin.json -w "%{http_code}" $aas_hostname/token`
 Bearer_token=`echo $curl_output | rev | cut -c 4- | rev`
-response_status=`echo "${curl_output: -3}"`
 
-if rpm -q jq; then
-	echo "JQ package installed"
-else
-	echo "JQ package not installed, please install jq package and try"
-	exit 2
-fi
+dnf install -qy jq
 
-#Create scsUser also get user id
-create_scs_user() {
+# This routined checks if sgx caching service user exists and reurns user id
+# it creates a new user if one does not exist
+create_scs_user()
+{
 cat > $tmpdir/user.json << EOF
 {
-	"username":"scsuser@scs",
-	"password":"scspassword"
+	"username":"$SCS_ADMIN_USERNAME",
+	"password":"$SCS_ADMIN_PASSWORD"
 }
 EOF
 
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/user.json -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/aas/users > $tmpdir/createscsuser-response.status
+	#check if user already exists
+	curl $CURL_OPTS -H "Authorization: Bearer ${Bearer_token}" -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/users?name=$SCS_ADMIN_USERNAME > $tmpdir/user-response.status
 
-local actual_status=$(cat $tmpdir/createscsuser-response.status)
-if [ $actual_status -ne 201 ]; then
-	local response_mesage=$(cat $tmpdir/user_response.json)
-	if [ "$response_mesage" = "same user exists" ]; then
-		return 2 
-	fi
-	return 1
-fi
+	len=$(jq '. | length' < $tmpdir/user_response.json)
+	if [ $len -ne 0 ]; then
+		user_id=$(jq -r '.[0] .user_id' < $tmpdir/user_response.json)
+	else
+		curl $CURL_OPTS -X POST -H "$CONTENT_TYPE" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/user.json -o $tmpdir/user_response.json -w "%{http_code}" $aas_hostname/users > $tmpdir/user_response.status
 
-if [ -s $tmpdir/user_response.json ]; then
-	user_id=$(jq -r '.user_id' < $tmpdir/user_response.json)
-	if [ -n "$user_id" ]; then
-		echo "Created user id: $user_id"
-		SCS_USER_ID=$user_id;
+		local status=$(cat $tmpdir/user_response.status)
+		if [ $status -ne 201 ]; then
+			return 1
+		fi
+
+		if [ -s $tmpdir/user_response.json ]; then
+			user_id=$(jq -r '.user_id' < $tmpdir/user_response.json)
+			if [ -n "$user_id" ]; then
+				echo "${green} Created scs user, id: $user_id ${reset}"
+			fi
+		fi
 	fi
-fi
 }
 
-#Add SCS roles
-#cms role(scs will create these roles where CN=SCS), getroles(api in aas that is to be map with), keyTransfer, keyCrud
-create_user_roles() {
-
-cat > $tmpdir/roles.json << EOF
+# This routined checks if scs CertApprover/CacheManager roles exist and reurns those role ids
+# it creates above roles if not present in AAS db
+create_roles()
 {
-	"service": "$1",
-	"name": "$2",
-	"context": "$3"
+cat > $tmpdir/certroles.json << EOF
+{
+	"service": "CMS",
+	"name": "CertApprover",
+	"context": "CN=$CN;SAN=$SAN_LIST;CERTTYPE=TLS"
 }
 EOF
 
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/roles.json -o $tmpdir/role_response.json -w "%{http_code}" $aas_hostname/aas/roles > $tmpdir/role_response-status.json
+cat > $tmpdir/hostregroles.json << EOF
+{
+	"service": "SCS",
+	"name": "CacheManager",
+	"context": ""
+}
+EOF
 
-local actual_status=$(cat $tmpdir/role_response-status.json)
-if [ $actual_status -ne 201 ]; then
-	local response_mesage=$(cat $tmpdir/role_response.json)
-	if [ "$response_mesage"="same role exists" ]; then
-		return 2 
+	#check if CertApprover role already exists
+	curl $CURL_OPTS -H "Authorization: Bearer ${Bearer_token}" -o $tmpdir/role_response.json -w "%{http_code}" $aas_hostname/roles?name=CertApprover > $tmpdir/role_response.status
+
+	cms_role_id=$(jq --arg SAN $SAN_LIST -r '.[] | select ( .context | ( contains("SCS") and contains($SAN)))' < $tmpdir/role_response.json | jq -r '.role_id')
+	if [ -z $cms_role_id ]; then
+		curl $CURL_OPTS -X POST -H "$CONTENT_TYPE" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/certroles.json -o $tmpdir/role_response.json -w "%{http_code}" $aas_hostname/roles > $tmpdir/role_response-status.json
+
+		local status=$(cat $tmpdir/role_response-status.json)
+		if [ $status -ne 201 ]; then
+			return 1
+		fi
+
+		if [ -s $tmpdir/role_response.json ]; then
+			cms_role_id=$(jq -r '.role_id' < $tmpdir/role_response.json)
+		fi
 	fi
-	return 1
-fi
 
-if [ -s $tmpdir/role_response.json ]; then
-	role_id=$(jq -r '.role_id' < $tmpdir/role_response.json)
-fi
-echo "$role_id"
-}
+	#check if CacheManager role already exists
+	curl $CURL_OPTS -H "Authorization: Bearer ${Bearer_token}" -o $tmpdir/role_resp.json -w "%{http_code}" $aas_hostname/roles?name=CacheManager > $tmpdir/role_resp.status
 
-create_roles() {
+	len=$(jq '. | length' < $tmpdir/role_resp.json)
+	if [ $len -ne 0 ]; then
+		scs_role_id=$(jq -r '.[0] .role_id' < $tmpdir/role_resp.json)
+	else
+		curl $CURL_OPTS -X POST -H "$CONTENT_TYPE" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/hostregroles.json -o $tmpdir/role_resp.json -w "%{http_code}" $aas_hostname/roles > $tmpdir/role_resp-status.json
 
-	local cms_role_id=$( create_user_roles "CMS" "CertApprover" "CN=$CN;SAN=$IPADDR;CERTTYPE=TLS" ) #get roleid
-	local scs_role_id=$( create_user_roles "SCS" "CacheManager" "" )
+		local status=$(cat $tmpdir/role_resp-status.json)
+		if [ $status -ne 201 ]; then
+			return 1
+		fi
+
+		if [ -s $tmpdir/role_resp.json ]; then
+			scs_role_id=$(jq -r '.role_id' < $tmpdir/role_resp.json)
+		fi
+	fi
 	ROLE_ID_TO_MAP=`echo \"$cms_role_id\",\"$scs_role_id\"`
-	echo $ROLE_ID_TO_MAP
 }
 
-#Map scsUser to Roles
-mapUser_to_role() {
+#Maps scs user to CertApprover/CacheManager Roles
+mapUser_to_role()
+{
 cat >$tmpdir/mapRoles.json <<EOF
 {
 	"role_ids": [$ROLE_ID_TO_MAP]
 }
 EOF
 
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/mapRoles.json -o $tmpdir/mapRoles_response.json -w "%{http_code}" $aas_hostname/aas/users/$user_id/roles > $tmpdir/mapRoles_response-status.json
+	curl $CURL_OPTS -X POST -H "$CONTENT_TYPE" -H "Authorization: Bearer ${Bearer_token}" --data @$tmpdir/mapRoles.json -o $tmpdir/mapRoles_response.json -w "%{http_code}" $aas_hostname/users/$user_id/roles > $tmpdir/mapRoles_response-status.json
 
-local actual_status=$(cat $tmpdir/mapRoles_response-status.json)
-if [ $actual_status -ne 201 ]; then
-	return 1 
-fi
+	local status=$(cat $tmpdir/mapRoles_response-status.json)
+	if [ $status -ne 201 ]; then
+		return 1
+	fi
 }
 
 SCS_SETUP_API="create_scs_user create_roles mapUser_to_role"
-
 status=
 for api in $SCS_SETUP_API
 do
-	echo $api
 	eval $api
     	status=$?
-    if [ $status -ne 0 ]; then
-        echo "SCS-AAS User/Roles creation failed.: $api"
-        break;
-    fi
+	if [ $status -ne 0 ]; then
+		break;
+	fi
 done
 
-if [ $status -eq 0 ]; then
-    echo "SCS Setup for AAS-CMS complete: No errors"
-fi
-if [ $status -eq 2 ]; then
-    echo "SCS Setup for AAS-CMS already exists in AAS Database: No action will be done"
-fi
-
-#Get Token for SCS USER and configure it in scs config
-curl $CURL_OPTS -X POST -H "Content-Type: application/json" -H "Accept: application/jwt" --data @$tmpdir/user.json -o $tmpdir/scs_token-response.json -w "%{http_code}" $aas_hostname/aas/token > $tmpdir/getscsusertoken-response.status
-
-status=$(cat $tmpdir/getscsusertoken-response.status)
-if [ $status -ne 200 ]; then
-	echo "Couldn't get bearer token"
+if [ $status -ne 0 ]; then
+	echo "${red} SGX Caching Service user/roles creation failed.: $api ${reset}"
+	exit 1
 else
-	export BEARER_TOKEN=`cat $tmpdir/scs_token-response.json`
-	echo $BEARER_TOKEN
+	echo "${green} SGX Caching Service user/roles creation succeded ${reset}"
 fi
+
+#Get Token for SGX Cachine Service user and configure it in scs config.
+curl $CURL_OPTS -X POST -H "$CONTENT_TYPE" -H "$ACCEPT" --data @$tmpdir/user.json -o $tmpdir/scs_token-resp.json -w "%{http_code}" $aas_hostname/token > $tmpdir/get_scs_token-response.status
+
+status=$(cat $tmpdir/get_scs_token-response.status)
+if [ $status -ne 200 ]; then
+	echo "${red} Couldn't get bearer token for scs user ${reset}"
+else
+	export BEARER_TOKEN=`cat $tmpdir/scs_token-resp.json`
+	echo "************************************************************************************************************************************************"
+	echo $BEARER_TOKEN
+	echo "************************************************************************************************************************************************"
+	echo "${green} copy the above token and paste it against BEARER_TOKEN in scs.env ${reset}"
+fi
+
 # cleanup
 rm -rf $tmpdir

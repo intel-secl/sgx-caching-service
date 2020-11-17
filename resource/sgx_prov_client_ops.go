@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
-	"intel/isecl/scs/config"
+	"intel/isecl/scs/v3/config"
 	"net/http"
 	"time"
 )
@@ -121,7 +121,7 @@ func getPckCertsWithManifestFromProvServer(manifest string, pceId string) (*http
 	return resp, nil
 }
 
-func getPckCrlFromProvServer(ca string) (*http.Response, error) {
+func getPckCrlFromProvServer(ca string, encoding string) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCrlFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCrlFromProvServer() Leaving")
 	client, conf, err := getProvClientObj()
@@ -136,6 +136,7 @@ func getPckCrlFromProvServer(ca string) (*http.Response, error) {
 
 	q := req.URL.Query()
 	q.Add("ca", ca)
+	q.Add("encoding", encoding)
 
 	req.URL.RawQuery = q.Encode()
 

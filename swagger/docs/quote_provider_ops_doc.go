@@ -4,7 +4,7 @@
  */
 package docs
 
-import "intel/isecl/scs/resource"
+import "intel/isecl/scs/v3/resource"
 
 // TcbInfoJsonResp response payload
 // swagger:response TcbInfoJsonResp
@@ -81,12 +81,12 @@ type TcbInfoJsonResp struct {
 // swagger:operation GET /sgx/certification/v1/pckcrl Certificates getPckCrl
 // ---
 // description: |
-//   Retrieves the latest PCK Certificate Revocation List (CRL) for any SGX enabled platforms.
+//   Retrieves the base64 encoded latest PCK Certificate Revocation List (CRL) for any SGX enabled platforms.
 //   A CRL is a list of revoked SGX PCK Certificates that are issued by Intel SGX Processor CA.
 //   The query parameter 'ca' should be provided as mandatory for this REST call.
 //
 // produces:
-//  - application/x-pem-file
+//  - application/x-x509-ca-cert
 // parameters:
 // - name: ca
 //   description: PCK CRL issuing Certificate Authority (CA). CA can be either "processor" or "platform".
@@ -100,14 +100,7 @@ type TcbInfoJsonResp struct {
 //
 // x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/pckcrl?ca=processor
 // x-sample-call-output: |
-//    -----BEGIN X509 CRL-----
-//    MIIBKjCB0QIBATAKBggqhkjOPQQDAjBxMSMwIQYDVQQDDBpJbnRlbCBTR1ggUENLIFByb2Nlc3Nv
-//    ciBDQTEaMBgGA1UECgwRSW50ZWwgQ29ycG9yYXRpb24xFDASBgNVBAcMC1NhbnRhIENsYXJhMQsw
-//    CQYDVQQIDAJDQTELMAkGA1UEBhMCVVMXDTIwMDQyODE2NTkyM1oXDTIwMDUyODE2NTkyM1qgLzAt
-//    MAoGA1UdFAQDAgEBMB8GA1UdIwQYMBaAFNDoqtp11/kuSReYPHsUZdDV8llNMAoGCCqGSM49BAMC
-//    A0gAMEUCIAKZ+B0OOFZgzMrwQ0T0GlIritTNKNr0ayW7wchYlgdlAiEAuQifgQcxCYU/lkOUgNcl
-//    gG6ZSVMMjfliJZK2q6fnM6s=
-//    -----END X509 CRL-----
+//    MIIBKTCB0QIBATAKBggqhkjOPQQDAjBxMSMwIQYDVQQDDBpJbnRlbCBTR1ggUENLIFByb2Nlc3NvciBDQTEaMBgGA1UECgwRSW50ZWwgQ29ycG9yYXRpb24xFDASBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTELMAkGA1UEBhMCVVMXDTIwMTExMzA0Mzc1NVoXDTIwMTIxMzA0Mzc1NVqgLzAtMAoGA1UdFAQDAgEBMB8GA1UdIwQYMBaAFMHp3Hk19b3/LlphIQ0b13g7pUxaMAoGCCqGSM49BAMCA0cAMEQCIGWhZDw8yQ56EfFYNaIX96ZaEEurMTcyGlxsNYBjBUXAAiBNRVW27AQvV04YimDhB+evEHvgbyOjj1+7bemmpQZoOg==
 // ---
 
 // swagger:operation GET /sgx/certification/v1/tcb Certificates getTcbInfo

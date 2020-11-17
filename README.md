@@ -53,6 +53,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```shell
 git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
+git checkout v3.2.0
 make installer
 ```
 
@@ -90,6 +91,6 @@ make installer
 | crypto      | golang.org/x/crypto         | v0.0.0-20190320181102-891825fb96df |
 | time        | golang.org/x/time           | v0.0.0-20191024005414-555d28b269f0 |
 | yaml.v2     | gopkg.in/yaml.v2            | v2.2.8                             |
-| common      | intel/isecl/lib/common      | v1.0.0-Beta                        |
+| common      | github.com/intel-secl/common| v3.2.0                             |
 
 *Note: All dependencies are listed in go.mod*
