@@ -15,7 +15,6 @@ var regExMap = map[string]*regexp.Regexp{
 	constants.PceSvn_Key:  regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
 	constants.PceId_Key:   regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
 	constants.Ca_Key:      regexp.MustCompile(`^(processor|platform)$`),
-	constants.Type_Key:    regexp.MustCompile(`^(certs)$`),
 	constants.Fmspc_Key:   regexp.MustCompile(`^[0-9a-fA-F]{12}$`),
 	constants.QeId_Key:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`)}
 

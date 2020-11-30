@@ -16,40 +16,40 @@ type PostgresPckCertRepository struct {
 
 func (r *PostgresPckCertRepository) Create(u types.PckCert) (*types.PckCert, error) {
 	err := r.db.Create(&u).Error
-	return &u, errors.Wrap(err, "Create: failed to create PckCert record")
+	if err != nil {
+		return nil, errors.Wrap(err, "Create: failed to create a record in pck_certs table")
+	}
+	return &u, nil
 }
 
 func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckCert, error) {
-	var p types.PckCert
-	log.WithField("PckCert", pckcert).Debug("Retrieve Call")
-	err := r.db.Where("qe_id = ?", pckcert.QeId).First(&p).Error
+	err := r.db.Where("qe_id = ?", pckcert.QeId).First(&pckcert).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "Retrieve: failed to Retrieve PckCert record")
+		return nil, errors.Wrap(err, "Retrieve: failed to retrieve a record from pck_certs table")
 	}
-	return &p, nil
+	return &pckcert, nil
 }
 
-func (r *PostgresPckCertRepository) RetrieveAll(u types.PckCert) (types.PckCerts, error) {
+func (r *PostgresPckCertRepository) RetrieveAll() (types.PckCerts, error) {
 	var pckcerts types.PckCerts
-	err := r.db.Where(&u).Find(&pckcerts).Error
+	err := r.db.Find(&pckcerts).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAll: failed to Retrieve All PckCert records")
+		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all records from pck_certs table")
 	}
 
-	log.WithField("db pckcerts", pckcerts).Trace("RetrieveAll")
-	return pckcerts, errors.Wrap(err, "RetrieveAll: failed to Retrieve All PckCert records")
+	return pckcerts, nil
 }
 
 func (r *PostgresPckCertRepository) Update(u types.PckCert) error {
 	if err := r.db.Save(&u).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to update PckCert record")
+		return errors.Wrap(err, "Update: failed to update a record in pck_certs table")
 	}
 	return nil
 }
 
 func (r *PostgresPckCertRepository) Delete(u types.PckCert) error {
 	if err := r.db.Delete(&u).Error; err != nil {
-		return errors.Wrap(err, "Delete: failed to delete PckCert record")
+		return errors.Wrap(err, "Delete: failed to delete a record from pck_certs table")
 	}
 	return nil
 }

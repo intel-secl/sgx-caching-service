@@ -22,6 +22,8 @@ var slog = clog.GetSecurityLogger()
 type errorHandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Trace("resource/resource:ServeHTTP() Entering")
+	defer log.Trace("resource/resource:ServeHTTP() Leaving")
 	if err := ehf(w, r); err != nil {
 		log.WithError(err).Error("HTTP Error")
 		if gorm.IsRecordNotFoundError(err) {
@@ -30,17 +32,14 @@ func (ehf errorHandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		switch t := err.(type) {
 		case *resourceError:
-			log.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case resourceError:
-			log.WithError(err).Warningf("resource error")
 			http.Error(w, t.Message, t.StatusCode)
 		case *privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		case privilegeError:
 			http.Error(w, t.Message, t.StatusCode)
 		default:
-			log.WithError(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}

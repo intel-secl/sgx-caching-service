@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"intel/isecl/scs/v3/constants"
 	_ "intel/isecl/scs/v3/swagger/docs"
 	"os"
@@ -17,53 +18,54 @@ func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	os.Chmod(constants.LogFile, 0664)
+	if err = os.Chmod(constants.LogFile, 0664); err != nil {
+		return nil, nil, nil, err
+	}
 
 	httpLogFile, err = os.OpenFile(constants.HTTPLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	os.Chmod(constants.HTTPLogFile, 0664)
+	if err = os.Chmod(constants.HTTPLogFile, 0664); err != nil {
+		return nil, nil, nil, err
+	}
 
 	secLogFile, err = os.OpenFile(constants.SecLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	os.Chmod(constants.SecLogFile, 0664)
+	if err = os.Chmod(constants.SecLogFile, 0664); err != nil {
+		return nil, nil, nil, err
+	}
 
 	scsUser, err := user.Lookup(constants.SCSUserName)
 	if err != nil {
-		log.Errorf("Could not find user '%s'", constants.SCSUserName)
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("Could not find user '%s'", constants.SCSUserName)
 	}
 
 	uid, err := strconv.Atoi(scsUser.Uid)
 	if err != nil {
-		log.Errorf("Could not parse scs user uid '%s'", scsUser.Uid)
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("Could not parse scs user uid '%s'", scsUser.Uid)
 	}
 
 	gid, err := strconv.Atoi(scsUser.Gid)
 	if err != nil {
-		log.Errorf("Could not parse scs user gid '%s'", scsUser.Gid)
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("Could not parse scs user gid '%s'", scsUser.Gid)
 	}
 
 	err = os.Chown(constants.HTTPLogFile, uid, gid)
 	if err != nil {
-		log.Errorf("Could not change file ownership for file: '%s'", constants.HTTPLogFile)
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", constants.HTTPLogFile)
 	}
 
 	err = os.Chown(constants.SecLogFile, uid, gid)
 	if err != nil {
-		log.Errorf("Could not change file ownership for file: '%s'", constants.SecLogFile)
+		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", constants.SecLogFile)
 	}
 
 	err = os.Chown(constants.LogFile, uid, gid)
 	if err != nil {
-		log.Errorf("Could not change file ownership for file: '%s'", constants.LogFile)
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", constants.LogFile)
 	}
 
 	return
@@ -88,7 +90,7 @@ func main() {
 	}
 	err = app.Run(os.Args)
 	if err != nil {
-		log.Error("Application returned with error: ", err)
+		fmt.Println("Application returned with error:", err.Error())
 		os.Exit(1)
 	}
 }

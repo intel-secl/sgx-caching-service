@@ -16,7 +16,7 @@
 - RESTful APIs for easy and versatile access to above features
 
 ## System Requirements
-- RHEL 8.1
+- RHEL 8.2
 - Epel 8 Repo
 - pgdg 42 Repo
 - Proxy settings if applicable
@@ -53,7 +53,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```shell
 git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
-git checkout v3.2.0
+git checkout v3.3.0
 make installer
 ```
 
@@ -91,6 +91,6 @@ make installer
 | crypto      | golang.org/x/crypto         | v0.0.0-20190320181102-891825fb96df |
 | time        | golang.org/x/time           | v0.0.0-20191024005414-555d28b269f0 |
 | yaml.v2     | gopkg.in/yaml.v2            | v2.2.8                             |
-| common      | github.com/intel-secl/common| v3.2.0                             |
+| common      | github.com/intel-secl/common| v3.3.0                             |
 
 *Note: All dependencies are listed in go.mod*

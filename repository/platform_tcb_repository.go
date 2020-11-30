@@ -9,8 +9,7 @@ import "intel/isecl/scs/v3/types"
 type PlatformTcbRepository interface {
 	Create(types.PlatformTcb) (*types.PlatformTcb, error)
 	Retrieve(types.PlatformTcb) (*types.PlatformTcb, error)
-	RetrieveAll(types.PlatformTcb) (types.PlatformTcbs, error)
-	RetrieveAllPlatformTcbInfo() (types.PlatformTcbs, error)
+	RetrieveAll() (types.PlatformTcbs, error)
 	Update(types.PlatformTcb) error
 	Delete(types.PlatformTcb) error
 }

@@ -5,15 +5,14 @@
 package mock
 
 import (
-	"intel/isecl/scs/types"
+	"intel/isecl/scs/v3/types"
 )
 
 type MockQEIdentityRepository struct {
-	CreateFunc      func(types.QEIdentity) (*types.QEIdentity, error)
-	RetrieveFunc    func(types.QEIdentity) (*types.QEIdentity, error)
-	RetrieveAllFunc func() (types.QEIdentities, error)
-	UpdateFunc      func(types.QEIdentity) error
-	DeleteFunc      func(types.QEIdentity) error
+	CreateFunc   func(types.QEIdentity) (*types.QEIdentity, error)
+	RetrieveFunc func() (*types.QEIdentity, error)
+	UpdateFunc   func(types.QEIdentity) error
+	DeleteFunc   func(types.QEIdentity) error
 }
 
 func (m *MockQEIdentityRepository) Create(qe types.QEIdentity) (*types.QEIdentity, error) {
@@ -23,16 +22,9 @@ func (m *MockQEIdentityRepository) Create(qe types.QEIdentity) (*types.QEIdentit
 	return nil, nil
 }
 
-func (m *MockQEIdentityRepository) Retrieve(qe types.QEIdentity) (*types.QEIdentity, error) {
+func (m *MockQEIdentityRepository) Retrieve() (*types.QEIdentity, error) {
 	if m.RetrieveFunc != nil {
-		return m.RetrieveFunc(qe)
-	}
-	return nil, nil
-}
-
-func (m *MockQEIdentityRepository) RetrieveAll() (types.QEIdentities, error) {
-	if m.RetrieveAllFunc != nil {
-		return m.RetrieveAllFunc()
+		return m.RetrieveFunc()
 	}
 	return nil, nil
 }

@@ -8,13 +8,10 @@ import (
 	"time"
 )
 
-//QEIdentity struct is the database schema of a QEIdentities table
+//QEIdentity struct is the database schema for qe_identities table
 type QEIdentity struct {
-	ID            uint   `json:"-" gorm:"auto_increment"`
-	QeInfo        string `json:"-" gorm:"type:text;not null"`
-	QeIssuerChain string `json:"-" gorm:"type:text;not null"`
-	CreatedTime   time.Time
-	UpdatedTime   time.Time
+	QeInfo        string    `json:"-" gorm:"type:text;not null"`
+	QeIssuerChain string    `json:"-" gorm:"type:text;not null"`
+	CreatedTime   time.Time `json:"-"`
+	UpdatedTime   time.Time `json:"-"`
 }
-
-type QEIdentities []QEIdentity

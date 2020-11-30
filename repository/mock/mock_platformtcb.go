@@ -5,16 +5,15 @@
 package mock
 
 import (
-	"intel/isecl/scs/types"
+	"intel/isecl/scs/v3/types"
 )
 
 type MockPlatformTcbRepository struct {
-	CreateFunc                     func(types.PlatformTcb) (*types.PlatformTcb, error)
-	RetrieveFunc                   func(types.PlatformTcb) (*types.PlatformTcb, error)
-	RetrieveAllFunc                func(types.PlatformTcb) (types.PlatformTcbs, error)
-	RetrieveAllPlatformTcbInfoFunc func() (types.PlatformTcbs, error)
-	UpdateFunc                     func(types.PlatformTcb) error
-	DeleteFunc                     func(types.PlatformTcb) error
+	CreateFunc      func(types.PlatformTcb) (*types.PlatformTcb, error)
+	RetrieveFunc    func(types.PlatformTcb) (*types.PlatformTcb, error)
+	RetrieveAllFunc func() (types.PlatformTcbs, error)
+	UpdateFunc      func(types.PlatformTcb) error
+	DeleteFunc      func(types.PlatformTcb) error
 }
 
 func (m *MockPlatformTcbRepository) Create(p types.PlatformTcb) (*types.PlatformTcb, error) {
@@ -31,16 +30,9 @@ func (m *MockPlatformTcbRepository) Retrieve(p types.PlatformTcb) (*types.Platfo
 	return nil, nil
 }
 
-func (m *MockPlatformTcbRepository) RetrieveAll(u types.PlatformTcb) (types.PlatformTcbs, error) {
+func (m *MockPlatformTcbRepository) RetrieveAll() (types.PlatformTcbs, error) {
 	if m.RetrieveAllFunc != nil {
-		return m.RetrieveAllFunc(u)
-	}
-	return nil, nil
-}
-
-func (m *MockPlatformTcbRepository) RetrieveAllPlatformTcbInfo() (types.PlatformTcbs, error) {
-	if m.RetrieveAllPlatformTcbInfoFunc != nil {
-		return m.RetrieveAllPlatformTcbInfoFunc()
+		return m.RetrieveAllFunc()
 	}
 	return nil, nil
 }

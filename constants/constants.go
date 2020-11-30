@@ -42,7 +42,6 @@ const (
 	QeId_Key                       = "qe_id"
 	Ca_Key                         = "ca"
 	Encoding_Value                 = "der"
-	Type_Key                       = "type"
 	Ca_Processor                   = "processor"
 	Fmspc_Key                      = "fmspc"
 	DefaultScsRefreshHours         = 24

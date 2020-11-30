@@ -5,7 +5,7 @@
 package mock
 
 import (
-	"intel/isecl/scs/repository"
+	"intel/isecl/scs/v3/repository"
 )
 
 type MockDatabase struct {
