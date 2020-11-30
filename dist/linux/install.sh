@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check OS and VERSION
+OS=$(cat /etc/os-release | grep ^ID= | cut -d'=' -f2)
+temp="${OS%\"}"
+temp="${temp#\"}"
+OS="$temp"
+
 # READ .env file 
 echo PWD IS $(pwd)
 if [ -f ~/scs.env ]; then 
@@ -59,8 +65,15 @@ cp $COMPONENT_NAME $BIN_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $BIN_
 chmod 700 $BIN_PATH/*
 ln -sfT $BIN_PATH/$COMPONENT_NAME /usr/bin/$COMPONENT_NAME
 
+if [ "$OS" == "rhel" ]
+then
 cp libPCKCertSelection.so /usr/lib64/libPCKCertSelection.so
 chmod 755 /usr/lib64/libPCKCertSelection.so
+elif [ "$OS" == "ubuntu" ]
+then
+cp libPCKCertSelection.so /usr/lib/libPCKCertSelection.so
+chmod 755 /usr/lib/libPCKCertSelection.so
+fi
 
 cp db_rotation.sql $DB_SCRIPT_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $DB_SCRIPT_PATH/*
 
@@ -81,9 +94,15 @@ systemctl daemon-reload
 auto_install() {
   local component=${1}
   local cprefix=${2}
-  local dnf_packages=$(eval "echo \$${cprefix}_YUM_PACKAGES")
+  local packages=$(eval "echo \$${cprefix}_PACKAGES")
   # detect available package management tools. start with the less likely ones to differentiate.
-  dnf -y install $dnf_packages
+if [ "$OS" == "rhel" ]
+then
+  dnf -y install $packages
+elif [ "$OS" == "ubuntu" ]
+then
+  apt -y install $packages
+fi
 }
 
 # SCRIPT EXECUTION
@@ -100,7 +119,7 @@ logRotate_detect() {
 }
 
 logRotate_install() {
-  LOGROTATE_YUM_PACKAGES="logrotate"
+  LOGROTATE_PACKAGES="logrotate"
   if [ "$(whoami)" == "root" ]; then
     auto_install "Log Rotate" "LOGROTATE"
     if [ $? -ne 0 ]; then echo_failure "Failed to install logrotate"; exit -1; fi
