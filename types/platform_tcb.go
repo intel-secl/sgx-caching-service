@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// PlatformTcb struct is the database schema of a PlatformTcb table
+// PlatformTcb struct is the database schema for platform_tcbs table
 type PlatformTcb struct {
 	QeId        string    `json:"-" gorm:"primary_key"`
 	PceId       string    `json:"-"`

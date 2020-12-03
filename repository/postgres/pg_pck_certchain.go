@@ -14,40 +14,33 @@ type PostgresPckCertChainRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresPckCertChainRepository) Create(certchain types.PckCertChain) (*types.PckCertChain, error) {
-	err := r.db.Create(&certchain).Error
-	return &certchain, errors.Wrap(err, "create: Failed to create PckCertChain")
-}
-
-func (r *PostgresPckCertChainRepository) Retrieve(certchain types.PckCertChain) (*types.PckCertChain, error) {
-	err := r.db.Where(&certchain).First(&certchain).Error
+func (r *PostgresPckCertChainRepository) Create(pcc types.PckCertChain) (*types.PckCertChain, error) {
+	err := r.db.Create(&pcc).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "Retrieve: Failed to Retrive PckCertChain")
+		return nil, errors.Wrap(err, "Create: failed to create a record in pck_cert_chains table")
 	}
-	return &certchain, nil
+	return &pcc, nil
 }
 
-func (r *PostgresPckCertChainRepository) RetrieveAll(certchain types.PckCertChain) (types.PckCertChains, error) {
-	var certchains types.PckCertChains
-	err := r.db.Where(&certchain).Find(&certchains).Error
+func (r *PostgresPckCertChainRepository) Retrieve() (*types.PckCertChain, error) {
+	var pcc types.PckCertChain
+	err := r.db.Find(&pcc).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAll: Failed to RetriveAll PckCertChain")
+		return nil, errors.Wrap(err, "Retrieve: failed to retrieve record from pck_cert_chains table")
 	}
-
-	log.WithField("db users", certchains).Trace("RetrieveAll")
-	return certchains, errors.Wrap(err, "RetrieveAll: Failed to RetriveAll PckCertChain")
+	return &pcc, nil
 }
 
-func (r *PostgresPckCertChainRepository) Update(certchain types.PckCertChain) error {
-	if err := r.db.Save(&certchain).Error; err != nil {
-		return errors.Wrap(err, "Update: Failed to Update PckCertChain")
+func (r *PostgresPckCertChainRepository) Update(pcc types.PckCertChain) error {
+	if err := r.db.Save(&pcc).Error; err != nil {
+		return errors.Wrap(err, "Update: failed to update record in pck_cert_chains table")
 	}
 	return nil
 }
 
-func (r *PostgresPckCertChainRepository) Delete(certchain types.PckCertChain) error {
-	if err := r.db.Model(&certchain).Association("PckCert").Clear().Error; err != nil {
-		return errors.Wrap(err, "Delete: Failed to Delete PckCertChain")
+func (r *PostgresPckCertChainRepository) Delete(pcc types.PckCertChain) error {
+	if err := r.db.Delete(&pcc).Error; err != nil {
+		return errors.Wrap(err, "Delete: failed to delete a record from pck_cert_chains table")
 	}
 	return nil
 }

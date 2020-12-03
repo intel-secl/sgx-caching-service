@@ -8,13 +8,13 @@ import (
 	"time"
 )
 
-// PckCrl struct is the database schema of a PckCrl table
+// PckCrl struct is the database schema for pck_crls table
 type PckCrl struct {
-	Ca              string `json:"-" gorm:"primary_key"`
-	PckCrlCertChain string `json:"-" gorm:"type:text;not null;unique"`
-	PckCrl          string `json:"-" gorm:"type:text;not null;unique"`
-	CreatedTime     time.Time
-	UpdatedTime     time.Time
+	Ca              string    `json:"-" gorm:"primary_key"`
+	PckCrlCertChain string    `json:"-" gorm:"type:text;not null;unique"`
+	PckCrl          string    `json:"-" gorm:"type:text;not null;unique"`
+	CreatedTime     time.Time `json:"-"`
+	UpdatedTime     time.Time `json:"-"`
 }
 
 type PckCrls []PckCrl

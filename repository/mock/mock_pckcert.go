@@ -5,13 +5,13 @@
 package mock
 
 import (
-	"intel/isecl/scs/types"
+	"intel/isecl/scs/v3/types"
 )
 
 type MockPckCertRepository struct {
 	CreateFunc      func(types.PckCert) (*types.PckCert, error)
 	RetrieveFunc    func(types.PckCert) (*types.PckCert, error)
-	RetrieveAllFunc func(types.PckCert) (types.PckCerts, error)
+	RetrieveAllFunc func() (types.PckCerts, error)
 	UpdateFunc      func(types.PckCert) error
 	DeleteFunc      func(types.PckCert) error
 }
@@ -30,9 +30,9 @@ func (m *MockPckCertRepository) Retrieve(cert types.PckCert) (*types.PckCert, er
 	return nil, nil
 }
 
-func (m *MockPckCertRepository) RetrieveAll(cert types.PckCert) (types.PckCerts, error) {
+func (m *MockPckCertRepository) RetrieveAll() (types.PckCerts, error) {
 	if m.RetrieveAllFunc != nil {
-		return m.RetrieveAllFunc(cert)
+		return m.RetrieveAllFunc()
 	}
 	return nil, nil
 }

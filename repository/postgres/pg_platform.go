@@ -5,10 +5,9 @@
 package postgres
 
 import (
-	"intel/isecl/scs/v3/types"
-
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/scs/v3/types"
 )
 
 type PostgresPlatformRepository struct {
@@ -17,50 +16,39 @@ type PostgresPlatformRepository struct {
 
 func (r *PostgresPlatformRepository) Create(p types.Platform) (*types.Platform, error) {
 	err := r.db.Create(&p).Error
-	return &p, errors.Wrap(err, "create: failed to create Platform")
-}
-
-func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform, error) {
-	log.WithField("Platform", p).Debug("Retrieve Call")
-	err := r.db.Where(&p).First(&p).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "Retrieve: failed to retrieve Platform")
+		return nil, errors.Wrap(err, "create: failed to create a record in platform table")
 	}
 	return &p, nil
 }
 
-func (r *PostgresPlatformRepository) RetrieveAll(u types.Platform) (types.Platforms, error) {
-	var platforminfo types.Platforms
-	err := r.db.Where(&u).Find(&platforminfo).Error
+func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform, error) {
+	err := r.db.Where("qe_id = ?", p.QeId).First(&p).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all Platform")
+		return nil, errors.Wrap(err, "Retrieve: failed to retrieve a record from platform table")
 	}
-
-	log.WithField("db platforminfo", platforminfo).Trace("RetrieveAll")
-	return platforminfo, nil
+	return &p, nil
 }
 
-func (r *PostgresPlatformRepository) RetrieveAllPlatformInfo() (types.Platforms, error) {
+func (r *PostgresPlatformRepository) RetrieveAll() (types.Platforms, error) {
 	var p types.Platforms
 	err := r.db.Find(&p).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAllPlatformInfo: failed to retrieve all PlatformInfo")
+		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all records from platform table")
 	}
-
-	log.WithField("db PlatformInfo", p).Trace("RetrieveAll")
 	return p, nil
 }
 
 func (r *PostgresPlatformRepository) Update(u types.Platform) error {
 	if err := r.db.Save(&u).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to update Platform")
+		return errors.Wrap(err, "Update: failed to update a record in platform table")
 	}
 	return nil
 }
 
 func (r *PostgresPlatformRepository) Delete(u types.Platform) error {
 	if err := r.db.Delete(&u).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to Delete Platform")
+		return errors.Wrap(err, "Update: failed to delete a record from platform table")
 	}
 	return nil
 }

@@ -16,49 +16,39 @@ type PostgresFmspcTcbInfoRepository struct {
 
 func (r *PostgresFmspcTcbInfoRepository) Create(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
 	err := r.db.Create(&tcb).Error
-	return &tcb, errors.Wrap(err, "create: failed to create fmspcTcbInfo")
+	if err != nil {
+		return nil, errors.Wrap(err, "create: failed to create a record in fmspctcb table")
+	}
+	return &tcb, nil
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Retrieve(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
 	err := r.db.Where(&tcb).First(&tcb).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "Retrieve: failed to retrive fmspcTcbInfo")
+		return nil, errors.Wrap(err, "Retrieve: failed to retrive a record from fmspctcb table")
 	}
 	return &tcb, nil
 }
 
-func (r *PostgresFmspcTcbInfoRepository) RetrieveAll(tcb types.FmspcTcbInfo) (types.FmspcTcbInfos, error) {
-	var tcbs types.FmspcTcbInfos
-	err := r.db.Where(&tcb).Find(&tcbs).Error
-	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all fmspcTcbInfo")
-	}
-
-	log.WithField("db Fmspc", tcbs).Trace("RetrieveAll")
-	return tcbs, errors.Wrap(err, "RetrieveAll: failed to retrieve all fmspcTcbInfo")
-}
-
-func (r *PostgresFmspcTcbInfoRepository) RetrieveAllFmspcTcbInfos() (types.FmspcTcbInfos, error) {
+func (r *PostgresFmspcTcbInfoRepository) RetrieveAll() (types.FmspcTcbInfos, error) {
 	var tcbs types.FmspcTcbInfos
 	err := r.db.Find(&tcbs).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAllFmspcTcbInfos: failed to retrieveAllFmspcTcbInfos")
+		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all fmspctcb records")
 	}
-
-	log.WithField("db Tcbs", tcbs).Trace("RetrieveAll")
-	return tcbs, errors.Wrap(err, "RetrieveAllFmspcTcbInfos: failed to retrieveAllFmspcTcbInfos")
+	return tcbs, nil
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Update(tcb types.FmspcTcbInfo) error {
 	if err := r.db.Save(&tcb).Error; err != nil {
-		return errors.Wrap(err, "update: failed to update fmspcTcbInfo")
+		return errors.Wrap(err, "update: failed to update a record in fmspctcb table")
 	}
 	return nil
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Delete(tcb types.FmspcTcbInfo) error {
 	if err := r.db.Delete(&tcb).Error; err != nil {
-		return errors.Wrap(err, "Delete: failed to Delete fmspcTcbInfo")
+		return errors.Wrap(err, "delete: failed to delete a record fmspctcb table")
 	}
 	return nil
 }

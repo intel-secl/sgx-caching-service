@@ -14,40 +14,33 @@ type PostgresQEIdentityRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresQEIdentityRepository) Create(u types.QEIdentity) (*types.QEIdentity, error) {
-	err := r.db.Create(&u).Error
-	return &u, errors.Wrap(err, "Create: failed to create qeIdentity")
-}
-
-func (r *PostgresQEIdentityRepository) Retrieve(u types.QEIdentity) (*types.QEIdentity, error) {
-	err := r.db.Where(&u).First(&u).Error
+func (r *PostgresQEIdentityRepository) Create(qe types.QEIdentity) (*types.QEIdentity, error) {
+	err := r.db.Create(&qe).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "Retrieve: failed to retrieve qeIdentity")
+		return nil, errors.Wrap(err, "Create: failed to create a record in qe_identities table")
 	}
-	return &u, nil
+	return &qe, nil
 }
 
-func (r *PostgresQEIdentityRepository) RetrieveAll() (types.QEIdentities, error) {
-	var qes types.QEIdentities
-	err := r.db.Find(&qes).Error
+func (r *PostgresQEIdentityRepository) Retrieve() (*types.QEIdentity, error) {
+	var qe types.QEIdentity
+	err := r.db.First(&qe).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "RetrieveAll: failed to retrieve all qeIdentity")
+		return nil, errors.Wrap(err, "Retrieve: failed to retrieve record from qe_identities table")
 	}
-
-	log.WithField("db qes", qes).Trace("RetrieveAll")
-	return qes, errors.Wrap(err, "RetrieveAll: failed to retrieve all qeIdentity")
+	return &qe, nil
 }
 
-func (r *PostgresQEIdentityRepository) Update(u types.QEIdentity) error {
-	if err := r.db.Save(&u).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to update qeIdentity")
+func (r *PostgresQEIdentityRepository) Update(qe types.QEIdentity) error {
+	if err := r.db.Save(&qe).Error; err != nil {
+		return errors.Wrap(err, "Update: failed to update record in qe_identities table")
 	}
 	return nil
 }
 
-func (r *PostgresQEIdentityRepository) Delete(u types.QEIdentity) error {
-	if err := r.db.Delete(&u).Error; err != nil {
-		return errors.Wrap(err, "Delete: failed to Delete qeIdentity")
+func (r *PostgresQEIdentityRepository) Delete(qe types.QEIdentity) error {
+	if err := r.db.Delete(&qe).Error; err != nil {
+		return errors.Wrap(err, "Delete: failed to delete a record from qe_identities table")
 	}
 	return nil
 }

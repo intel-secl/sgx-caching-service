@@ -22,28 +22,28 @@ func getLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 	data.PlatformInfo.PceSvn = PceSvn
 	data.PlatformInfo.PceId = pceId
 	data.PlatformInfo.QeId = qeId
-	data.PlatformInfo.PlatformManifest = manifest
+	data.PlatformInfo.Manifest = manifest
 
 	err := fetchPckCertInfo(&data)
 	if err != nil {
 		return nil, errors.New("fetchPckCertInfo:" + err.Error())
 	}
 
-	err = cachePlatformInfo(db, &data)
-	if err != nil {
-		return nil, errors.New("cachePlatformInfo:" + err.Error())
-	}
+	/*	err = cachePlatformInfo(db, &data)
+		if err != nil {
+			return nil, errors.New("cachePlatformInfo:" + err.Error())
+		}
 
-	err = cachePlatformTcbInfo(db, &data)
-	if err != nil {
-		return nil, errors.New("cachePlatformTcbInfo:" + err.Error())
-	}
+		err = cachePlatformTcbInfo(db, &data)
+		if err != nil {
+			return nil, errors.New("cachePlatformTcbInfo:" + err.Error())
+		}
 
-	err = cacheFmspcTcbInfo(db, &data)
-	if err != nil {
-		return nil, errors.New("cacheFmpscTcbInfo:" + err.Error())
-	}
-
+		err = cacheFmspcTcbInfo(db, &data)
+		if err != nil {
+			return nil, errors.New("cacheFmpscTcbInfo:" + err.Error())
+		}
+	*/
 	err = cachePckCertChainInfo(db, &data)
 	if err != nil {
 		return nil, errors.New("cachePckCertChainInfo:" + err.Error())
@@ -100,7 +100,7 @@ func getLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl
 	return data.PckCrl, nil
 }
 
-func getLazyCacheQEIdentityInfo(db repository.SCSDatabase) (types.QEIdentities, error) {
+func getLazyCacheQEIdentityInfo(db repository.SCSDatabase) (*types.QEIdentity, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCacheQEIdentityInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCacheQEIdentityInfo() Leaving")
 
@@ -116,11 +116,6 @@ func getLazyCacheQEIdentityInfo(db repository.SCSDatabase) (types.QEIdentities, 
 		return nil, errors.New("cacheQeIdentityInfo:" + err.Error())
 	}
 
-	existingQeInfo, err := db.QEIdentityRepository().RetrieveAll()
-	if existingQeInfo == nil && err == nil {
-		return nil, errors.New("getLazyCacheQEIdentityInfo: Retrive data error" + err.Error())
-	}
-
 	log.Debug("getLazyCacheQEIdentityInfo fetch and cache operation completed")
-	return existingQeInfo, nil
+	return data.QEIdentity, nil
 }

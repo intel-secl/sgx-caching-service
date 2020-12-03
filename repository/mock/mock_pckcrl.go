@@ -5,16 +5,15 @@
 package mock
 
 import (
-	"intel/isecl/scs/types"
+	"intel/isecl/scs/v3/types"
 )
 
 type MockPckCrlRepository struct {
-	CreateFunc             func(types.PckCrl) (*types.PckCrl, error)
-	RetrieveFunc           func(types.PckCrl) (*types.PckCrl, error)
-	RetrieveAllFunc        func(types.PckCrl) (types.PckCrls, error)
-	RetrieveAllPckCrlsFunc func() (types.PckCrls, error)
-	UpdateFunc             func(types.PckCrl) error
-	DeleteFunc             func(types.PckCrl) error
+	CreateFunc      func(types.PckCrl) (*types.PckCrl, error)
+	RetrieveFunc    func(types.PckCrl) (*types.PckCrl, error)
+	RetrieveAllFunc func() (types.PckCrls, error)
+	UpdateFunc      func(types.PckCrl) error
+	DeleteFunc      func(types.PckCrl) error
 }
 
 func (m *MockPckCrlRepository) Create(crl types.PckCrl) (*types.PckCrl, error) {
@@ -31,16 +30,9 @@ func (m *MockPckCrlRepository) Retrieve(crl types.PckCrl) (*types.PckCrl, error)
 	return nil, nil
 }
 
-func (m *MockPckCrlRepository) RetrieveAll(crl types.PckCrl) (types.PckCrls, error) {
+func (m *MockPckCrlRepository) RetrieveAll() (types.PckCrls, error) {
 	if m.RetrieveAllFunc != nil {
-		return m.RetrieveAllFunc(crl)
-	}
-	return nil, nil
-}
-
-func (m *MockPckCrlRepository) RetrieveAllPckCrls() (types.PckCrls, error) {
-	if m.RetrieveAllPckCrlsFunc != nil {
-		return m.RetrieveAllPckCrlsFunc()
+		return m.RetrieveAllFunc()
 	}
 	return nil, nil
 }

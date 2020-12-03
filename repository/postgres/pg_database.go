@@ -27,7 +27,7 @@ func (pd *PostgresDatabase) Migrate() error {
 	pd.DB.AutoMigrate(types.Platform{})
 	pd.DB.AutoMigrate(types.PlatformTcb{})
 	pd.DB.AutoMigrate(types.PckCertChain{})
-	pd.DB.AutoMigrate(types.PckCert{}).AddForeignKey("pck_cert_chain_id", "pck_cert_chains(id)", "RESTRICT", "RESTRICT")
+	pd.DB.AutoMigrate(types.PckCert{})
 	pd.DB.AutoMigrate(types.PckCrl{})
 	pd.DB.AutoMigrate(types.FmspcTcbInfo{})
 	pd.DB.AutoMigrate(types.QEIdentity{})
@@ -83,17 +83,18 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	var dbErr error
 	const numAttempts = 4
 	for i := 0; i < numAttempts; i = i + 1 {
-		const retryTime = 5
+		const retryTime = 1
 		db, dbErr = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s%s",
 			host, port, user, dbname, password, sslMode, sslCertParams))
 		if dbErr != nil {
-			slog.Warningf("Failed to connect to DB, retrying attempt %d/%d", i, numAttempts)
+			log.WithError(dbErr).Infof("Failed to connect to DB, retrying attempt %d/%d", i+1, numAttempts)
 		} else {
 			break
 		}
 		time.Sleep(retryTime * time.Second)
 	}
 	if dbErr != nil {
+		log.WithError(dbErr).Infof("Failed to connect to db after %d attempts\n", numAttempts)
 		slog.Errorf("%s: Failed to connect to db after %d attempts", commLogMsg.BadConnection, numAttempts)
 		return nil, dbErr
 	}
