@@ -14,27 +14,27 @@ import (
 )
 
 func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File, err error) {
-	logFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0664)
+	logFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err = os.Chmod(constants.LogFile, 0664); err != nil {
+	if err = os.Chmod(constants.LogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
 
-	httpLogFile, err = os.OpenFile(constants.HTTPLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	httpLogFile, err = os.OpenFile(constants.HTTPLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err = os.Chmod(constants.HTTPLogFile, 0664); err != nil {
+	if err = os.Chmod(constants.HTTPLogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
 
-	secLogFile, err = os.OpenFile(constants.SecLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	secLogFile, err = os.OpenFile(constants.SecLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err = os.Chmod(constants.SecLogFile, 0664); err != nil {
+	if err = os.Chmod(constants.SecLogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -79,9 +79,24 @@ func main() {
 			LogWriter: os.Stdout,
 		}
 	} else {
-		defer l.Close()
-		defer h.Close()
-		defer s.Close()
+		defer func() {
+			err = l.Close()
+			if err != nil {
+				log.Error("failed to complete write on scs.log ", err)
+				os.Exit(1)
+			}
+			err = h.Close()
+			if err != nil {
+				log.Error("failed to complete write on scs-http.log ", err)
+				os.Exit(1)
+			}
+			err = s.Close()
+			if err != nil {
+				log.Error("failed to complete write on scs-security.log ", err)
+				os.Exit(1)
+			}
+		}()
+
 		app = &App{
 			LogWriter:     l,
 			HTTPLogWriter: h,

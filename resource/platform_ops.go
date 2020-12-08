@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +30,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"intel/isecl/scs/v3/config"
 	"intel/isecl/scs/v3/constants"
 	"intel/isecl/scs/v3/repository"
 	"intel/isecl/scs/v3/types"
@@ -258,14 +256,21 @@ func fetchPckCertInfo(in *SgxData) error {
 		return errors.New("invalid request, enc_ppid or platform_manifest is null")
 	}
 
-	if in.PlatformInfo.Manifest != "" && getPcsVersion() >= 3 {
+	if in.PlatformInfo.Manifest != "" {
 		resp, err = getPckCertsWithManifestFromProvServer(in.PlatformInfo.Manifest,
 			in.PlatformInfo.PceId)
 	} else {
 		resp, err = getPckCertFromProvServer(in.PlatformInfo.EncPpid,
 			in.PlatformInfo.PceId)
 	}
-	defer resp.Body.Close()
+	if resp != nil {
+		defer func() {
+			derr := resp.Body.Close()
+			if derr != nil {
+				log.WithError(derr).Error("Error closing response")
+			}
+		}()
+	}
 
 	if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPckCerts api failed")
@@ -357,11 +362,19 @@ func fetchPckCertInfo(in *SgxData) error {
 // by comparing against this CRL
 func fetchPckCrlInfo(in *SgxData) error {
 	resp, err := getPckCrlFromProvServer(in.PckCRLInfo.Ca, constants.Encoding_Value)
+	if resp != nil {
+		defer func() {
+			derr := resp.Body.Close()
+			if derr != nil {
+				log.WithError(derr).Error("Error closing response")
+			}
+		}()
+	}
+
 	if err != nil {
 		log.WithError(err).Error("Intel PCS Server getPckCrl api failed")
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
@@ -386,11 +399,19 @@ func fetchPckCrlInfo(in *SgxData) error {
 // for a platform FMSPC value, fetches corresponding TCBInfo structure from Intel PCS server
 func fetchFmspcTcbInfo(in *SgxData) error {
 	resp, err := getFmspcTcbInfoFromProvServer(in.FmspcTcbInfo.Fmspc)
+	if resp != nil {
+		defer func() {
+			derr := resp.Body.Close()
+			if derr != nil {
+				log.WithError(derr).Error("Error closing response")
+			}
+		}()
+	}
+
 	if err != nil {
 		log.WithError(err).Error("Intel PCS Server getTCBInfo api failed")
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
@@ -414,11 +435,19 @@ func fetchFmspcTcbInfo(in *SgxData) error {
 // Fetches Quoting Enclave ID details for a platform from intel PCS server
 func fetchQeIdentityInfo(in *SgxData) error {
 	resp, err := getQeInfoFromProvServer()
+	if resp != nil {
+		defer func() {
+			derr := resp.Body.Close()
+			if derr != nil {
+				log.WithError(derr).Error("Error closing response")
+			}
+		}()
+	}
+
 	if err != nil {
 		log.WithError(err).Error("Intel PCS Server getQEIdentity api failed")
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.WithField("Status Code", resp.StatusCode).Error(httputil.DumpResponse(resp, true))
@@ -1112,19 +1141,5 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 		w.Write(js)
 		slog.Infof("%s: TCB status retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
-	}
-}
-
-func getPcsVersion() int {
-	conf := config.Global()
-	pcs_url := conf.ProvServerInfo.ProvServerUrl
-	PCS_Url := regexp.MustCompile(`^(https:\/\/)(.*)\.intel\.com\/sgx\/certification\/v([1-9]{0,9})$`)
-	if PCS_Url.MatchString(pcs_url) {
-		str := PCS_Url.FindStringSubmatch(pcs_url)
-		version, _ := strconv.Atoi(str[3])
-		return version
-	} else {
-		log.Error("failed to get pcs server version")
-		return 0
 	}
 }

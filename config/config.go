@@ -89,8 +89,7 @@ func (c *Configuration) Save() error {
 		// we have an error
 		if os.IsNotExist(err) {
 			// error is that the config doesnt yet exist, create it
-			file, err = os.Create(c.configFile)
-			os.Chmod(c.configFile, 0640)
+			file, err = os.OpenFile(c.configFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 			if err != nil {
 				return err
 			}
@@ -99,7 +98,13 @@ func (c *Configuration) Save() error {
 			return err
 		}
 	}
-	defer file.Close()
+	defer func() {
+		derr := file.Close()
+		if derr != nil {
+			log.WithError(derr).Error("Failed to flush config.yml")
+		}
+	}()
+
 	return yaml.NewEncoder(file).Encode(c)
 }
 
@@ -221,11 +226,18 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 func Load(path string) *Configuration {
 	var c Configuration
 	file, err := os.Open(path)
-	if err == nil {
-		defer file.Close()
-		yaml.NewDecoder(file).Decode(&c)
+	if file != nil {
+		defer func() {
+			derr := file.Close()
+			if derr != nil {
+				log.WithError(derr).Error("Failed to close config.yml")
+			}
+		}()
+		err = yaml.NewDecoder(file).Decode(&c)
+		if err != nil {
+			log.WithError(err).Error("Failed to decode config.yml contents")
+		}
 	} else {
-		// file doesnt exist, create a new blank one
 		c.LogLevel = log.InfoLevel
 	}
 
