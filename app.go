@@ -70,14 +70,13 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "    scs <command> [arguments]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Avaliable Commands:")
-	fmt.Fprintln(w, "    -h|--help			Show this help message")
+	fmt.Fprintln(w, "    help|-h|--help		Show this help message")
 	fmt.Fprintln(w, "    setup [task]		Run setup task")
 	fmt.Fprintln(w, "    start			Start scs")
 	fmt.Fprintln(w, "    status			Show the status of scs")
 	fmt.Fprintln(w, "    stop			Stop scs")
-	fmt.Fprintln(w, "    tlscertsha384		Show the SHA384 digest of the certificate used for TLS")
 	fmt.Fprintln(w, "    uninstall [--purge]	Uninstall SCS. --purge option needs to be applied to remove configuration and data files")
-	fmt.Fprintln(w, "    -v|--version          	Show the version of scs")
+	fmt.Fprintln(w, "    version|-v|--version      	Show the version of scs")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Setup command usage:     scs setup [task] [--arguments=<argument_value>] [--force]")
 	fmt.Fprintln(w, "")
@@ -248,30 +247,15 @@ func (a *App) Run(args []string) error {
 		a.printUsage()
 		fmt.Fprintf(os.Stderr, "Unrecognized command: %s\n", args[1])
 		os.Exit(1)
-	case "list":
-		if len(args) < 3 {
-			a.printUsage()
-			os.Exit(1)
-		}
-		return a.PrintDirFileContents(args[2])
-	case "tlscertsha384":
-		a.configureLogs(a.configuration().LogEnableStdout, true)
-		hash, err := crypt.GetCertHexSha384(config.Global().TLSCertFile)
-		if err != nil {
-			fmt.Println(err.Error())
-			return errors.Wrap(err, "app:Run() Could not derive tls certificate digest")
-		}
-		fmt.Println(hash)
-		return nil
 	case "run":
 		a.configureLogs(a.configuration().LogEnableStdout, true)
 		if err := a.startServer(); err != nil {
 			fmt.Fprintln(os.Stderr, "Error: daemon did not start - ", err.Error())
 			// wait some time for logs to flush - otherwise, there will be no entry in syslog
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 			return errors.Wrap(err, "app:Run() Error starting SCS service")
 		}
-	case "-h", "--help":
+	case "help", "-h", "--help":
 		a.printUsage()
 		return nil
 	case "start":
@@ -289,7 +273,7 @@ func (a *App) Run(args []string) error {
 		a.uninstall(purge)
 		log.Info("app:Run() Uninstalled SGX Caching Service")
 		os.Exit(0)
-	case "--version", "-v":
+	case "version", "--version", "-v":
 		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
 		return nil
 	case "setup":
@@ -395,7 +379,6 @@ func (a *App) Run(args []string) error {
 		}
 
 		//Change the fileownership to scs user
-
 		err = cos.ChownR(constants.ConfigDir, uid, gid)
 		if err != nil {
 			return errors.Wrap(err, "Error while changing file ownership")
