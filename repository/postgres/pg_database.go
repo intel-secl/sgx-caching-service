@@ -64,7 +64,10 @@ func (pd *PostgresDatabase) QEIdentityRepository() repository.QEIdentityReposito
 
 func (pd *PostgresDatabase) Close() {
 	if pd.DB != nil {
-		pd.DB.Close()
+		err := pd.DB.Close()
+		if err != nil {
+			log.WithError(err).Error("failed to close the scs db")
+		}
 	}
 }
 

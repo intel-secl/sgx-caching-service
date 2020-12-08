@@ -29,7 +29,10 @@ func getVersion() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		verStr := fmt.Sprintf("%s-%s", version.Version, version.GitHash)
 		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-		w.Write([]byte(verStr))
+		_, err := w.Write([]byte(verStr))
+		if err != nil {
+			log.WithError(err).Error("Could not write version to response")
+		}
 	})
 }
 
@@ -111,7 +114,10 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header()["sgx-tcbm"] = []string{existingPckCert.Tcbms[certIndex]}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(existingPckCert.PckCerts[certIndex]))
+		_, err = w.Write([]byte(existingPckCert.PckCerts[certIndex]))
+		if err != nil {
+			log.WithError(err).Error("Could not write pck cert data to response")
+		}
 		slog.Infof("%s: PCK certificate retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
@@ -147,7 +153,10 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 
 		w.Header()["SGX-PCK-CRL-Issuer-Chain"] = []string{existingPckCrl.PckCrlCertChain}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(existingPckCrl.PckCrl))
+		_, err = w.Write([]byte(existingPckCrl.PckCrl))
+		if err != nil {
+			log.WithError(err).Error("Could not write pck crl data to response")
+		}
 		slog.Infof("%s: PCK CRL retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
@@ -167,7 +176,10 @@ func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["Sgx-Qe-Identity-Issuer-Chain"] = []string{existingQeInfo.QeIssuerChain}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(existingQeInfo.QeInfo))
+		_, err = w.Write([]byte(existingQeInfo.QeInfo))
+		if err != nil {
+			log.WithError(err).Error("Could not write qe info data to response")
+		}
 		slog.Infof("%s: QE Identity info retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
@@ -200,7 +212,10 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["SGX-TCB-Info-Issuer-Chain"] = []string{existingFmspc.TcbInfoIssuerChain}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(existingFmspc.TcbInfo))
+		_, err = w.Write([]byte(existingFmspc.TcbInfo))
+		if err != nil {
+			log.WithError(err).Error("Could not write tcbinfo data to response")
+		}
 		slog.Infof("%s: TCB Info retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}

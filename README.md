@@ -59,7 +59,7 @@ make installer
 
 ### Deploy
 ```console
-> ./scs-*.bin
+> ./out/scs-*.bin
 ```
 
 ### Manage service
@@ -88,8 +88,6 @@ make installer
 | jwt-go      | github.com/dgrijalva/jwt-go | v3.2.0                             |
 | testify     | github.com/stretchr/testify | v1.5.1                             |
 | pq          | github.com/lib/pq           | v1.3.0                             |
-| crypto      | golang.org/x/crypto         | v0.0.0-20190320181102-891825fb96df |
-| time        | golang.org/x/time           | v0.0.0-20191024005414-555d28b269f0 |
 | yaml.v2     | gopkg.in/yaml.v2            | v2.2.8                             |
 | common      | github.com/intel-secl/common| v3.3.0                             |
 
