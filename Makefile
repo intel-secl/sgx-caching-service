@@ -18,7 +18,7 @@ SKCPCKCertSelection:
 	rm -rf $(TMP)
 
 scs:SKCPCKCertSelection
-	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X github.com/intel-secl/sgx-caching-service/v3/version.BuildDate=$(BUILDDATE) -X github.com/intel-secl/sgx-caching-service/v3/version.Version=$(VERSION) -X github.com/intel-secl/sgx-caching-service/v3/version.GitHash=$(GITCOMMIT)" -o out/scs
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/v3/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v3/version.Version=$(VERSION) -X intel/isecl/scs/v3/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 swagger-get:
 	wget https://github.com/go-swagger/go-swagger/releases/download/v0.25.0/swagger_linux_amd64 -O /usr/local/bin/swagger
