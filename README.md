@@ -24,7 +24,7 @@
 ## Software requirements
 - git
 - makeself
-- Go 1.14.1 or newer
+- Go 1.14.1
 
 # Step By Step Build Instructions
 
@@ -35,8 +35,8 @@
 sudo dnf install -y git wget makeself
 ```
 
-### Install `go 1.14.1` or newer
-The `SGX Caching Service` requires Go version 1.14.1 and above that has support for `go modules`. The build was validated with the latest version 1.14.1 of `go`. It is recommended that you use 1.14.1 version of `go`. More recent versions may introduce compatibility issues. You can use the following to install `go`.
+### Install `go 1.14.1`
+The `SGX Caching Service` requires Go version 1.14.1 that has support for `go modules`. The build was validated with the version 1.14.1 of `go`. It is recommended that you use 1.14.1 version of `go`. More recent versions may introduce compatibility issues. You can use the following to install `go`.
 ```shell
 wget https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
 tar -xzf go1.14.1.linux-amd64.tar.gz
