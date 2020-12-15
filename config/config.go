@@ -109,7 +109,7 @@ func (c *Configuration) Save() error {
 }
 
 func (conf *Configuration) SaveConfiguration(c setup.Context) error {
-	var err error = nil
+	var err error
 
 	tlsCertDigest, err := c.GetenvString("CMS_TLS_CERT_SHA384", "TLS certificate digest")
 	if err == nil && tlsCertDigest != "" {
@@ -225,7 +225,7 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 
 func Load(path string) *Configuration {
 	var c Configuration
-	file, err := os.Open(path)
+	file, _ := os.Open(path)
 	if file != nil {
 		defer func() {
 			derr := file.Close()
@@ -233,7 +233,7 @@ func Load(path string) *Configuration {
 				log.WithError(derr).Error("Failed to close config.yml")
 			}
 		}()
-		err = yaml.NewDecoder(file).Decode(&c)
+		err := yaml.NewDecoder(file).Decode(&c)
 		if err != nil {
 			log.WithError(err).Error("Failed to decode config.yml contents")
 		}

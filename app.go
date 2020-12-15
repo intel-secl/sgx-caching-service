@@ -45,7 +45,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	// Import driver for GORM
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
@@ -105,6 +104,7 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "                         alternatively, set environment variable SCS_DB_SSLCERTSRC")
 	fmt.Fprintln(w, "        - Run this command with environment variable SCS_DB_REPORT_MAX_ROWS and")
 	fmt.Fprintln(w, "          SCS_DB_REPORT_NUM_ROTATIONS can update db rotation arguments")
+	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    scs setup server [--port=<port>]")
 	fmt.Fprintln(w, "        - Setup http server on <port>")
 	fmt.Fprintln(w, "        - Environment variable SCS_PORT=<port> can be set alternatively")
@@ -736,7 +736,14 @@ func fnGetJwtCerts() error {
 	if err != nil {
 		return errors.Wrap(err, "Could not retrieve jwt certificate")
 	}
-	defer res.Body.Close()
+	if res != nil {
+		defer func() {
+			derr := res.Body.Close()
+			if derr != nil {
+				log.WithError(derr).Error("Error closing jwt cert response body")
+			}
+		}()
+	}
 	body, _ := ioutil.ReadAll(res.Body)
 	err = crypt.SavePemCertWithShortSha1FileName(body, constants.TrustedJWTSigningCertsDir)
 	if err != nil {

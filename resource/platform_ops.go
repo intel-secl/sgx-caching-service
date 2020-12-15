@@ -209,14 +209,22 @@ func getBestPckCert(in *SgxData) (uint8, error) {
 	TotalPckPcerts := in.PckCertInfo.TotalPckCerts
 
 	tcbInfo := C.CString(in.FmspcTcbInfo.TcbInfo)
-	defer C.free(unsafe.Pointer(tcbInfo))
+	if tcbInfo != nil {
+		defer C.free(unsafe.Pointer(tcbInfo))
+	} else {
+		return 0, errors.New("failed to allocate memory for tcbinfo")
+	}
 
 	var certIdx C.uint
 
 	certs := make([]*C.char, TotalPckPcerts)
 	for i := 0; i < TotalPckPcerts; i++ {
 		certs[i] = C.CString(in.PckCertInfo.PckCerts[i])
-		defer C.free(unsafe.Pointer(certs[i]))
+		if certs[i] != nil {
+			defer C.free(unsafe.Pointer(certs[i]))
+		} else {
+			return 0, errors.New("failed to allocate memory for pckcert")
+		}
 	}
 	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pce_svn),
 		C.ushort(pce_id), (*C.char)(unsafe.Pointer(tcbInfo)),
@@ -267,7 +275,7 @@ func fetchPckCertInfo(in *SgxData) error {
 		defer func() {
 			derr := resp.Body.Close()
 			if derr != nil {
-				log.WithError(derr).Error("Error closing response")
+				log.WithError(derr).Error("Error closing pckcert response body")
 			}
 		}()
 	}
@@ -366,7 +374,7 @@ func fetchPckCrlInfo(in *SgxData) error {
 		defer func() {
 			derr := resp.Body.Close()
 			if derr != nil {
-				log.WithError(derr).Error("Error closing response")
+				log.WithError(derr).Error("Error closing pckcrl response body")
 			}
 		}()
 	}
@@ -403,7 +411,7 @@ func fetchFmspcTcbInfo(in *SgxData) error {
 		defer func() {
 			derr := resp.Body.Close()
 			if derr != nil {
-				log.WithError(derr).Error("Error closing response")
+				log.WithError(derr).Error("Error closing tcbinfo response body")
 			}
 		}()
 	}
@@ -439,7 +447,7 @@ func fetchQeIdentityInfo(in *SgxData) error {
 		defer func() {
 			derr := resp.Body.Close()
 			if derr != nil {
-				log.WithError(derr).Error("Error closing response")
+				log.WithError(derr).Error("Error closing qeidentity response body")
 			}
 		}()
 	}
@@ -702,7 +710,10 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
-			w.Write(js)
+			_, err = w.Write(js)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
 			return nil
 		}
 
@@ -712,9 +723,22 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		PckCertChain, err := db.PckCertChainRepository().Retrieve()
-		if PckCertChain == nil {
+		pckCertChain, err := db.PckCertChainRepository().Retrieve()
+		if pckCertChain == nil {
 			err = cachePckCertChainInfo(db, &data)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+		}
+
+		data.PckCrl = &types.PckCrl{Ca: data.PckCRLInfo.Ca}
+		pckCrl, err := db.PckCrlRepository().Retrieve(*data.PckCrl)
+		if pckCrl == nil {
+			err = fetchPckCrlInfo(&data)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+			err = cachePckCrlInfo(db, &data)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -749,6 +773,18 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
+		qeIdentity, err := db.QEIdentityRepository().Retrieve()
+		if qeIdentity == nil {
+			err = fetchQeIdentityInfo(&data)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+			err = cacheQeIdentityInfo(db, &data)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 
@@ -757,7 +793,10 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
-		w.Write(js)
+		_, err = w.Write(js)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
 		slog.Infof("%s: platform data pushed by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
@@ -949,7 +988,10 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
-			w.Write(js)
+			_, err = w.Write(js)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
 			return err
 		}
 
@@ -962,7 +1004,10 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
-			w.Write(js)
+			_, err = w.Write(js)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
 			return err
 		}
 
@@ -973,7 +1018,10 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
-		w.Write(js)
+		_, err = w.Write(js)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
 		slog.Infof("%s: Platform data refreshed by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
@@ -1138,7 +1186,10 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
-		w.Write(js)
+		_, err = w.Write(js)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
 		slog.Infof("%s: TCB status retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
