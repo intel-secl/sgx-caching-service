@@ -5,6 +5,16 @@ BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
 PCKCERTGITTAG := DCAP_1.9
 
+OS := $(shell cat /etc/os-release | grep ^ID= | cut -d'=' -f2)
+
+ifeq ($(OS),"rhel")
+   LIB_PATH := /usr/lib64
+endif
+
+ifeq ($(OS),ubuntu)
+   LIB_PATH := /usr/lib
+endif
+
 .PHONY: SKCPCKCertSelection scs installer all test clean
 
 all: clean installer
@@ -13,8 +23,8 @@ SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
 	git clone $(PCKCERTGITURL) $(TMP) --branch=$(PCKCERTGITTAG)
 	make -C $(TMP)/tools/PCKCertSelection
-	cp $(TMP)/tools/PCKCertSelection/out/libPCKCertSelection.so /usr/lib64/
-	chmod 755 /usr/lib64/libPCKCertSelection.so
+	cp $(TMP)/tools/PCKCertSelection/out/libPCKCertSelection.so $(LIB_PATH)
+	chmod 755 $(LIB_PATH)/libPCKCertSelection.so
 	rm -rf $(TMP)
 
 scs:SKCPCKCertSelection
@@ -40,7 +50,7 @@ test:
 installer: scs
 	mkdir -p out/installer
 	cp dist/linux/scs.service out/installer/scs.service
-	cp /usr/lib64/libPCKCertSelection.so out/installer/libPCKCertSelection.so
+	cp $(LIB_PATH)/libPCKCertSelection.so out/installer/libPCKCertSelection.so
 	cp dist/linux/install.sh out/installer/install.sh && chmod +x out/installer/install.sh
 	cp dist/linux/db_rotation.sql out/installer/db_rotation.sql
 	cp out/scs out/installer/scs
