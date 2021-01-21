@@ -35,6 +35,7 @@ checkmarx:
     - docker-checkmarx
 
   script:
+    - env
     - cat ${CX_FLOW_CONFIG} > application.yml
     - |
       if [ "$CI_PIPELINE_SOURCE" == "merge_request_event" ]; then 
