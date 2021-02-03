@@ -173,8 +173,8 @@ type cpu_svn struct {
 }
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
-	r.Handle("/push", handlers.ContentTypeHandler(pushPlatformInfo(db), "application/json")).Methods("POST")
-	r.Handle("/refresh", handlers.ContentTypeHandler(refreshPlatformInfo(db), "application/json")).Methods("GET")
+	r.Handle("/platforms", handlers.ContentTypeHandler(pushPlatformInfo(db), "application/json")).Methods("POST")
+	r.Handle("/refreshes", handlers.ContentTypeHandler(refreshPlatformInfo(db), "application/json")).Methods("GET")
 	r.Handle("/tcbstatus", handlers.ContentTypeHandler(getTcbStatus(db), "application/json")).Methods("GET")
 }
 

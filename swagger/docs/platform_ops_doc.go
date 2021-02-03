@@ -29,13 +29,11 @@ type StatusResponse struct {
 	Body resource.Response
 }
 
-// swagger:operation POST /sgx/platforminfo/push PlatformInfo pushPlatformInfo
+// swagger:operation POST /sgx/certification/v1/platforms PlatformInfo pushPlatformInfo
 // ---
 //
 // description: |
-//   Pushes the SGX Platform values into the SGX Caching Service (SCS). The SGX Host Verification Service (HVS) retrieves the
-//   platform values (such as enc_ppi, pceid, cpisvn, pcesvn, qeid and manifest) from the registered SGX Agent and uses this API
-//   to push the platform values to the SCS.
+//   SGX Agent uses this API to push the platform values (such as enc_ppi, pceid, cpisvn, pcesvn, qeid and manifest) to SCS.
 //   A valid bearer token should be provided to authorize this REST call.
 //
 // security:
@@ -56,7 +54,7 @@ type StatusResponse struct {
 //     schema:
 //       "$ref": "#/definitions/Response"
 //
-// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/platforminfo/push
+// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/platforms
 // x-sample-call-input: |
 //    {
 //       "enc_ppid": "00f51b4272163732be2101ee62dfdb175205a5179c5b5faff4b2ae103cb1150ef7d4e6041775543930600e41dd2e6aee7f4079
@@ -145,7 +143,7 @@ type StatusResponse struct {
 //    }
 // ---
 
-// swagger:operation GET /sgx/platforminfo/refresh PlatformInfo refreshPlatformInfo
+// swagger:operation GET /sgx/certification/v1/refreshes PlatformInfo refreshPlatformInfo
 // ---
 // description: |
 //   This API is used to refresh the platform collaterals stored in the SGX Caching Service (SCS) database,
@@ -163,7 +161,7 @@ type StatusResponse struct {
 //     schema:
 //       "$ref": "#/definitions/Response"
 //
-// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/platforminfo/refresh
+// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/refreshes
 // x-sample-call-output: |
 //    {
 //        "Status": "Success",
@@ -171,10 +169,10 @@ type StatusResponse struct {
 //    }
 // ---
 
-// swagger:operation GET /sgx/platforminfo/tcbstatus PlatformInfo getTcbStatus
+// swagger:operation GET /sgx/certification/v1/tcbstatus PlatformInfo getTcbStatus
 // ---
 // description: |
-//   This API is used by SGX Host Verification Service (HVS) to determine the TCB up-to-date status of a platform.
+//   This API is used by SGX Agent to determine the TCB up-to-date status of a platform.
 //   A valid bearer token should be provided to authorize this REST call.
 //
 // security:
@@ -192,7 +190,7 @@ type StatusResponse struct {
 //     schema:
 //       "$ref": "#/definitions/Response"
 //
-// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/platforminfo/tcbstatus?qeid=0f16dfa4033e66e642af8fe358c18751
+// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/tcbstatus?qeid=0f16dfa4033e66e642af8fe358c18751
 // x-sample-call-output: |
 //    {
 //        "Status": "true",

@@ -454,7 +454,7 @@ func (a *App) startServer() error {
 	}(resource.QuoteProviderOps)
 
 	// Use token based auth for platform data push api
-	sr = r.PathPrefix("/scs/sgx/platforminfo/").Subrouter()
+	sr = r.PathPrefix("/scs/sgx/certification/v1").Subrouter()
 	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
 		constants.TrustedCAsStoreDir, fnGetJwtCerts,
 		time.Minute*constants.DefaultJwtValidateCacheKeyMins))
