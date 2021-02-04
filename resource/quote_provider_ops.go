@@ -61,6 +61,7 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 		var existingPckCert *types.PckCert
+		var existingPckCertChain *types.PckCertChain
 
 		pinfo := types.Platform{CpuSvn: cpusvn, PceSvn: pcesvn, PceId: pceid, QeId: qeid}
 
@@ -70,45 +71,33 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		if existingPinfo != nil {
-			pck_cert := types.PckCert{QeId: qeid}
-			existingPckCert, err = db.PckCertRepository().Retrieve(pck_cert)
+			pckCert := types.PckCert{QeId: qeid}
+			existingPckCert, err = db.PckCertRepository().Retrieve(pckCert)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+			existingPckCertChain, err = db.PckCertChainRepository().Retrieve()
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
 		}
 		if existingPckCert == nil {
-			var manifest string
+			pinfo.Encppid = encryptedppid
 			if existingPinfo != nil {
-				if existingPinfo.Manifest != "" {
-					manifest = existingPinfo.Manifest
-				} else {
-					manifest = ""
-				}
+				pinfo.Manifest = existingPinfo.Manifest
 			}
+
 			// getLazyCachePckCert API will get PCK Certs and will cache it as well.
-			p, err := getLazyCachePckCert(db, encryptedppid, cpusvn, pcesvn, pceid, qeid, manifest)
+			p, c, _, err := getLazyCachePckCert(db, &pinfo, constants.CacheInsert)
 			if err != nil {
 				log.WithError(err).Error("Pck Cert Retrieval failed")
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
 			existingPckCert = p
-		}
-
-		if existingPckCert == nil {
-			return &resourceError{Message: "pck certs not found in db",
-				StatusCode: http.StatusNotFound}
+			existingPckCertChain = c
 		}
 
 		certIndex := existingPckCert.CertIndex
-		existingPckCertChain, err := db.PckCertChainRepository().Retrieve()
-		if err != nil {
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
-		}
-
-		if existingPckCertChain == nil {
-			return &resourceError{Message: "pck cert chain data not found in db",
-				StatusCode: http.StatusNotFound}
-		}
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		w.Header()["sgx-pck-certificate-issuer-chain"] = []string{existingPckCertChain.PckCertChain}
 		w.Header()["sgx-tcbm"] = []string{existingPckCert.Tcbms[certIndex]}
@@ -145,7 +134,7 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 
 		if existingPckCrl == nil {
-			existingPckCrl, err = getLazyCachePckCrl(db, Ca)
+			existingPckCrl, err = getLazyCachePckCrl(db, Ca, constants.CacheInsert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
@@ -167,7 +156,7 @@ func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		existingQeInfo, err := db.QEIdentityRepository().Retrieve()
 		if existingQeInfo == nil {
-			existingQeInfo, err = getLazyCacheQEIdentityInfo(db)
+			existingQeInfo, err = getLazyCacheQEIdentityInfo(db, constants.CacheInsert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
@@ -203,7 +192,7 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		TcbInfo := types.FmspcTcbInfo{Fmspc: Fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
-			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, Fmspc)
+			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, Fmspc, constants.CacheInsert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}

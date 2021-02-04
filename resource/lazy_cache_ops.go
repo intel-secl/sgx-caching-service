@@ -6,116 +6,102 @@ package resource
 
 import (
 	"github.com/pkg/errors"
+	"intel/isecl/scs/v3/constants"
 	"intel/isecl/scs/v3/repository"
 	"intel/isecl/scs/v3/types"
 )
 
 // perform an api call to pcs server to get PCK Certificate for a sgx platform and store in db
-func getLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn string,
-	PceSvn string, pceId string, qeId string, manifest string) (*types.PckCert, error) {
+func getLazyCachePckCert(db repository.SCSDatabase, platformInfo *types.Platform, cacheType constants.CacheType) (*types.PckCert, *types.PckCertChain, string, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Leaving")
 
-	var data SgxData
-	data.PlatformInfo.EncPpid = encryptedPPID
-	data.PlatformInfo.CpuSvn = cpuSvn
-	data.PlatformInfo.PceSvn = PceSvn
-	data.PlatformInfo.PceId = pceId
-	data.PlatformInfo.QeId = qeId
-	data.PlatformInfo.Manifest = manifest
-
-	err := fetchPckCertInfo(&data)
+	pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platformInfo)
 	if err != nil {
-		return nil, errors.New("fetchPckCertInfo:" + err.Error())
+		return nil, nil, "", errors.New("fetchPckCertInfo:" + err.Error())
 	}
 
-	/*	err = cachePlatformInfo(db, &data)
-		if err != nil {
-			return nil, errors.New("cachePlatformInfo:" + err.Error())
-		}
-
-		err = cachePlatformTcbInfo(db, &data)
-		if err != nil {
-			return nil, errors.New("cachePlatformTcbInfo:" + err.Error())
-		}
-
-		err = cacheFmspcTcbInfo(db, &data)
-		if err != nil {
-			return nil, errors.New("cacheFmpscTcbInfo:" + err.Error())
-		}
-	*/
-	err = cachePckCertChainInfo(db, &data)
+	platformInfo.Fmspc = fmspcTcbInfo.Fmspc
+	err = cachePlatformInfo(db, platformInfo, cacheType)
 	if err != nil {
-		return nil, errors.New("cachePckCertChainInfo:" + err.Error())
+		return nil, nil, "", errors.New("cachePlatformInfo:" + err.Error())
 	}
 
-	err = cachePckCertInfo(db, &data)
+	err = cachePlatformTcbInfo(db, platformInfo, pckCertInfo.Tcbms[pckCertInfo.CertIndex], cacheType)
 	if err != nil {
-		return nil, errors.New("cachePckCertInfo:" + err.Error())
+		return nil, nil, "", errors.New("cachePlatformTcbInfo:" + err.Error())
+	}
+
+	_, err = cacheFmspcTcbInfo(db, fmspcTcbInfo, cacheType)
+	if err != nil {
+		return nil, nil, "", errors.New("cacheFmpscTcbInfo:" + err.Error())
+	}
+
+	certChain, err := cachePckCertChainInfo(db, pckCertChain, cacheType)
+	if err != nil {
+		return nil, nil, "", errors.New("cachePckCertChainInfo:" + err.Error())
+	}
+
+	pckCert, err := cachePckCertInfo(db, pckCertInfo, cacheType)
+	if err != nil {
+		return nil, nil, "", errors.New("cachePckCertInfo:" + err.Error())
 	}
 
 	log.Debug("getLazyCachePckCert: Pck Cert best suited for current tcb level is fetched")
-	return data.PckCert, nil
+	return pckCert, certChain, ca, nil
 }
 
 // perform an api call to pcs server to get trusted computing base info for a sgx platform and store in db
-func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*types.FmspcTcbInfo, error) {
+func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string, cacheType constants.CacheType) (*types.FmspcTcbInfo, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCacheFmspcTcbInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCacheFmspcTcbInfo() Leaving")
-	var data SgxData
-	data.FmspcTcbInfo.Fmspc = fmspcType
 
-	err := fetchFmspcTcbInfo(&data)
+	fmspcTcbInfo, err := fetchFmspcTcbInfo(fmspcType)
 	if err != nil {
 		return nil, errors.New("getLazyCacheFmspcTcbInfo: failed to fetch tcbinfo")
 	}
 
-	err = cacheFmspcTcbInfo(db, &data)
+	fmspcTcb, err := cacheFmspcTcbInfo(db, fmspcTcbInfo, cacheType)
 	if err != nil {
 		return nil, errors.New("cacheFmspcTcbInfo:" + err.Error())
 	}
 
 	log.Debug("getLazyCacheFmspcTcbInfo fetch and cache operation completed")
-	return data.FmspcTcb, nil
+	return fmspcTcb, nil
 }
 
-func getLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl, error) {
+func getLazyCachePckCrl(db repository.SCSDatabase, caType string, cacheType constants.CacheType) (*types.PckCrl, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCrl() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCachePckCrl() Leaving")
 
-	var data SgxData
-	data.PckCRLInfo.Ca = CaType
-
-	err := fetchPckCrlInfo(&data)
+	pckCRLInfo, err := fetchPckCrlInfo(caType)
 	if err != nil {
 		return nil, errors.New("getLazyCachePckCrl: Failed to fetch PCKCRLInfo")
 	}
 
-	err = cachePckCrlInfo(db, &data)
+	pckCrl, err := cachePckCrlInfo(db, pckCRLInfo, cacheType)
 	if err != nil {
 		return nil, errors.New("cachePckCRLInfo:" + err.Error())
 	}
 
 	log.Debug("getLazyCachePckCrl fetch and cache operation completed")
-	return data.PckCrl, nil
+	return pckCrl, nil
 }
 
-func getLazyCacheQEIdentityInfo(db repository.SCSDatabase) (*types.QEIdentity, error) {
+func getLazyCacheQEIdentityInfo(db repository.SCSDatabase, cacheType constants.CacheType) (*types.QEIdentity, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCacheQEIdentityInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCacheQEIdentityInfo() Leaving")
 
-	var data SgxData
-
-	err := fetchQeIdentityInfo(&data)
+	qeInfo, err := fetchQeIdentityInfo()
 	if err != nil {
 		return nil, errors.New("fetchQeIdentityInfo:" + err.Error())
 	}
 
-	err = cacheQeIdentityInfo(db, &data)
+	qeIdentity, err := cacheQeIdentityInfo(db, qeInfo, cacheType)
 	if err != nil {
 		return nil, errors.New("cacheQeIdentityInfo:" + err.Error())
 	}
 
 	log.Debug("getLazyCacheQEIdentityInfo fetch and cache operation completed")
-	return data.QEIdentity, nil
+	return qeIdentity, nil
 }
