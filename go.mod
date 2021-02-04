@@ -11,7 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.5.1
 	gopkg.in/yaml.v2 v2.2.8
-	intel/isecl/lib/common/v3 v3.4.0
+	intel/isecl/lib/common/v3 v3.5.0
 )
 
-replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v3 v3.4/develop
+replace intel/isecl/lib/common/v3 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v3 v3.5/develop
