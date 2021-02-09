@@ -302,10 +302,6 @@ func (a *App) Run(args []string) error {
 			fmt.Println("Error saving configuration: " + err.Error())
 			os.Exit(1)
 		}
-		// Containers are always run as non root users, does not require changing ownership of config directories
-		if _, err := os.Stat("/.container-env"); err == nil {
-			return nil
-		}
 
 		task := strings.ToLower(args[2])
 		flags := args[3:]
@@ -362,6 +358,10 @@ func (a *App) Run(args []string) error {
 			fmt.Fprintf(os.Stderr, "Error running setup: %s\n", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
 		}
+// Containers are always run as non root users, does not require changing ownership of config directories
+                if _, err := os.Stat("/.container-env"); err == nil {
+                        return nil
+                }
 
 		scsUser, err := user.Lookup(constants.SCSUserName)
 		if err != nil {

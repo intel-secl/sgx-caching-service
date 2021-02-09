@@ -2,9 +2,7 @@ FROM centos:8
 
 COPY out/scs /usr/bin/scs
 
-RUN mkdir -p /opt/scs
-
-RUN mkdir /opt/scs/dbscripts/
+RUN mkdir -p /opt/scs/dbscripts/
 
 COPY out/installer/libPCKCertSelection.so /usr/lib64/libPCKCertSelection.so
 
