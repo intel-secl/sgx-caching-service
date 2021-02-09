@@ -20,7 +20,6 @@ if [ ! -f $CONFIG_PATH/.setup_done ]; then
     chown -R $USER_ID:$USER_ID $directory
     echo "After creating directory"
     chmod 700 $directory
-    chmod g+s $directory
   done
   scs setup all
   if [ $? -ne 0 ]; then
