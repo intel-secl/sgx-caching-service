@@ -1,3 +1,6 @@
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
 FROM centos:8
 
 COPY out/scs /usr/bin/scs

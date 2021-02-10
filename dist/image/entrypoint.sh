@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2021 Intel Corporation
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #!/bin/bash
 
 USER_ID=$(id -u)
@@ -5,9 +10,7 @@ LOG_PATH=/var/log/scs
 CONFIG_PATH=/etc/scs
 CERTS_DIR=${CONFIG_PATH}/certs
 TRUSTED_CERTS=${CERTS_DIR}/trustedca
-ROOT_CA_DIR=${CERTS_DIR}/cms-root-ca
 CERTDIR_TRUSTEDJWTCERTS=${CERTS_DIR}/trustedjwt
-TOKEN_SIGN_DIR=${CERTS_DIR}/tokensign
 DB_SCRIPT_PATH=/opt/scs/dbscripts
 
 if [ ! -f $CONFIG_PATH/.setup_done ]; then
