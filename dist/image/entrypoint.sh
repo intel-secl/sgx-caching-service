@@ -14,7 +14,7 @@ CERTDIR_TRUSTEDJWTCERTS=${CERTS_DIR}/trustedjwt
 DB_SCRIPT_PATH=/opt/scs/dbscripts
 
 if [ ! -f $CONFIG_PATH/.setup_done ]; then
-  for directory in $LOG_PATH $CONFIG_PATH $CERTS_DIR $TRUSTED_CERTS $ROOT_CA_DIR $CERTDIR_TRUSTEDJWTCERTS $TOKEN_SIGN_DIR $DB_SCRIPT_PATH; do
+  for directory in $LOG_PATH $CONFIG_PATH $CERTS_DIR $TRUSTED_CERTS $CERTDIR_TRUSTEDJWTCERTS $DB_SCRIPT_PATH; do
     mkdir -p $directory
     if [ $? -ne 0 ]; then
       echo "Cannot create directory: $directory"
