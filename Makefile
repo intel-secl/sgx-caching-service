@@ -62,7 +62,7 @@ installer: scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 	cp dist/linux/install_pgscsdb.sh out/install_pgscsdb.sh && chmod +x out/install_pgscsdb.sh
 
-docker: scs
+docker: installer
 ifeq ($(PROXY_EXISTS),1)
 	docker build ${DOCKER_PROXY_FLAGS} -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
 else
