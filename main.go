@@ -37,6 +37,10 @@ func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File
 	if err = os.Chmod(constants.SecLogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
+        // Containers are always run as non root users, does not require changing ownership of config directories
+        if _, err := os.Stat("/.container-env"); err == nil {
+                return logFile, httpLogFile, secLogFile, nil
+        }
 
 	scsUser, err := user.Lookup(constants.SCSUserName)
 	if err != nil {
