@@ -16,7 +16,8 @@ var regExMap = map[string]*regexp.Regexp{
 	constants.PceIDKey:   regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
 	constants.CaKey:      regexp.MustCompile(`^(processor|platform)$`),
 	constants.FmspcKey:   regexp.MustCompile(`^[0-9a-fA-F]{12}$`),
-	constants.QeIDKey:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`)}
+	constants.QeIDKey:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`),
+	constants.HwUUIDKey:  regexp.MustCompile(`([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}`)}
 
 func validateInputString(key, inString string) bool {
 	regEx := regExMap[key]

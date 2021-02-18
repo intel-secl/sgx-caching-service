@@ -44,6 +44,7 @@ const (
 	EncodingValue                  = "der"
 	CaProcessor                    = "processor"
 	FmspcKey                       = "fmspc"
+	HwUUIDKey                      = "hardware_uuid"
 	DefaultScsRefreshHours         = 24
 	DefaultJwtValidateCacheKeyMins = 60
 	SCSLogLevel                    = "SCS_LOGLEVEL"

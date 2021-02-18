@@ -17,7 +17,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -27,9 +26,12 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
+	"intel/isecl/lib/common/v3/context"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"intel/isecl/scs/v3/constants"
 	"intel/isecl/scs/v3/repository"
@@ -55,6 +57,7 @@ type PlatformInfo struct {
 	PceID    string `json:"pce_id"`
 	QeID     string `json:"qe_id"`
 	Manifest string `json:"manifest"`
+	HwUUID   string `json:"hardware_uuid"`
 }
 
 type TcbLevels struct {
@@ -572,7 +575,7 @@ func cachePckCrlInfo(db repository.SCSDatabase, pckCrl *types.PckCrl, cacheType 
 	}
 	return pckCrl, nil
 }
-func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *PlatformInfo) (bool, error) {
+func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *PlatformInfo, tokenSubject string) (bool, error) {
 	log.Trace("resource/platform_ops:checkPlatformDataCacheStatus() Entering")
 	defer log.Trace("resource/platform_ops:checkPlatformDataCacheStatus() Leaving")
 
@@ -582,9 +585,17 @@ func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *Platf
 	}
 	existingPlatformData, err := db.PlatformRepository().Retrieve(platform)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, errors.Wrap(err, "resource/platform_ops:checkPlatformDataCacheStatus() Error while retrieving platform data from DB")
+		log.WithError(err).Error("resource/platform_ops:checkPlatformDataCacheStatus() Error while retrieving platform data from DB")
+		return false, &resourceError{Message: err.Error(),
+			StatusCode: http.StatusInternalServerError}
 	}
 	if existingPlatformData != nil {
+		if existingPlatformData.HwUUID.String() != tokenSubject {
+			slog.Errorf("resource/platform_ops:checkPlatformDataCacheStatus() %s : Failed to match host identity from database", commLogMsg.AuthenticationFailed)
+			return false, &resourceError{Message: "Invalid Token",
+				StatusCode: http.StatusUnauthorized}
+		}
+
 		if platformInfo.Manifest == "" {
 			platformInfo.Manifest = existingPlatformData.Manifest
 			cert := &types.PckCert{
@@ -593,7 +604,9 @@ func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *Platf
 			}
 			existingPckCert, err := db.PckCertRepository().Retrieve(cert)
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				return false, errors.Wrap(err, "resource/platform_ops:checkPlatformDataCacheStatus() Error while retrieving pck cert from DB")
+				log.WithError(err).Error("resource/platform_ops:checkPlatformDataCacheStatus() Error while retrieving pck cert from DB")
+				return false, &resourceError{Message: err.Error(),
+					StatusCode: http.StatusInternalServerError}
 			}
 			if existingPckCert != nil {
 				return true, nil
@@ -630,16 +643,23 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			!validateInputString(constants.CPUSvnKey, platformInfo.CPUSvn) ||
 			!validateInputString(constants.PceSvnKey, platformInfo.PceSvn) ||
 			!validateInputString(constants.PceIDKey, platformInfo.PceID) ||
-			!validateInputString(constants.QeIDKey, platformInfo.QeID) {
+			!validateInputString(constants.QeIDKey, platformInfo.QeID) ||
+			!validateInputString(constants.HwUUIDKey, platformInfo.HwUUID) {
 			slog.Error("resource/platform_ops: pushPlatformInfo() Input validation failed")
 			return &resourceError{Message: "invalid query param data",
 				StatusCode: http.StatusBadRequest}
 		}
 
-		isCached, err := checkPlatformDataCacheStatus(db, &platformInfo)
+		tokenSubject, err := context.GetTokenSubject(r)
+		if err != nil || tokenSubject != platformInfo.HwUUID {
+			slog.Errorf("resource/platform_ops: pushPlatformInfo() %s : Failed to match host identity from token", commLogMsg.AuthenticationFailed)
+			return &resourceError{Message: "Invalid Token",
+				StatusCode: http.StatusUnauthorized}
+		}
+
+		isCached, err := checkPlatformDataCacheStatus(db, &platformInfo, tokenSubject)
 		if err != nil {
-			log.WithError(err).Error("Error while checking platform data cache status")
-			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			return err
 		}
 
 		if isCached {
@@ -664,6 +684,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			PceID:    platformInfo.PceID,
 			QeID:     platformInfo.QeID,
 			Manifest: platformInfo.Manifest,
+			HwUUID:   uuid.MustParse(platformInfo.HwUUID),
 		}
 
 		_, _, ca, err := getLazyCachePckCert(db, platform, constants.CacheInsert)

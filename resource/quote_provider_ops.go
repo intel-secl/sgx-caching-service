@@ -86,6 +86,7 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 			pInfo.Encppid = encryptedppid
 			if existingPinfo != nil {
 				pInfo.Manifest = existingPinfo.Manifest
+				pInfo.HwUUID = existingPinfo.HwUUID
 			}
 
 			// getLazyCachePckCert API will get PCK Certs and will cache it as well.
