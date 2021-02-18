@@ -4,6 +4,11 @@ VERSION := $(or ${GITTAG}, v0.0.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
 PCKCERTGITTAG := DCAP_1.9
+PROXY_EXISTS := $(shell if [[ "${https_proxy}" || "${http_proxy}" ]]; then echo 1; else echo 0; fi)
+DOCKER_PROXY_FLAGS := ""
+ifeq ($(PROXY_EXISTS),1)
+        DOCKER_PROXY_FLAGS = --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy}
+endif
 
 OS := $(shell cat /etc/os-release | grep ^ID= | cut -d'=' -f2)
 
@@ -15,7 +20,7 @@ ifeq ($(OS),ubuntu)
    LIB_PATH := /usr/lib
 endif
 
-.PHONY: SKCPCKCertSelection scs installer all test clean
+.PHONY: SKCPCKCertSelection docker scs installer all test clean
 
 all: clean installer
 
@@ -56,6 +61,16 @@ installer: scs
 	cp out/scs out/installer/scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 	cp dist/linux/install_pgscsdb.sh out/install_pgscsdb.sh && chmod +x out/install_pgscsdb.sh
+
+docker: installer
+ifeq ($(PROXY_EXISTS),1)
+	docker build ${DOCKER_PROXY_FLAGS} -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
+else
+	docker build -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
+endif
+
+scs-oci-archive: docker
+	skopeo copy docker-daemon:isecl/scs:$(VERSION) oci-archive:out/scs-$(VERSION)-$(GITCOMMIT).tar
 
 clean:
 	rm -f cover.*
