@@ -6,11 +6,11 @@ package docs
 
 import "intel/isecl/scs/v3/resource"
 
-// TcbInfoJsonResp response payload
-// swagger:response TcbInfoJsonResp
-type TcbInfoJsonResp struct {
+// TcbInfoJSONResp response payload
+// swagger:response TcbInfoJSONResp
+type TcbInfoJSONResp struct {
 	// in:body
-	Body resource.TcbInfoJson
+	Body resource.TcbInfoJSON
 }
 
 // swagger:operation GET /sgx/certification/v1/pckcert Certificates getPckCertificate

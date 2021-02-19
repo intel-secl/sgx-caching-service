@@ -14,20 +14,20 @@ type PostgresFmspcTcbInfoRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Create(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
-	err := r.db.Create(&tcb).Error
+func (r *PostgresFmspcTcbInfoRepository) Create(tcb *types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
+	err := r.db.Create(tcb).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "create: failed to create a record in fmspctcb table")
 	}
-	return &tcb, nil
+	return tcb, nil
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Retrieve(tcb types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
-	err := r.db.Where(&tcb).First(&tcb).Error
+func (r *PostgresFmspcTcbInfoRepository) Retrieve(tcb *types.FmspcTcbInfo) (*types.FmspcTcbInfo, error) {
+	err := r.db.Where(tcb).First(&tcb).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrive a record from fmspctcb table")
 	}
-	return &tcb, nil
+	return tcb, nil
 }
 
 func (r *PostgresFmspcTcbInfoRepository) RetrieveAll() (types.FmspcTcbInfos, error) {
@@ -39,15 +39,15 @@ func (r *PostgresFmspcTcbInfoRepository) RetrieveAll() (types.FmspcTcbInfos, err
 	return tcbs, nil
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Update(tcb types.FmspcTcbInfo) error {
-	if err := r.db.Save(&tcb).Error; err != nil {
+func (r *PostgresFmspcTcbInfoRepository) Update(tcb *types.FmspcTcbInfo) error {
+	if err := r.db.Save(tcb).Error; err != nil {
 		return errors.Wrap(err, "update: failed to update a record in fmspctcb table")
 	}
 	return nil
 }
 
-func (r *PostgresFmspcTcbInfoRepository) Delete(tcb types.FmspcTcbInfo) error {
-	if err := r.db.Delete(&tcb).Error; err != nil {
+func (r *PostgresFmspcTcbInfoRepository) Delete(tcb *types.FmspcTcbInfo) error {
+	if err := r.db.Delete(tcb).Error; err != nil {
 		return errors.Wrap(err, "delete: failed to delete a record fmspctcb table")
 	}
 	return nil

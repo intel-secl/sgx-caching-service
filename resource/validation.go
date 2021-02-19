@@ -10,17 +10,17 @@ import (
 )
 
 var regExMap = map[string]*regexp.Regexp{
-	constants.EncPPID_Key: regexp.MustCompile(`^[0-9a-fA-F]{768}$`),
-	constants.CpuSvn_Key:  regexp.MustCompile(`^[0-9a-fA-F]{32}$`),
-	constants.PceSvn_Key:  regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
-	constants.PceId_Key:   regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
-	constants.Ca_Key:      regexp.MustCompile(`^(processor|platform)$`),
-	constants.Fmspc_Key:   regexp.MustCompile(`^[0-9a-fA-F]{12}$`),
-	constants.QeId_Key:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`)}
+	constants.EncPPIDKey: regexp.MustCompile(`^[0-9a-fA-F]{768}$`),
+	constants.CPUSvnKey:  regexp.MustCompile(`^[0-9a-fA-F]{32}$`),
+	constants.PceSvnKey:  regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
+	constants.PceIDKey:   regexp.MustCompile(`^[0-9a-fA-F]{4}$`),
+	constants.CaKey:      regexp.MustCompile(`^(processor|platform)$`),
+	constants.FmspcKey:   regexp.MustCompile(`^[0-9a-fA-F]{12}$`),
+	constants.QeIDKey:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`)}
 
-func validateInputString(key string, inString string) bool {
+func validateInputString(key, inString string) bool {
 	regEx := regExMap[key]
-	if len(key) <= 0 || !regEx.MatchString(inString) {
+	if key == "" || !regEx.MatchString(inString) {
 		log.WithField(key, inString).Error("Input Validation")
 		return false
 	}

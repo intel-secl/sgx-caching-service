@@ -53,7 +53,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```shell
 git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
-git checkout v3.3.1
+git checkout v3.4.0
 make installer
 ```
 
@@ -67,8 +67,6 @@ make installer
     * scs start
 * Stop service
     * scs stop
-* Restart service
-    * scs restart
 * Status of service
     * scs status
 
@@ -88,7 +86,7 @@ make installer
 | jwt-go      | github.com/dgrijalva/jwt-go | v3.2.0                             |
 | testify     | github.com/stretchr/testify | v1.5.1                             |
 | pq          | github.com/lib/pq           | v1.3.0                             |
-| yaml.v2     | gopkg.in/yaml.v2            | v2.2.8                             |
+| yaml.v2     | gopkg.in/yaml.v2            | v2.4.0                             |
 | common      | github.com/intel-secl/common| v3.3.1                             |
 
 *Note: All dependencies are listed in go.mod*

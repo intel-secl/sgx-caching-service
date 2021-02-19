@@ -8,10 +8,10 @@ import "intel/isecl/scs/v3/resource"
 
 type PlatformInfoInput struct {
 	EncPpid          string `json:"enc_ppid"`
-	CpuSvn           string `json:"cpu_svn"`
+	CPUSvn           string `json:"cpu_svn"`
 	PceSvn           string `json:"pce_svn"`
-	PceId            string `json:"pce_id"`
-	QeId             string `json:"qe_id"`
+	PceID            string `json:"pce_id"`
+	QeID             string `json:"qe_id"`
 	PlatformManifest string `json:"manifest"`
 }
 

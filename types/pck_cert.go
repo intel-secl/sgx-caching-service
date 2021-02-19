@@ -11,8 +11,8 @@ import (
 
 // PckCert struct is the database schema for pck_certs table
 type PckCert struct {
-	QeId        string         `json:"-" gorm:"primary_key"`
-	PceId       string         `json:"-"`
+	QeID        string         `json:"-" gorm:"primary_key"`
+	PceID       string         `json:"-"`
 	CertIndex   uint8          `json:"-"`
 	Tcbms       pq.StringArray `json:"-" gorm:"type:text[];not null"`
 	Fmspc       string         `json:"-"`

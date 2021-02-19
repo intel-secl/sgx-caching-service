@@ -14,20 +14,20 @@ type PostgresPckCertRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresPckCertRepository) Create(u types.PckCert) (*types.PckCert, error) {
-	err := r.db.Create(&u).Error
+func (r *PostgresPckCertRepository) Create(u *types.PckCert) (*types.PckCert, error) {
+	err := r.db.Create(u).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Create: failed to create a record in pck_certs table")
 	}
-	return &u, nil
+	return u, nil
 }
 
-func (r *PostgresPckCertRepository) Retrieve(pckcert types.PckCert) (*types.PckCert, error) {
-	err := r.db.Where("qe_id = ?", pckcert.QeId).First(&pckcert).Error
+func (r *PostgresPckCertRepository) Retrieve(pckcert *types.PckCert) (*types.PckCert, error) {
+	err := r.db.Where("qe_id = ?", pckcert.QeID).First(pckcert).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve a record from pck_certs table")
 	}
-	return &pckcert, nil
+	return pckcert, nil
 }
 
 func (r *PostgresPckCertRepository) RetrieveAll() (types.PckCerts, error) {
@@ -40,15 +40,15 @@ func (r *PostgresPckCertRepository) RetrieveAll() (types.PckCerts, error) {
 	return pckcerts, nil
 }
 
-func (r *PostgresPckCertRepository) Update(u types.PckCert) error {
-	if err := r.db.Save(&u).Error; err != nil {
+func (r *PostgresPckCertRepository) Update(p *types.PckCert) error {
+	if err := r.db.Save(p).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update a record in pck_certs table")
 	}
 	return nil
 }
 
-func (r *PostgresPckCertRepository) Delete(u types.PckCert) error {
-	if err := r.db.Delete(&u).Error; err != nil {
+func (r *PostgresPckCertRepository) Delete(p *types.PckCert) error {
+	if err := r.db.Delete(p).Error; err != nil {
 		return errors.Wrap(err, "Delete: failed to delete a record from pck_certs table")
 	}
 	return nil

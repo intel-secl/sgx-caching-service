@@ -10,9 +10,9 @@ import (
 
 // PlatformTcb struct is the database schema for platform_tcbs table
 type PlatformTcb struct {
-	QeId        string    `json:"-" gorm:"primary_key"`
-	PceId       string    `json:"-"`
-	CpuSvn      string    `json:"-"`
+	QeID        string    `json:"-" gorm:"primary_key"`
+	PceID       string    `json:"-"`
+	CPUSvn      string    `json:"-"`
 	PceSvn      string    `json:"-"`
 	Tcbm        string    `json:"-"`
 	CreatedTime time.Time `json:"-"`

@@ -14,12 +14,12 @@ type PostgresPckCertChainRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresPckCertChainRepository) Create(pcc types.PckCertChain) (*types.PckCertChain, error) {
-	err := r.db.Create(&pcc).Error
+func (r *PostgresPckCertChainRepository) Create(pcc *types.PckCertChain) (*types.PckCertChain, error) {
+	err := r.db.Create(pcc).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Create: failed to create a record in pck_cert_chains table")
 	}
-	return &pcc, nil
+	return pcc, nil
 }
 
 func (r *PostgresPckCertChainRepository) Retrieve() (*types.PckCertChain, error) {
@@ -31,15 +31,15 @@ func (r *PostgresPckCertChainRepository) Retrieve() (*types.PckCertChain, error)
 	return &pcc, nil
 }
 
-func (r *PostgresPckCertChainRepository) Update(pcc types.PckCertChain) error {
-	if err := r.db.Save(&pcc).Error; err != nil {
+func (r *PostgresPckCertChainRepository) Update(pcc *types.PckCertChain) error {
+	if err := r.db.Save(pcc).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update record in pck_cert_chains table")
 	}
 	return nil
 }
 
-func (r *PostgresPckCertChainRepository) Delete(pcc types.PckCertChain) error {
-	if err := r.db.Delete(&pcc).Error; err != nil {
+func (r *PostgresPckCertChainRepository) Delete(pcc *types.PckCertChain) error {
+	if err := r.db.Delete(pcc).Error; err != nil {
 		return errors.Wrap(err, "Delete: failed to delete a record from pck_cert_chains table")
 	}
 	return nil

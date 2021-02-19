@@ -14,20 +14,20 @@ type PostgresPlatformRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresPlatformRepository) Create(p types.Platform) (*types.Platform, error) {
-	err := r.db.Create(&p).Error
+func (r *PostgresPlatformRepository) Create(p *types.Platform) (*types.Platform, error) {
+	err := r.db.Create(p).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "create: failed to create a record in platform table")
 	}
-	return &p, nil
+	return p, nil
 }
 
-func (r *PostgresPlatformRepository) Retrieve(p types.Platform) (*types.Platform, error) {
-	err := r.db.Where("qe_id = ?", p.QeId).First(&p).Error
+func (r *PostgresPlatformRepository) Retrieve(p *types.Platform) (*types.Platform, error) {
+	err := r.db.Where("qe_id = ?", p.QeID).First(p).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve a record from platform table")
 	}
-	return &p, nil
+	return p, nil
 }
 
 func (r *PostgresPlatformRepository) RetrieveAll() (types.Platforms, error) {
@@ -39,15 +39,15 @@ func (r *PostgresPlatformRepository) RetrieveAll() (types.Platforms, error) {
 	return p, nil
 }
 
-func (r *PostgresPlatformRepository) Update(u types.Platform) error {
-	if err := r.db.Save(&u).Error; err != nil {
+func (r *PostgresPlatformRepository) Update(p *types.Platform) error {
+	if err := r.db.Save(p).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update a record in platform table")
 	}
 	return nil
 }
 
-func (r *PostgresPlatformRepository) Delete(u types.Platform) error {
-	if err := r.db.Delete(&u).Error; err != nil {
+func (r *PostgresPlatformRepository) Delete(p *types.Platform) error {
+	if err := r.db.Delete(p).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to delete a record from platform table")
 	}
 	return nil

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// FmspcTcb struct is the database schema for fmspc_tcb_infos table
+// FmspcTcbInfo struct is the database schema for fmspc_tcb_infos table
 type FmspcTcbInfo struct {
 	Fmspc              string    `json:"-" gorm:"primary_key"`
 	TcbInfo            string    `json:"-" gorm:"type:text;not null"`

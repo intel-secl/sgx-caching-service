@@ -49,10 +49,10 @@ type Response struct {
 
 type PlatformInfo struct {
 	EncPpid     string `json:"enc_ppid"`
-	CpuSvn      string `json:"cpu_svn"`
+	CPUSvn      string `json:"cpu_svn"`
 	PceSvn      string `json:"pce_svn"`
-	PceId       string `json:"pce_id"`
-	QeId        string `json:"qe_id"`
+	PceID       string `json:"pce_id"`
+	QeID        string `json:"qe_id"`
 	Manifest    string `json:"manifest"`
 }
 
@@ -73,13 +73,13 @@ type TcbLevels struct {
 	SgxTcbComp14Svn uint8  `json:"sgxtcbcomp14svn"`
 	SgxTcbComp15Svn uint8  `json:"sgxtcbcomp15svn"`
 	SgxTcbComp16Svn uint8  `json:"sgxtcbcomp16svn"`
-	PceSvn          uint16 `json: "pcesvn"`
+	PceSvn          uint16 `json:"pcesvn"`
 }
 
 type TcbLevelsType struct {
-	Tcb       TcbLevels `json: "tcb"`
-	TcbDate   string    `json: "tcbDate"`
-	TcbStatus string    `json: "tcbStatus"`
+	Tcb       TcbLevels `json:"tcb"`
+	TcbDate   string    `json:"tcbDate"`
+	TcbStatus string    `json:"tcbStatus"`
 }
 
 type TcbInfoType struct {
@@ -87,13 +87,13 @@ type TcbInfoType struct {
 	IssueDate               string          `json:"issueDate"`
 	NextUpdate              string          `json:"nextUpdate"`
 	Fmspc                   string          `json:"fmspc"`
-	PceId                   string          `json:"pceId"`
+	PceID                   string          `json:"pceId"`
 	TcbType                 int             `json:"tcbType"`
 	TcbEvaluationDataNumber int             `josn:"tcbEvaluationDataNumber"`
 	TcbLevels               []TcbLevelsType `json:"tcbLevels"`
 }
 
-type TcbInfoJson struct {
+type TcbInfoJSON struct {
 	TcbInfo   TcbInfoType `josn:"tcbInfo"`
 	Signature string      `json:"signature"`
 }
@@ -104,7 +104,7 @@ type PckCertsInfo struct {
 	Cert string    `json:"cert"`
 }
 
-type cpu_svn struct {
+type cpuSvn struct {
 	bytes []byte
 }
 
@@ -125,9 +125,9 @@ func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 // and returns index to the certificate
 func getBestPckCert(platformInfo *types.Platform, pckCerts []string, tcb string) (uint8, error) {
 	var err error
-	var cpuSvn cpu_svn
+	var cpusvn cpuSvn
 
-	cpuSvn.bytes, err = hex.DecodeString(platformInfo.CpuSvn)
+	cpusvn.bytes, err = hex.DecodeString(platformInfo.CPUSvn)
 	if err != nil {
 		log.WithError(err).Error("could not decode cpusvn string")
 		return 0, err
@@ -137,7 +137,7 @@ func getBestPckCert(platformInfo *types.Platform, pckCerts []string, tcb string)
 		log.WithError(err).Error("could not parse pcesvn string")
 		return 0, err
 	}
-	pceId, err := strconv.ParseUint(platformInfo.PceId, 16, 32)
+	pceID, err := strconv.ParseUint(platformInfo.PceID, 16, 32)
 	if err != nil {
 		log.WithError(err).Error("could not parse pceid string")
 		return 0, err
@@ -162,8 +162,8 @@ func getBestPckCert(platformInfo *types.Platform, pckCerts []string, tcb string)
 			return 0, errors.New("failed to allocate memory for pckcert")
 		}
 	}
-	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpuSvn.bytes[0])), C.ushort(pceSvn),
-		C.ushort(pceId), (*C.char)(unsafe.Pointer(tcbInfo)),
+	ret := C.pck_cert_select((*C.cpu_svn_t)(unsafe.Pointer(&cpusvn.bytes[0])), C.ushort(pceSvn),
+		C.ushort(pceID), (*C.char)(unsafe.Pointer(tcbInfo)),
 		(**C.char)(unsafe.Pointer(&certs[0])), C.uint(totalPckCerts), &certIdx)
 
 	certError := [...]string{
@@ -202,10 +202,10 @@ func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.Fmsp
 
 	if platformInfo.Manifest != "" {
 		resp, err = getPckCertsWithManifestFromProvServer(platformInfo.Manifest,
-			platformInfo.PceId)
+			platformInfo.PceID)
 	} else {
 		resp, err = getPckCertFromProvServer(platformInfo.Encppid,
-			platformInfo.PceId)
+			platformInfo.PceID)
 	}
 	if resp != nil {
 		defer func() {
@@ -283,8 +283,8 @@ func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.Fmsp
 	}
 
 	pckCertInfo.Fmspc = fmspc
-	pckCertInfo.QeId = platformInfo.QeId
-	pckCertInfo.PceId = platformInfo.PceId
+	pckCertInfo.QeID = platformInfo.QeID
+	pckCertInfo.PceID = platformInfo.PceID
 
 	fmspcTcbInfo, err := fetchFmspcTcbInfo(fmspc)
 	if err != nil {
@@ -305,7 +305,7 @@ func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.Fmsp
 // SVS will make use of this to verify if PCK certificate in a quote is valid
 // by comparing against this CRL
 func fetchPckCrlInfo(ca string) (*types.PckCrl, error) {
-	resp, err := getPckCrlFromProvServer(ca, constants.Encoding_Value)
+	resp, err := getPckCrlFromProvServer(ca, constants.EncodingValue)
 	if resp != nil {
 		defer func() {
 			derr := resp.Body.Close()
@@ -423,14 +423,14 @@ func cachePckCertInfo(db repository.SCSDatabase, pckCert *types.PckCert, cacheTy
 	var err error
 	pckCert.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.PckCertRepository().Update(*pckCert)
+		err = db.PckCertRepository().Update(pckCert)
 		if err != nil {
 			log.WithError(err).Error("PckCerts record could not be updated in db")
 			return nil, err
 		}
 	} else {
 		pckCert.CreatedTime = time.Now().UTC()
-		pckCert, err = db.PckCertRepository().Create(*pckCert)
+		pckCert, err = db.PckCertRepository().Create(pckCert)
 		if err != nil {
 			log.WithError(err).Error("PckCerts record could not be created in db")
 			return nil, err
@@ -443,14 +443,14 @@ func cacheQeIdentityInfo(db repository.SCSDatabase, qeIdentity *types.QEIdentity
 	var err error
 	qeIdentity.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.QEIdentityRepository().Update(*qeIdentity)
+		err = db.QEIdentityRepository().Update(qeIdentity)
 		if err != nil {
 			log.WithError(err).Error("QE Identity record could not be updated in db")
 			return nil, err
 		}
 	} else {
 		qeIdentity.CreatedTime = time.Now().UTC()
-		qeIdentity, err = db.QEIdentityRepository().Create(*qeIdentity)
+		qeIdentity, err = db.QEIdentityRepository().Create(qeIdentity)
 		if err != nil {
 			log.WithError(err).Error("QE Identity record could not created in db")
 			return nil, err
@@ -466,14 +466,14 @@ func cachePckCertChainInfo(db repository.SCSDatabase, pckCertChain string, cache
 	var err error
 	certChain.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.PckCertChainRepository().Update(*certChain)
+		err = db.PckCertChainRepository().Update(certChain)
 		if err != nil {
 			log.WithError(err).Error("PckCertChain record could not be updated in db")
 			return nil, err
 		}
 	} else {
 		certChain.CreatedTime = time.Now().UTC()
-		certChain, err = db.PckCertChainRepository().Create(*certChain)
+		certChain, err = db.PckCertChainRepository().Create(certChain)
 		if err != nil {
 			log.WithError(err).Error("PckCertChain record could not be created in db")
 			return nil, err
@@ -486,14 +486,14 @@ func cacheFmspcTcbInfo(db repository.SCSDatabase, fmspcTcb *types.FmspcTcbInfo, 
 	var err error
 	fmspcTcb.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.FmspcTcbInfoRepository().Update(*fmspcTcb)
+		err = db.FmspcTcbInfoRepository().Update(fmspcTcb)
 		if err != nil {
 			log.WithError(err).Error("FmspcTcb record could not be Updated in db")
 			return nil, err
 		}
 	} else {
 		fmspcTcb.CreatedTime = time.Now().UTC()
-		fmspcTcb, err = db.FmspcTcbInfoRepository().Create(*fmspcTcb)
+		fmspcTcb, err = db.FmspcTcbInfoRepository().Create(fmspcTcb)
 		if err != nil {
 			log.WithError(err).Error("FmspcTcb record could not be created in db")
 			return nil, err
@@ -506,14 +506,14 @@ func cachePlatformInfo(db repository.SCSDatabase, platform *types.Platform, cach
 	var err error
 	platform.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.PlatformRepository().Update(*platform)
+		err = db.PlatformRepository().Update(platform)
 		if err != nil {
 			log.WithError(err).Error("Platform values record could not be updated in db")
 			return err
 		}
 	} else {
 		platform.CreatedTime = time.Now().UTC()
-		platform, err = db.PlatformRepository().Create(*platform)
+		platform, err = db.PlatformRepository().Create(platform)
 		if err != nil {
 			log.WithError(err).Error("Platform values record could not be created in db")
 			return err
@@ -525,22 +525,22 @@ func cachePlatformInfo(db repository.SCSDatabase, platform *types.Platform, cach
 func cachePlatformTcbInfo(db repository.SCSDatabase, platformInfo *types.Platform, tcbm string, cacheType constants.CacheType) error {
 	platformTcb := &types.PlatformTcb{
 		Tcbm:   tcbm,
-		CpuSvn: platformInfo.CpuSvn,
+		CPUSvn: platformInfo.CPUSvn,
 		PceSvn: platformInfo.PceSvn,
-		PceId:  platformInfo.PceId,
-		QeId:   platformInfo.QeId}
+		PceID:  platformInfo.PceID,
+		QeID:   platformInfo.QeID}
 
 	var err error
 	platformTcb.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.PlatformTcbRepository().Update(*platformTcb)
+		err = db.PlatformTcbRepository().Update(platformTcb)
 		if err != nil {
 			log.WithError(err).Error("PlatformTcb values record could not be updated in db")
 			return err
 		}
 	} else {
 		platformTcb.CreatedTime = time.Now().UTC()
-		platformTcb, err = db.PlatformTcbRepository().Create(*platformTcb)
+		platformTcb, err = db.PlatformTcbRepository().Create(platformTcb)
 		if err != nil {
 			log.WithError(err).Error("PlatformTcb values record could not be created in db")
 			return err
@@ -553,14 +553,14 @@ func cachePckCrlInfo(db repository.SCSDatabase, pckCrl *types.PckCrl, cacheType 
 	var err error
 	pckCrl.UpdatedTime = time.Now().UTC()
 	if cacheType == constants.CacheRefresh {
-		err = db.PckCrlRepository().Update(*pckCrl)
+		err = db.PckCrlRepository().Update(pckCrl)
 		if err != nil {
 			log.WithError(err).Error("PckCrl record could not be updated in db")
 			return nil, err
 		}
 	} else {
 		pckCrl.CreatedTime = time.Now().UTC()
-		pckCrl, err = db.PckCrlRepository().Create(*pckCrl)
+		pckCrl, err = db.PckCrlRepository().Create(pckCrl)
 		if err != nil {
 			log.WithError(err).Error("PckCrl record could not be created in db")
 			return nil, err
@@ -590,18 +590,18 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			slog.WithError(err).Errorf("resource/platform_ops: pushPlatformInfo() %s :  Failed to decode request body", commLogMsg.InvalidInputBadEncoding)
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
 		}
-		if !validateInputString(constants.EncPPID_Key, platformInfo.EncPpid) ||
-			!validateInputString(constants.CpuSvn_Key, platformInfo.CpuSvn) ||
-			!validateInputString(constants.PceSvn_Key, platformInfo.PceSvn) ||
-			!validateInputString(constants.PceId_Key, platformInfo.PceId) ||
-			!validateInputString(constants.QeId_Key, platformInfo.QeId) {
+		if !validateInputString(constants.EncPPIDKey, platformInfo.EncPpid) ||
+			!validateInputString(constants.CPUSvnKey, platformInfo.CPUSvn) ||
+			!validateInputString(constants.PceSvnKey, platformInfo.PceSvn) ||
+			!validateInputString(constants.PceIDKey, platformInfo.PceID) ||
+			!validateInputString(constants.QeIDKey, platformInfo.QeID) {
 			slog.Error("resource/platform_ops: pushPlatformInfo() Input validation failed")
 			return &resourceError{Message: "invalid query param data",
 				StatusCode: http.StatusBadRequest}
 		}
 
-		platform := &types.Platform{QeId: platformInfo.QeId}
-		existingPlaformData, err := db.PlatformRepository().Retrieve(*platform)
+		platform := &types.Platform{QeID: platformInfo.QeID}
+		existingPlaformData, err := db.PlatformRepository().Retrieve(platform)
 		if existingPlaformData != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -619,10 +619,10 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 
 		platform = &types.Platform{
 			Encppid:  platformInfo.EncPpid,
-			CpuSvn:   platformInfo.CpuSvn,
+			CPUSvn:   platformInfo.CPUSvn,
 			PceSvn:   platformInfo.PceSvn,
-			PceId:    platformInfo.PceId,
-			QeId:     platformInfo.QeId,
+			PceID:    platformInfo.PceID,
+			QeID:     platformInfo.QeID,
 			Manifest: platformInfo.Manifest,
 		}
 
@@ -632,7 +632,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		pckCrl := &types.PckCrl{Ca: ca}
-		existingPckCrl, err := db.PckCrlRepository().Retrieve(*pckCrl)
+		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 		if existingPckCrl == nil {
 			_, err = getLazyCachePckCrl(db, ca, constants.CacheInsert)
 			if err != nil {
@@ -640,7 +640,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 
-		tcbInfo := types.FmspcTcbInfo{Fmspc: platform.Fmspc}
+		tcbInfo := &types.FmspcTcbInfo{Fmspc: platform.Fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
 		if existingFmspc == nil {
 			_, err = getLazyCacheFmspcTcbInfo(db, platform.Fmspc, constants.CacheInsert)
@@ -688,7 +688,7 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 
 		_, err = cachePckCertInfo(db, pckCertInfo, constants.CacheRefresh)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error in Cache Pck Cert Info: %s", err.Error()))
+			return fmt.Errorf("Error in Cache Pck Cert Info: %s", err.Error())
 		}
 	}
 	log.Debug("All PckCerts for the platform refeteched from PCS as part of refresh")
@@ -704,7 +704,7 @@ func refreshAllPckCrl(db repository.SCSDatabase) error {
 	for n := 0; n < len(existingPckCrlData); n++ {
 		_, err = getLazyCachePckCrl(db, existingPckCrlData[n].Ca, constants.CacheRefresh)
 		if err != nil {
-			return errors.New(fmt.Sprintf("refresh of pckcrl failed: %s", err.Error()))
+			return fmt.Errorf("refresh of pckcrl failed: %s", err.Error())
 		}
 	}
 	log.Debug("All PckCrls for the platform refeteched from PCS as part of refresh")
@@ -765,13 +765,13 @@ func refreshNonPCKCollaterals(db repository.SCSDatabase) error {
 
 func RefreshPlatformInfoTimer(db repository.SCSDatabase, rtype string) error {
 	var err error
-	if strings.Compare(rtype, constants.Type_Refresh_Cert) == 0 {
+	if strings.Compare(rtype, constants.TypeRefreshCert) == 0 {
 		err = refreshPckCerts(db)
 		if err != nil {
 			log.WithError(err).Error("could not complete refresh of Pck Certificates")
 			return err
 		}
-	} else if strings.Compare(rtype, constants.Type_Refresh_Tcb) == 0 {
+	} else if strings.Compare(rtype, constants.TypeRefreshTcb) == 0 {
 		err = refreshNonPCKCollaterals(db)
 		if err != nil {
 			log.WithError(err).Error("could not complete refresh of TcbInfo")
@@ -841,58 +841,58 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 func compareTcbComponents(pckComponents []byte, pckpcesvn uint16, tcbComponents []byte, tcbpcesvn uint16) int {
-	left_lower := false
-	right_lower := false
+	leftLower := false
+	rightLower := false
 
 	if len(pckComponents) != constants.MaxTcbLevels || len(tcbComponents) != constants.MaxTcbLevels {
 		return Error
 	}
 	if pckpcesvn < tcbpcesvn {
-		left_lower = true
+		leftLower = true
 	}
 	if pckpcesvn > tcbpcesvn {
-		right_lower = true
+		rightLower = true
 	}
 
 	for i := 0; i < constants.MaxTcbLevels; i++ {
 		if pckComponents[i] < tcbComponents[i] {
-			left_lower = true
+			leftLower = true
 		}
 		if pckComponents[i] > tcbComponents[i] {
-			right_lower = true
+			rightLower = true
 		}
 	}
 	// this should not happen as either one can be greater
-	if left_lower && right_lower {
+	if leftLower && rightLower {
 		return Undefined
 	}
-	if left_lower {
+	if leftLower {
 		return Lower
 	}
 	return EqualOrGreater
 }
 
-func getTcbCompList(TcbLevelList *TcbLevels) []byte {
-	TcbCompLevel := make([]byte, constants.MaxTcbLevels)
+func getTcbCompList(tcbLevelList *TcbLevels) []byte {
+	tcbCompLevel := make([]byte, constants.MaxTcbLevels)
 
-	TcbCompLevel[0] = TcbLevelList.SgxTcbComp01Svn
-	TcbCompLevel[1] = TcbLevelList.SgxTcbComp02Svn
-	TcbCompLevel[2] = TcbLevelList.SgxTcbComp03Svn
-	TcbCompLevel[3] = TcbLevelList.SgxTcbComp04Svn
-	TcbCompLevel[4] = TcbLevelList.SgxTcbComp05Svn
-	TcbCompLevel[5] = TcbLevelList.SgxTcbComp06Svn
-	TcbCompLevel[6] = TcbLevelList.SgxTcbComp07Svn
-	TcbCompLevel[7] = TcbLevelList.SgxTcbComp08Svn
-	TcbCompLevel[8] = TcbLevelList.SgxTcbComp09Svn
-	TcbCompLevel[9] = TcbLevelList.SgxTcbComp10Svn
-	TcbCompLevel[10] = TcbLevelList.SgxTcbComp11Svn
-	TcbCompLevel[11] = TcbLevelList.SgxTcbComp12Svn
-	TcbCompLevel[12] = TcbLevelList.SgxTcbComp13Svn
-	TcbCompLevel[13] = TcbLevelList.SgxTcbComp14Svn
-	TcbCompLevel[14] = TcbLevelList.SgxTcbComp15Svn
-	TcbCompLevel[15] = TcbLevelList.SgxTcbComp16Svn
+	tcbCompLevel[0] = tcbLevelList.SgxTcbComp01Svn
+	tcbCompLevel[1] = tcbLevelList.SgxTcbComp02Svn
+	tcbCompLevel[2] = tcbLevelList.SgxTcbComp03Svn
+	tcbCompLevel[3] = tcbLevelList.SgxTcbComp04Svn
+	tcbCompLevel[4] = tcbLevelList.SgxTcbComp05Svn
+	tcbCompLevel[5] = tcbLevelList.SgxTcbComp06Svn
+	tcbCompLevel[6] = tcbLevelList.SgxTcbComp07Svn
+	tcbCompLevel[7] = tcbLevelList.SgxTcbComp08Svn
+	tcbCompLevel[8] = tcbLevelList.SgxTcbComp09Svn
+	tcbCompLevel[9] = tcbLevelList.SgxTcbComp10Svn
+	tcbCompLevel[10] = tcbLevelList.SgxTcbComp11Svn
+	tcbCompLevel[11] = tcbLevelList.SgxTcbComp12Svn
+	tcbCompLevel[12] = tcbLevelList.SgxTcbComp13Svn
+	tcbCompLevel[13] = tcbLevelList.SgxTcbComp14Svn
+	tcbCompLevel[14] = tcbLevelList.SgxTcbComp15Svn
+	tcbCompLevel[15] = tcbLevelList.SgxTcbComp16Svn
 
-	return TcbCompLevel
+	return tcbCompLevel
 }
 
 /*
@@ -919,48 +919,48 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: "query data not provided",
 				StatusCode: http.StatusBadRequest}
 		}
-		QeId := r.URL.Query().Get("qeid")
-		if !validateInputString(constants.QeId_Key, QeId) {
+		qeID := r.URL.Query().Get("qeid")
+		if !validateInputString(constants.QeIDKey, qeID) {
 			slog.Errorf("resource/platform_ops: getTcbStatus() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid qeid",
 				StatusCode: http.StatusBadRequest}
 		}
 
-		pckinfo := &types.PckCert{QeId: QeId}
-		existingPckCertData, err := db.PckCertRepository().Retrieve(*pckinfo)
+		pckinfo := &types.PckCert{QeID: qeID}
+		existingPckCertData, err := db.PckCertRepository().Retrieve(pckinfo)
 		if existingPckCertData == nil {
 			return &resourceError{Message: "no pck cert record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 
 		certIndex := existingPckCertData.CertIndex
-		existingPlatformData := &types.Platform{QeId: QeId}
-		existingPlatformData, err = db.PlatformRepository().Retrieve(*existingPlatformData)
+		existingPlatformData := &types.Platform{QeID: qeID}
+		existingPlatformData, err = db.PlatformRepository().Retrieve(existingPlatformData)
 		if existingPlatformData == nil {
 			return &resourceError{Message: "no platform record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{Fmspc: existingPlatformData.Fmspc}
-		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
+		tcbInf := &types.FmspcTcbInfo{Fmspc: existingPlatformData.Fmspc}
+		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInf)
 		if existingFmspc == nil {
 			return &resourceError{Message: "no tcb info record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 
 		// for the selected pck cert, select corresponding raw tcb level (tcbm)
-		tcbm, err1 := hex.DecodeString(existingPckCertData.Tcbms[certIndex])
-		if err1 != nil {
-			return &resourceError{Message: "cannot decode tcbm: " + err1.Error(),
+		tcbm, err := hex.DecodeString(existingPckCertData.Tcbms[certIndex])
+		if err != nil {
+			return &resourceError{Message: "cannot decode tcbm: " + err.Error(),
 				StatusCode: http.StatusInternalServerError}
 		}
 
 		// tcbm (current raw tcb level) is 18 byte array with first 16 bytes for cpusvn
 		//  and next 2 bytes for pcesvn
-		PckComponents := tcbm[:16]
-		PckPceSvn := binary.LittleEndian.Uint16(tcbm[16:])
+		pckComponents := tcbm[:16]
+		pckPceSvn := binary.LittleEndian.Uint16(tcbm[16:])
 
-		var tcbInfo TcbInfoJson
+		var tcbInfo TcbInfoJSON
 
 		// unmarshal the json encoded TcbInfo response for a platform
 		err = json.Unmarshal([]byte(existingFmspc.TcbInfo), &tcbInfo)
@@ -969,24 +969,24 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusInternalServerError}
 		}
 
-		var Status string
+		var status string
 		var response Response
 		response.Status = "false"
 		response.Message = "TCB Status is not UpToDate"
 
-		var TcbComponents []byte
+		var tcbComponents []byte
 		// iterate through all TCB Levels present in TCBInfo
 		for i := 0; i < len(tcbInfo.TcbInfo.TcbLevels); i++ {
-			TcbPceSvn := tcbInfo.TcbInfo.TcbLevels[i].Tcb.PceSvn
-			TcbComponents = getTcbCompList(&tcbInfo.TcbInfo.TcbLevels[i].Tcb)
-			TcbError := compareTcbComponents(PckComponents, PckPceSvn, TcbComponents, TcbPceSvn)
-			if TcbError == EqualOrGreater {
-				Status = tcbInfo.TcbInfo.TcbLevels[i].TcbStatus
+			tcbPceSvn := tcbInfo.TcbInfo.TcbLevels[i].Tcb.PceSvn
+			tcbComponents = getTcbCompList(&tcbInfo.TcbInfo.TcbLevels[i].Tcb)
+			tcbError := compareTcbComponents(pckComponents, pckPceSvn, tcbComponents, tcbPceSvn)
+			if tcbError == EqualOrGreater {
+				status = tcbInfo.TcbInfo.TcbLevels[i].TcbStatus
 				break
 			}
 		}
 
-		if Status == "UpToDate" || Status == "ConfigurationNeeded" {
+		if status == "UpToDate" || status == "ConfigurationNeeded" {
 			response.Status = "true"
 			response.Message = "TCB Status is UpToDate"
 		}

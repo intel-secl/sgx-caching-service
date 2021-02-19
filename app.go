@@ -143,6 +143,13 @@ func (a *App) logWriter() io.Writer {
 	return os.Stderr
 }
 
+func (a *App) secLogWriter() io.Writer {
+	if a.SecLogWriter != nil {
+		return a.SecLogWriter
+	}
+	return os.Stdout
+}
+
 func (a *App) httpLogWriter() io.Writer {
 	if a.HTTPLogWriter != nil {
 		return a.HTTPLogWriter
@@ -161,13 +168,13 @@ func (a *App) executablePath() string {
 	if a.ExecutablePath != "" {
 		return a.ExecutablePath
 	}
-	exec, err := os.Executable()
+	execPath, err := os.Executable()
 	if err != nil {
 		log.WithError(err).Error("app:executablePath() Unable to find SCS executable")
 		// if we can't find self-executable path, we're probably in a state that is panic() worthy
 		panic(err)
 	}
-	return exec
+	return execPath
 }
 
 func (a *App) homeDir() string {
@@ -213,13 +220,13 @@ func (a *App) configureLogs(stdOut, logFile bool) {
 	ioWriterDefault = a.LogWriter
 	if stdOut {
 		if logFile {
-			ioWriterDefault = io.MultiWriter(os.Stdout, a.LogWriter)
+			ioWriterDefault = io.MultiWriter(os.Stdout, a.logWriter())
 		} else {
 			ioWriterDefault = os.Stdout
 		}
 	}
 
-	ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.SecLogWriter)
+	ioWriterSecurity := io.MultiWriter(ioWriterDefault, a.secLogWriter())
 
 	f := commLog.LogFormatter{MaxLength: a.configuration().LogMaxLength}
 	commLogInt.SetLogger(commLog.DefaultLoggerName, a.configuration().LogLevel, &f, ioWriterDefault, false)
@@ -275,7 +282,7 @@ func (a *App) Run(args []string) error {
 		return nil
 	case "setup":
 		a.configureLogs(a.configuration().LogEnableStdout, true)
-		var context setup.Context
+		var setupContext setup.Context
 		if len(args) <= 2 {
 			a.printUsage()
 			log.Error("app:Run() Invalid command")
@@ -297,7 +304,7 @@ func (a *App) Run(args []string) error {
 		}
 
 		a.Config = config.Global()
-		err = a.Config.SaveConfiguration(context)
+		err = a.Config.SaveConfiguration(setupContext)
 		if err != nil {
 			fmt.Println("Error saving configuration: " + err.Error())
 			os.Exit(1)
@@ -315,9 +322,9 @@ func (a *App) Run(args []string) error {
 			Tasks: []setup.Task{
 				setup.Download_Ca_Cert{
 					Flags:                flags,
-					CmsBaseURL:           a.Config.CMSBaseUrl,
+					CmsBaseURL:           a.Config.CMSBaseURL,
 					CaCertDirPath:        constants.TrustedCAsStoreDir,
-					TrustedTlsCertDigest: a.Config.CmsTlsCertDigest,
+					TrustedTlsCertDigest: a.Config.CmsTLSCertDigest,
 					ConsoleWriter:        os.Stdout,
 				},
 				setup.Download_Cert{
@@ -326,7 +333,7 @@ func (a *App) Run(args []string) error {
 					CertFile:           a.Config.TLSCertFile,
 					KeyAlgorithm:       constants.DefaultKeyAlgorithm,
 					KeyAlgorithmLength: constants.DefaultKeyAlgorithmLength,
-					CmsBaseURL:         a.Config.CMSBaseUrl,
+					CmsBaseURL:         a.Config.CMSBaseURL,
 					Subject: pkix.Name{
 						CommonName: a.Config.Subject.TLSCertCommonName,
 					},
@@ -358,10 +365,10 @@ func (a *App) Run(args []string) error {
 			fmt.Fprintf(os.Stderr, "Error running setup: %s\n", err)
 			return errors.Wrap(err, "app:Run() Error running setup")
 		}
-// Containers are always run as non root users, does not require changing ownership of config directories
-                if _, err := os.Stat("/.container-env"); err == nil {
-                        return nil
-                }
+		// Containers are always run as non root users, does not require changing ownership of config directories
+		if _, err := os.Stat("/.container-env"); err == nil {
+			return nil
+		}
 
 		scsUser, err := user.Lookup(constants.SCSUserName)
 		if err != nil {
@@ -378,7 +385,7 @@ func (a *App) Run(args []string) error {
 			return errors.Wrapf(err, "Could not parse scs user gid '%s'", scsUser.Gid)
 		}
 
-		//Change the fileownership to scs user
+		// Change the fileownership to scs user
 		err = cos.ChownR(constants.ConfigDir, uid, gid)
 		if err != nil {
 			return errors.Wrap(err, "Error while changing file ownership")
@@ -411,11 +418,11 @@ func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
 				return
 			case t := <-ticker.C:
 				log.Debug("Timer started", t)
-				err := resource.RefreshPlatformInfoTimer(db, constants.Type_Refresh_Cert)
+				err := resource.RefreshPlatformInfoTimer(db, constants.TypeRefreshCert)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error: refresh pck cert failed  with error:%s", err.Error())
 				}
-				err = resource.RefreshPlatformInfoTimer(db, constants.Type_Refresh_Tcb)
+				err = resource.RefreshPlatformInfoTimer(db, constants.TypeRefreshTcb)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error: refresh tcbinfo failed  with error:%s", err.Error())
 				}
@@ -602,16 +609,16 @@ func removeService() {
 	}
 }
 
-func validateCmdAndEnv(env_names_cmd_opts map[string]string, flags *flag.FlagSet) error {
-	env_names := make([]string, 0)
-	for k := range env_names_cmd_opts {
-		env_names = append(env_names, k)
+func validateCmdAndEnv(envNamesCmdOpts map[string]string, flags *flag.FlagSet) error {
+	envNames := make([]string, 0)
+	for k := range envNamesCmdOpts {
+		envNames = append(envNames, k)
 	}
 
-	missing, valid_err := validation.ValidateEnvList(env_names)
-	if valid_err != nil && missing != nil {
+	missing, validErr := validation.ValidateEnvList(envNames)
+	if validErr != nil && missing != nil {
 		for _, m := range missing {
-			if cmd_f := flags.Lookup(env_names_cmd_opts[m]); cmd_f == nil {
+			if cmdF := flags.Lookup(envNamesCmdOpts[m]); cmdF == nil {
 				return errors.New("Insufficient arguments")
 			}
 		}
@@ -633,7 +640,7 @@ func validateSetupArgs(cmd string, args []string) error {
 		return nil
 
 	case "database":
-		env_names_cmd_opts := map[string]string{
+		envNamesCmdOpts := map[string]string{
 			"SCS_DB_HOSTNAME":   "db-host",
 			"SCS_DB_PORT":       "db-port",
 			"SCS_DB_USERNAME":   "db-user",
@@ -656,9 +663,9 @@ func validateSetupArgs(cmd string, args []string) error {
 
 		err := fs.Parse(args)
 		if err != nil {
-			return fmt.Errorf("Fail to parse arguments: %s", err.Error())
+			return fmt.Errorf("fail to parse arguments: %s", err.Error())
 		}
-		return validateCmdAndEnv(env_names_cmd_opts, fs)
+		return validateCmdAndEnv(envNamesCmdOpts, fs)
 
 	case "server":
 		// this has a default port value of 9000
@@ -703,10 +710,10 @@ func fnGetJwtCerts() error {
 		return errors.New("failed to read config")
 	}
 
-	if !strings.HasSuffix(conf.AuthServiceUrl, "/") {
-		conf.AuthServiceUrl = conf.AuthServiceUrl + "/"
+	if !strings.HasSuffix(conf.AuthServiceURL, "/") {
+		conf.AuthServiceURL += "/"
 	}
-	url := conf.AuthServiceUrl + "jwt-certificates"
+	url := conf.AuthServiceURL + "jwt-certificates"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return errors.Wrap(err, "Could not create http request")

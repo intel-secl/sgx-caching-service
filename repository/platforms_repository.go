@@ -7,9 +7,9 @@ package repository
 import "intel/isecl/scs/v3/types"
 
 type PlatformRepository interface {
-	Create(types.Platform) (*types.Platform, error)
-	Retrieve(types.Platform) (*types.Platform, error)
+	Create(*types.Platform) (*types.Platform, error)
+	Retrieve(*types.Platform) (*types.Platform, error)
 	RetrieveAll() (types.Platforms, error)
-	Update(types.Platform) error
-	Delete(types.Platform) error
+	Update(*types.Platform) error
+	Delete(*types.Platform) error
 }

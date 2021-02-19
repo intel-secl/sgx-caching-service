@@ -10,15 +10,16 @@ import (
 	_ "intel/isecl/scs/v3/swagger/docs"
 	"os"
 	"os/user"
+	"runtime"
 	"strconv"
 )
 
-func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File, err error) {
+func openLogFiles() (logFile, httpLogFile, secLogFile *os.File, err error) {
 	logFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err = os.Chmod(constants.LogFile, 0600); err != nil {
+	if err := os.Chmod(constants.LogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -26,7 +27,7 @@ func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err = os.Chmod(constants.HTTPLogFile, 0600); err != nil {
+	if err := os.Chmod(constants.HTTPLogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -34,42 +35,42 @@ func openLogFiles() (logFile *os.File, httpLogFile *os.File, secLogFile *os.File
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if err = os.Chmod(constants.SecLogFile, 0600); err != nil {
+	if err := os.Chmod(constants.SecLogFile, 0600); err != nil {
 		return nil, nil, nil, err
 	}
-        // Containers are always run as non root users, does not require changing ownership of config directories
-        if _, err := os.Stat("/.container-env"); err == nil {
-                return logFile, httpLogFile, secLogFile, nil
-        }
+	// Containers are always run as non root users, does not require changing ownership of config directories
+	if _, err := os.Stat("/.container-env"); err == nil {
+		return logFile, httpLogFile, secLogFile, nil
+	}
 
 	scsUser, err := user.Lookup(constants.SCSUserName)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not find user '%s'", constants.SCSUserName)
+		return nil, nil, nil, fmt.Errorf("could not find user '%s'", constants.SCSUserName)
 	}
 
 	uid, err := strconv.Atoi(scsUser.Uid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not parse scs user uid '%s'", scsUser.Uid)
+		return nil, nil, nil, fmt.Errorf("could not parse scs user uid '%s'", scsUser.Uid)
 	}
 
 	gid, err := strconv.Atoi(scsUser.Gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not parse scs user gid '%s'", scsUser.Gid)
+		return nil, nil, nil, fmt.Errorf("could not parse scs user gid '%s'", scsUser.Gid)
 	}
 
 	err = os.Chown(constants.HTTPLogFile, uid, gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", constants.HTTPLogFile)
+		return nil, nil, nil, fmt.Errorf("could not change file ownership for file: '%s'", constants.HTTPLogFile)
 	}
 
 	err = os.Chown(constants.SecLogFile, uid, gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", constants.SecLogFile)
+		return nil, nil, nil, fmt.Errorf("could not change file ownership for file: '%s'", constants.SecLogFile)
 	}
 
 	err = os.Chown(constants.LogFile, uid, gid)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("Could not change file ownership for file: '%s'", constants.LogFile)
+		return nil, nil, nil, fmt.Errorf("could not change file ownership for file: '%s'", constants.LogFile)
 	}
 
 	return
@@ -110,6 +111,6 @@ func main() {
 	err = app.Run(os.Args)
 	if err != nil {
 		fmt.Println("Application returned with error:", err.Error())
-		os.Exit(1)
+		runtime.Goexit()
 	}
 }

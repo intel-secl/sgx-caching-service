@@ -7,9 +7,9 @@ package repository
 import "intel/isecl/scs/v3/types"
 
 type PckCertRepository interface {
-	Create(types.PckCert) (*types.PckCert, error)
-	Retrieve(types.PckCert) (*types.PckCert, error)
+	Create(*types.PckCert) (*types.PckCert, error)
+	Retrieve(*types.PckCert) (*types.PckCert, error)
 	RetrieveAll() (types.PckCerts, error)
-	Update(types.PckCert) error
-	Delete(types.PckCert) error
+	Update(*types.PckCert) error
+	Delete(*types.PckCert) error
 }

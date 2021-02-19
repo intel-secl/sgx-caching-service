@@ -32,7 +32,7 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
 	var err error
 	var resp *http.Response
 	var retries int = conf.RetryCount
-	var time_bw_calls int = conf.WaitTime
+	var timeBwCalls int = conf.WaitTime
 
 	for retries >= 0 {
 		resp, err := client.Do(req)
@@ -51,13 +51,13 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
 		}
 
 		select {
-		case <-time.After(time.Duration(time_bw_calls) * time.Second):
+		case <-time.After(time.Duration(timeBwCalls) * time.Second):
 		}
 	}
 	return resp, err
 }
 
-func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Response, error) {
+func getPckCertFromProvServer(encryptedPPID, pceID string) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCertFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCertFromProvServer() Leaving")
 
@@ -65,17 +65,17 @@ func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Respons
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCertFromProvServer: Cannot get provclient Object")
 	}
-	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerUrl)
+	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCertFromProvServer: Getpckcerts http request Failed")
 	}
 
-	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.ApiSubscriptionkey)
+	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.APISubscriptionkey)
 	q := req.URL.Query()
-	q.Add("encrypted_ppid", EncryptedPPID)
-	q.Add("pceid", PceId)
+	q.Add("encrypted_ppid", encryptedPPID)
+	q.Add("pceid", pceID)
 
 	req.URL.RawQuery = q.Encode()
 
@@ -87,18 +87,18 @@ func getPckCertFromProvServer(EncryptedPPID string, PceId string) (*http.Respons
 	return resp, nil
 }
 
-func getPckCertsWithManifestFromProvServer(manifest string, pceId string) (*http.Response, error) {
+func getPckCertsWithManifestFromProvServer(manifest, pceID string) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCertsWithManifestFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCertsWithManifestFromProvServer() Leaving")
 	client, conf, err := getProvClientObj()
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCertsWithManifestFromProvServer: Cannot get provclient Object")
 	}
-	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerUrl)
+	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerURL)
 
 	requestStr := map[string]string{
 		"platformManifest": manifest,
-		"pceid":            pceId}
+		"pceid":            pceID}
 
 	reqBytes, err := json.Marshal(requestStr)
 	if err != nil {
@@ -110,7 +110,7 @@ func getPckCertsWithManifestFromProvServer(manifest string, pceId string) (*http
 		return nil, errors.Wrap(err, "getPckCertsWithManifestFromProvServer: Getpckcerts http request Failed")
 	}
 
-	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.ApiSubscriptionkey)
+	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.APISubscriptionkey)
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := getRespFromProvServer(req, client, conf)
@@ -121,14 +121,14 @@ func getPckCertsWithManifestFromProvServer(manifest string, pceId string) (*http
 	return resp, nil
 }
 
-func getPckCrlFromProvServer(ca string, encoding string) (*http.Response, error) {
+func getPckCrlFromProvServer(ca, encoding string) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCrlFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCrlFromProvServer() Leaving")
 	client, conf, err := getProvClientObj()
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCrlFromProvServer(): Cannot get provclient Object")
 	}
-	url := fmt.Sprintf("%s/pckcrl", conf.ProvServerInfo.ProvServerUrl)
+	url := fmt.Sprintf("%s/pckcrl", conf.ProvServerInfo.ProvServerURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCrlFromProvServer(): GetpckCrl http request Failed")
@@ -155,7 +155,7 @@ func getFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getFmspcTcbInfoFromProvServer(): Cannot get provclient Object")
 	}
-	url := fmt.Sprintf("%s/tcb", conf.ProvServerInfo.ProvServerUrl)
+	url := fmt.Sprintf("%s/tcb", conf.ProvServerInfo.ProvServerURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getFmspcTcbInfoFromProvServer(): GetTcb http request Failed")
@@ -181,7 +181,7 @@ func getQeInfoFromProvServer() (*http.Response, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): Cannot get provclient Object")
 	}
-	url := fmt.Sprintf("%s/qe/identity", conf.ProvServerInfo.ProvServerUrl)
+	url := fmt.Sprintf("%s/qe/identity", conf.ProvServerInfo.ProvServerURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): getQeIdentity http request Failed")
