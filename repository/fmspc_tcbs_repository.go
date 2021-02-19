@@ -7,9 +7,9 @@ package repository
 import "intel/isecl/scs/v3/types"
 
 type FmspcTcbInfoRepository interface {
-	Create(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
-	Retrieve(types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
+	Create(*types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
+	Retrieve(*types.FmspcTcbInfo) (*types.FmspcTcbInfo, error)
 	RetrieveAll() (types.FmspcTcbInfos, error)
-	Update(types.FmspcTcbInfo) error
-	Delete(types.FmspcTcbInfo) error
+	Update(*types.FmspcTcbInfo) error
+	Delete(*types.FmspcTcbInfo) error
 }

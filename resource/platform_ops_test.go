@@ -17,9 +17,9 @@ func ExecuteSGXAgentTest(input TestData) {
 	input.Test.Log("Test:", input.Description)
 	var req *http.Request
 	if len(input.PostData) > 0 {
-		req = httptest.NewRequest("POST", input.Url, bytes.NewReader(input.PostData))
+		req = httptest.NewRequest("POST", input.URL, bytes.NewReader(input.PostData))
 	} else {
-		req = httptest.NewRequest("POST", input.Url, nil)
+		req = httptest.NewRequest("POST", input.URL, nil)
 	}
 
 	req.Header.Add("Accept", "application/json")
@@ -39,7 +39,7 @@ func TestSgxAgentPushInvalidBearerToken(t *testing.T) {
 		Assert:      assert.New(t),
 		Router:      setupRouter(t),
 		Test:        t,
-		Url:         "/scs/sgx/test-noauth/platforminfo/push",
+		URL:         "/scs/sgx/test-noauth/platforminfo/push",
 		Token:       "invalidtoken",
 		StatusCode:  http.StatusUnauthorized,
 		PostData:    nil,
@@ -54,7 +54,7 @@ func TestSgxAgentPushInvalidJson(t *testing.T) {
 		Assert:      assert.New(t),
 		Router:      setupRouter(t),
 		Test:        t,
-		Url:         "/scs/sgx/test-noauth/platforminfo/push",
+		URL:         "/scs/sgx/test-noauth/platforminfo/push",
 		Token:       "",
 		StatusCode:  http.StatusUnauthorized,
 		PostData:    nil,

@@ -41,19 +41,17 @@ DB_SCRIPT_PATH=$PRODUCT_HOME/dbscripts
 LOG_PATH=/var/log/$COMPONENT_NAME/
 CONFIG_PATH=/etc/$COMPONENT_NAME/
 CERTS_PATH=$CONFIG_PATH/certs
-CERTDIR_TOKENSIGN=$CERTS_PATH/tokensign
 CERTDIR_TRUSTEDJWTCERTS=$CERTS_PATH/trustedjwt
 CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
-CERTDIR_CMSROOTCAS=$CERTS_PATH/cms-root-ca
 
 echo "Setting up SGX Caching Service Linux User..."
 id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
 
-for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TOKENSIGN $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS $CERTDIR_CMSROOTCAS; do
+for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
-    echo_failure "Cannot create directory: $directory"
+    echo "Cannot create directory: $directory"
     exit 1
   fi
   chown -R $SERVICE_USERNAME:$SERVICE_USERNAME $directory
@@ -91,7 +89,6 @@ auto_install() {
   local component=${1}
   local cprefix=${2}
   local packages=$(eval "echo \$${cprefix}_PACKAGES")
-  # detect available package management tools. start with the less likely ones to differentiate.
 if [ "$OS" == "rhel" ]; then
 	dnf -y install $packages
 elif [ "$OS" == "ubuntu" ]; then
@@ -116,11 +113,11 @@ logRotate_install() {
   LOGROTATE_PACKAGES="logrotate"
   if [ "$(whoami)" == "root" ]; then
     auto_install "Log Rotate" "LOGROTATE"
-    if [ $? -ne 0 ]; then echo_failure "Failed to install logrotate"; exit -1; fi
+    if [ $? -ne 0 ]; then echo "Failed to install logrotate"; exit -1; fi
   fi
   logRotate_clear; logRotate_detect;
     if [ -z "$logrotate" ]; then
-      echo_failure "logrotate is not installed"
+      echo "logrotate is not installed"
     else
       echo  "logrotate installed in $logrotate"
     fi

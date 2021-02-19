@@ -25,7 +25,7 @@ func (s Server) Run(c setup.Context) error {
 	fmt.Fprintln(s.ConsoleWriter, "Running server setup...")
 	defaultPort, err := c.GetenvInt("SCS_PORT", "SGX Caching Service http port")
 	if err != nil {
-		defaultPort = constants.DefaultHttpsPort
+		defaultPort = constants.DefaultHTTPSPort
 	}
 	fs := flag.NewFlagSet("server", flag.ContinueOnError)
 
@@ -75,17 +75,17 @@ func (s Server) Run(c setup.Context) error {
 		s.Config.MaxHeaderBytes = maxHeaderBytes
 	}
 
-	intelProvUrl, err := c.GetenvString("INTEL_PROVISIONING_SERVER", "Intel ECDSA Provisioning Server URL")
+	intelProvURL, err := c.GetenvString("INTEL_PROVISIONING_SERVER", "Intel ECDSA Provisioning Server URL")
 	if err != nil {
-		intelProvUrl = constants.DefaultIntelProvServerURL
+		intelProvURL = constants.DefaultIntelProvServerURL
 	}
-	s.Config.ProvServerInfo.ProvServerUrl = intelProvUrl
+	s.Config.ProvServerInfo.ProvServerURL = intelProvURL
 
-	intelProvApiKey, err := c.GetenvString("INTEL_PROVISIONING_SERVER_API_KEY", "Intel ECDSA Provisioning Server API Subscription key")
+	intelProvAPIKey, err := c.GetenvString("INTEL_PROVISIONING_SERVER_API_KEY", "Intel ECDSA Provisioning Server API Subscription key")
 	if err != nil {
 		return errors.Wrap(err, "Intel API Subscription key not provided")
 	}
-	s.Config.ProvServerInfo.ApiSubscriptionkey = intelProvApiKey
+	s.Config.ProvServerInfo.APISubscriptionkey = intelProvAPIKey
 
 	logMaxLen, err := c.GetenvInt("SCS_LOG_MAX_LENGTH", "SGX Caching Service Log maximum length")
 	if err != nil || logMaxLen < constants.DefaultLogEntryMaxLength {
@@ -96,7 +96,7 @@ func (s Server) Run(c setup.Context) error {
 
 	s.Config.LogEnableStdout = false
 	logEnableStdout, err := c.GetenvString("SCS_ENABLE_CONSOLE_LOG", "SGX Caching Service Enable standard output")
-	if err != nil || len(logEnableStdout) == 0 {
+	if err != nil || logEnableStdout == "" {
 		s.Config.LogEnableStdout = false
 	} else {
 		s.Config.LogEnableStdout = true

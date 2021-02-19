@@ -13,8 +13,7 @@ import (
 
 func ExecuteQPLTest(input TestData) {
 	input.Test.Log("Test:", input.Description)
-	var req *http.Request
-	req = httptest.NewRequest("GET", input.Url, nil)
+	req := httptest.NewRequest("GET", input.URL, nil)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 
@@ -30,7 +29,7 @@ func TestGetPckCert(t *testing.T) {
 		Assert:      assert.New(t),
 		Router:      setupRouter(t),
 		Test:        t,
-		Url:         "/scs/sgx/certification/v1/pckcert",
+		URL:         "/scs/sgx/certification/v1/pckcert",
 		StatusCode:  http.StatusBadRequest,
 		PostData:    nil,
 		Token:       "",
@@ -38,7 +37,7 @@ func TestGetPckCert(t *testing.T) {
 	}
 	ExecuteQPLTest(input)
 
-	input.Url = "/scs/sgx/certification/v1/pckcert?encrypted_ppid=invalid&cpusvn=invalid&pcesvn=invalid&pceid=invalid"
+	input.URL = "/scs/sgx/certification/v1/pckcert?encrypted_ppid=invalid&cpusvn=invalid&pcesvn=invalid&pceid=invalid"
 	input.Description = "Invalid Query Params"
 	ExecuteQPLTest(input)
 }
@@ -49,14 +48,14 @@ func TestGetPckCrl(t *testing.T) {
 		Assert:      assert.New(t),
 		Router:      setupRouter(t),
 		Test:        t,
-		Url:         "/scs/sgx/certification/v1/pckcrl",
+		URL:         "/scs/sgx/certification/v1/pckcrl",
 		StatusCode:  http.StatusBadRequest,
 		PostData:    nil,
 		Token:       "",
 		Description: "Without Query Params",
 	}
 	ExecuteQPLTest(input)
-	input.Url = "/scs/sgx/certification/v1/pckcrl?ca=invalid"
+	input.URL = "/scs/sgx/certification/v1/pckcrl?ca=invalid"
 	input.Description = "Invalid Query Params"
 	ExecuteQPLTest(input)
 }
@@ -67,14 +66,14 @@ func TestGetFmspc(t *testing.T) {
 		Assert:      assert.New(t),
 		Router:      setupRouter(t),
 		Test:        t,
-		Url:         "/scs/sgx/certification/v1/tcb",
+		URL:         "/scs/sgx/certification/v1/tcb",
 		StatusCode:  http.StatusBadRequest,
 		PostData:    nil,
 		Token:       "",
 		Description: "Without Query Params",
 	}
 	ExecuteQPLTest(input)
-	input.Url = "/scs/sgx/certification/v1/tcb?fmspc=invalid"
+	input.URL = "/scs/sgx/certification/v1/tcb?fmspc=invalid"
 	input.Description = "Invalid Query Params"
 	ExecuteQPLTest(input)
 }

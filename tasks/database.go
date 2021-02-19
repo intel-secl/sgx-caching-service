@@ -54,30 +54,30 @@ func (db Database) Run(c setup.Context) error {
 		return errors.Wrap(err, "setup database: failed to parse cmd flags")
 	}
 
-	var valid_err error
+	var validErr error
 
-	valid_err = validation.ValidateHostname(db.Config.Postgres.Hostname)
-	if valid_err != nil {
+	validErr = validation.ValidateHostname(db.Config.Postgres.Hostname)
+	if validErr != nil {
 		slog.Errorf("%s: Failed to connect to db, Input validation failed for database hostname", commLogMsg.BadConnection)
-		return valid_err
+		return validErr
 	}
-	valid_err = validation.ValidateAccount(db.Config.Postgres.Username, db.Config.Postgres.Password)
-	if valid_err != nil {
+	validErr = validation.ValidateAccount(db.Config.Postgres.Username, db.Config.Postgres.Password)
+	if validErr != nil {
 		slog.Errorf("%s: Failed to connect to db, Input validation failed for database credentials", commLogMsg.BadConnection)
-		return valid_err
+		return validErr
 	}
-	valid_err = validation.ValidateIdentifier(db.Config.Postgres.DBName)
-	if valid_err != nil {
+	validErr = validation.ValidateIdentifier(db.Config.Postgres.DBName)
+	if validErr != nil {
 		slog.Errorf("%s: Failed to connect to db, Input validation failed for database name", commLogMsg.BadConnection)
-		return valid_err
+		return validErr
 	}
 
-	db.Config.Postgres.SSLMode, db.Config.Postgres.SSLCert, valid_err = configureDBSSLParams(
+	db.Config.Postgres.SSLMode, db.Config.Postgres.SSLCert, validErr = configureDBSSLParams(
 		db.Config.Postgres.SSLMode, envDBSSLCertSrc,
 		db.Config.Postgres.SSLCert)
-	if valid_err != nil {
+	if validErr != nil {
 		slog.Errorf("%s: Failed to connect to db, Input validation failed for database SSL parameters", commLogMsg.BadConnection)
-		return valid_err
+		return validErr
 	}
 
 	pg := db.Config.Postgres
@@ -96,7 +96,7 @@ func (db Database) Run(c setup.Context) error {
 	return nil
 }
 
-func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, error) {
+func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (mode, cert string, err error) {
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	sslCert = strings.TrimSpace(sslCert)
 	sslCertSrc = strings.TrimSpace(sslCertSrc)
@@ -115,10 +115,8 @@ func configureDBSSLParams(sslMode, sslCertSrc, sslCert string) (string, string, 
 		}
 		if sslCertSrc == "" {
 			return "", "", errors.New("verify-ca or verify-full needs a source cert file to copy from unless db-sslcert exists")
-		} else {
-			if _, err := os.Stat(sslCertSrc); os.IsNotExist(err) {
-				return "", "", errors.Wrapf(err, "certificate source file not specified and sslcert %s does not exist", sslCertSrc)
-			}
+		} else if _, err := os.Stat(sslCertSrc); os.IsNotExist(err) {
+			return "", "", errors.Wrapf(err, "certificate source file not specified and sslcert %s does not exist", sslCertSrc)
 		}
 		// at this point if sslCert destination is not passed it, lets set to default
 		if sslCert == "" {

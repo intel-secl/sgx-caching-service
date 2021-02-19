@@ -51,18 +51,18 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		pceid := strings.ToLower(r.URL.Query().Get("pceid"))
 		qeid := strings.ToLower(r.URL.Query().Get("qeid"))
 
-		if !validateInputString(constants.EncPPID_Key, encryptedppid) ||
-			!validateInputString(constants.CpuSvn_Key, cpusvn) ||
-			!validateInputString(constants.PceSvn_Key, pcesvn) ||
-			!validateInputString(constants.PceId_Key, pceid) ||
-			!validateInputString(constants.QeId_Key, qeid) {
+		if !validateInputString(constants.EncPPIDKey, encryptedppid) ||
+			!validateInputString(constants.CPUSvnKey, cpusvn) ||
+			!validateInputString(constants.PceSvnKey, pcesvn) ||
+			!validateInputString(constants.PceIDKey, pceid) ||
+			!validateInputString(constants.QeIDKey, qeid) {
 			slog.Errorf("resource/quote_provider_ops: getPckCertificate() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param",
 				StatusCode: http.StatusBadRequest}
 		}
 		var existingPckCert *types.PckCert
 
-		pinfo := types.Platform{CpuSvn: cpusvn, PceSvn: pcesvn, PceId: pceid, QeId: qeid}
+		pinfo := &types.Platform{CPUSvn: cpusvn, PceSvn: pcesvn, PceID: pceid, QeID: qeid}
 
 		existingPinfo, err := db.PlatformRepository().Retrieve(pinfo)
 		if err != nil {
@@ -70,8 +70,8 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		if existingPinfo != nil {
-			pck_cert := types.PckCert{QeId: qeid}
-			existingPckCert, err = db.PckCertRepository().Retrieve(pck_cert)
+			pckCert := &types.PckCert{QeID: qeid}
+			existingPckCert, err = db.PckCertRepository().Retrieve(pckCert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -132,20 +132,20 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
-		Ca := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("ca")))
+		ca := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("ca")))
 
-		if !validateInputString(constants.Ca_Key, Ca) {
+		if !validateInputString(constants.CaKey, ca) {
 			slog.Errorf("resource/quote_provider_ops: getPckCrl() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param",
 				StatusCode: http.StatusBadRequest}
 		}
 
-		pckCrl := types.PckCrl{Ca: Ca}
+		pckCrl := &types.PckCrl{Ca: ca}
 
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 
 		if existingPckCrl == nil {
-			existingPckCrl, err = getLazyCachePckCrl(db, Ca)
+			existingPckCrl, err = getLazyCachePckCrl(db, ca)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
@@ -193,17 +193,17 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
-		Fmspc := strings.ToLower(r.URL.Query().Get("fmspc"))
+		fmspc := strings.ToLower(r.URL.Query().Get("fmspc"))
 
-		if !validateInputString(constants.Fmspc_Key, Fmspc) {
+		if !validateInputString(constants.FmspcKey, fmspc) {
 			slog.Errorf("resource/quote_provider_ops: getTcbInfo() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{Fmspc: Fmspc}
-		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
+		tcbInfo := &types.FmspcTcbInfo{Fmspc: fmspc}
+		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
 		if existingFmspc == nil {
-			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, Fmspc)
+			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, fmspc)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}

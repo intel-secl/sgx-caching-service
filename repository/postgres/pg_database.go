@@ -85,7 +85,7 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 	var db *gorm.DB
 	var dbErr error
 	const numAttempts = 4
-	for i := 0; i < numAttempts; i = i + 1 {
+	for i := 0; i < numAttempts; i++ {
 		const retryTime = 1
 		db, dbErr = gorm.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s%s",
 			host, port, user, dbname, password, sslMode, sslCertParams))

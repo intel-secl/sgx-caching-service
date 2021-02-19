@@ -14,12 +14,12 @@ type PostgresQEIdentityRepository struct {
 	db *gorm.DB
 }
 
-func (r *PostgresQEIdentityRepository) Create(qe types.QEIdentity) (*types.QEIdentity, error) {
-	err := r.db.Create(&qe).Error
+func (r *PostgresQEIdentityRepository) Create(qe *types.QEIdentity) (*types.QEIdentity, error) {
+	err := r.db.Create(qe).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Create: failed to create a record in qe_identities table")
 	}
-	return &qe, nil
+	return qe, nil
 }
 
 func (r *PostgresQEIdentityRepository) Retrieve() (*types.QEIdentity, error) {
@@ -31,15 +31,15 @@ func (r *PostgresQEIdentityRepository) Retrieve() (*types.QEIdentity, error) {
 	return &qe, nil
 }
 
-func (r *PostgresQEIdentityRepository) Update(qe types.QEIdentity) error {
-	if err := r.db.Save(&qe).Error; err != nil {
+func (r *PostgresQEIdentityRepository) Update(qe *types.QEIdentity) error {
+	if err := r.db.Save(qe).Error; err != nil {
 		return errors.Wrap(err, "Update: failed to update record in qe_identities table")
 	}
 	return nil
 }
 
-func (r *PostgresQEIdentityRepository) Delete(qe types.QEIdentity) error {
-	if err := r.db.Delete(&qe).Error; err != nil {
+func (r *PostgresQEIdentityRepository) Delete(qe *types.QEIdentity) error {
+	if err := r.db.Delete(qe).Error; err != nil {
 		return errors.Wrap(err, "Delete: failed to delete a record from qe_identities table")
 	}
 	return nil

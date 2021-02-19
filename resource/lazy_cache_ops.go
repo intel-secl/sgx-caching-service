@@ -12,16 +12,16 @@ import (
 
 // perform an api call to pcs server to get PCK Certificate for a sgx platform and store in db
 func getLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn string,
-	PceSvn string, pceId string, qeId string, manifest string) (*types.PckCert, error) {
+	pceSvn string, pceID string, qeID string, manifest string) (*types.PckCert, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Leaving")
 
 	var data SgxData
 	data.PlatformInfo.EncPpid = encryptedPPID
-	data.PlatformInfo.CpuSvn = cpuSvn
-	data.PlatformInfo.PceSvn = PceSvn
-	data.PlatformInfo.PceId = pceId
-	data.PlatformInfo.QeId = qeId
+	data.PlatformInfo.CPUSvn = cpuSvn
+	data.PlatformInfo.PceSvn = pceSvn
+	data.PlatformInfo.PceID = pceID
+	data.PlatformInfo.QeID = qeID
 	data.PlatformInfo.Manifest = manifest
 
 	err := fetchPckCertInfo(&data)
@@ -29,21 +29,21 @@ func getLazyCachePckCert(db repository.SCSDatabase, encryptedPPID string, cpuSvn
 		return nil, errors.New("fetchPckCertInfo:" + err.Error())
 	}
 
-	/*	err = cachePlatformInfo(db, &data)
-		if err != nil {
-			return nil, errors.New("cachePlatformInfo:" + err.Error())
-		}
+	err = cachePlatformInfo(db, &data)
+	if err != nil {
+		return nil, errors.New("cachePlatformInfo:" + err.Error())
+	}
 
-		err = cachePlatformTcbInfo(db, &data)
-		if err != nil {
-			return nil, errors.New("cachePlatformTcbInfo:" + err.Error())
-		}
+	err = cachePlatformTcbInfo(db, &data)
+	if err != nil {
+		return nil, errors.New("cachePlatformTcbInfo:" + err.Error())
+	}
 
-		err = cacheFmspcTcbInfo(db, &data)
-		if err != nil {
-			return nil, errors.New("cacheFmpscTcbInfo:" + err.Error())
-		}
-	*/
+	err = cacheFmspcTcbInfo(db, &data)
+	if err != nil {
+		return nil, errors.New("cacheFmpscTcbInfo:" + err.Error())
+	}
+
 	err = cachePckCertChainInfo(db, &data)
 	if err != nil {
 		return nil, errors.New("cachePckCertChainInfo:" + err.Error())
@@ -79,12 +79,12 @@ func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string) (*typ
 	return data.FmspcTcb, nil
 }
 
-func getLazyCachePckCrl(db repository.SCSDatabase, CaType string) (*types.PckCrl, error) {
+func getLazyCachePckCrl(db repository.SCSDatabase, caType string) (*types.PckCrl, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCrl() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCachePckCrl() Leaving")
 
 	var data SgxData
-	data.PckCRLInfo.Ca = CaType
+	data.PckCRLInfo.Ca = caType
 
 	err := fetchPckCrlInfo(&data)
 	if err != nil {

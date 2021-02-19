@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-//QEIdentity struct is the database schema for qe_identities table
+// QEIdentity struct is the database schema for qe_identities table
 type QEIdentity struct {
 	QeInfo        string    `json:"-" gorm:"type:text;not null"`
 	QeIssuerChain string    `json:"-" gorm:"type:text;not null"`
