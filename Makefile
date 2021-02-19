@@ -69,7 +69,7 @@ else
 	docker build -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
 endif
 
-scs-oci-archive: docker
+oci-archive: docker
 	skopeo copy docker-daemon:isecl/scs:$(VERSION) oci-archive:out/scs-$(VERSION)-$(GITCOMMIT).tar
 
 clean:
