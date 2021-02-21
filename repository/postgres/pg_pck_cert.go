@@ -23,7 +23,7 @@ func (r *PostgresPckCertRepository) Create(u *types.PckCert) (*types.PckCert, er
 }
 
 func (r *PostgresPckCertRepository) Retrieve(pckcert *types.PckCert) (*types.PckCert, error) {
-	err := r.db.Where("qe_id = ?", pckcert.QeID).First(pckcert).Error
+	err := r.db.Where(pckcert).First(pckcert).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve a record from pck_certs table")
 	}

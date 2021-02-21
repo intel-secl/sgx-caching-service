@@ -63,15 +63,15 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		var existingPckCert *types.PckCert
 		var existingPckCertChain *types.PckCertChain
 
-		pinfo := &types.Platform{CPUSvn: cpusvn, PceSvn: pcesvn, PceID: pceid, QeID: qeid}
+		pInfo := types.Platform{QeID: qeid, PceID: pceid}
 
-		existingPinfo, err := db.PlatformRepository().Retrieve(pinfo)
+		existingPinfo, err := db.PlatformRepository().Retrieve(pInfo)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 		}
 
 		if existingPinfo != nil {
-			pckCert := &types.PckCert{QeID: qeid}
+			pckCert := &types.PckCert{QeID: qeid, PceID: pceid}
 			existingPckCert, err = db.PckCertRepository().Retrieve(pckCert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -82,13 +82,13 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 			}
 		}
 		if existingPckCert == nil {
-			pinfo.Encppid = encryptedppid
+			pInfo.Encppid = encryptedppid
 			if existingPinfo != nil {
-				pinfo.Manifest = existingPinfo.Manifest
+				pInfo.Manifest = existingPinfo.Manifest
 			}
 
 			// getLazyCachePckCert API will get PCK Certs and will cache it as well.
-			p, c, _, err := getLazyCachePckCert(db, pinfo, constants.CacheInsert)
+			p, c, _, err := getLazyCachePckCert(db, pInfo, constants.CacheInsert)
 			if err != nil {
 				log.WithError(err).Error("Pck Cert Retrieval failed")
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}

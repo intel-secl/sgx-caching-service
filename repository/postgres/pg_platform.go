@@ -23,7 +23,7 @@ func (r *PostgresPlatformRepository) Create(p *types.Platform) (*types.Platform,
 }
 
 func (r *PostgresPlatformRepository) Retrieve(p *types.Platform) (*types.Platform, error) {
-	err := r.db.Where("qe_id = ?", p.QeID).First(p).Error
+	err := r.db.Where(p).First(p).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve a record from platform table")
 	}

@@ -11,7 +11,7 @@ import (
 // Platform struct is the database schema of a platforms table
 type Platform struct {
 	QeID        string    `json:"-" gorm:"primary_key"`
-	PceID       string    `json:"-"`
+	PceID       string    `json:"-" gorm:"primary_key"`
 	CPUSvn      string    `json:"-"`
 	PceSvn      string    `json:"-"`
 	Encppid     string    `json:"-"`

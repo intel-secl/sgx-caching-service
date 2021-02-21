@@ -600,9 +600,12 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
-		platform := &types.Platform{QeID: platformInfo.QeID}
-		existingPlaformData, err := db.PlatformRepository().Retrieve(platform)
-		if existingPlaformData != nil {
+		platform := &types.Platform {
+			QeID:  platformInfo.QeID,
+			PceID: platformInfo.PceID,
+		}
+		existingPlatformData, err := db.PlatformRepository().Retrieve(platform)
+		if existingPlatformData != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			res := Response{Status: "Success", Message: "platform info already cached"}
@@ -675,13 +678,13 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 func refreshPckCerts(db repository.SCSDatabase) error {
-	existingPlaformData, _ := db.PlatformRepository().RetrieveAll()
-	if len(existingPlaformData) == 0 {
+	existingPlatformData, _ := db.PlatformRepository().RetrieveAll()
+	if len(existingPlatformData) == 0 {
 		return errors.New("no platform value records are found in db, cannot perform refresh")
 	}
 
-	for n := 0; n < len(existingPlaformData); n++ {
-		pckCertInfo, _, _, _, err := fetchPckCertInfo(&existingPlaformData[n])
+	for n := 0; n < len(existingPlatformData); n++ {
+		pckCertInfo, _, _, _, err := fetchPckCertInfo(&existingPlatformData[n])
 		if err != nil {
 			return errors.New(fmt.Sprintf("pck cert refresh failed: %s", err.Error()))
 		}
