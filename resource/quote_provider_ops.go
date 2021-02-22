@@ -63,7 +63,7 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		var existingPckCert *types.PckCert
 		var existingPckCertChain *types.PckCertChain
 
-		pInfo := types.Platform{QeID: qeid, PceID: pceid}
+		pInfo := &types.Platform{QeID: qeid, PceID: pceid}
 
 		existingPinfo, err := db.PlatformRepository().Retrieve(pInfo)
 		if err != nil {

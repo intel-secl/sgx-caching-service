@@ -918,26 +918,27 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 			return err
 		}
 
-		if len(r.URL.Query()) == 0 {
+		if len(r.URL.Query()) < 2 {
 			return &resourceError{Message: "query data not provided",
 				StatusCode: http.StatusBadRequest}
 		}
 		qeID := r.URL.Query().Get("qeid")
-		if !validateInputString(constants.QeIDKey, qeID) {
+		pceID := r.URL.Query().Get("pceid")
+		if !validateInputString(constants.QeIDKey, qeID) || !validateInputString(constants.PceIDKey, pceID) {
 			slog.Errorf("resource/platform_ops: getTcbStatus() Input validation failed for query parameter")
-			return &resourceError{Message: "invalid qeid",
+			return &resourceError{Message: "invalid query param",
 				StatusCode: http.StatusBadRequest}
 		}
 
-		pckinfo := &types.PckCert{QeID: qeID}
-		existingPckCertData, err := db.PckCertRepository().Retrieve(pckinfo)
+		pckInfo := &types.PckCert{QeID: qeID, PceID: pceID}
+		existingPckCertData, err := db.PckCertRepository().Retrieve(pckInfo)
 		if existingPckCertData == nil {
 			return &resourceError{Message: "no pck cert record found: " + err.Error(),
 				StatusCode: http.StatusNotFound}
 		}
 
 		certIndex := existingPckCertData.CertIndex
-		existingPlatformData := &types.Platform{QeID: qeID}
+		existingPlatformData := &types.Platform{QeID: qeID, PceID: pceID}
 		existingPlatformData, err = db.PlatformRepository().Retrieve(existingPlatformData)
 		if existingPlatformData == nil {
 			return &resourceError{Message: "no platform record found: " + err.Error(),
