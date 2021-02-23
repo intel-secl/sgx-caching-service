@@ -14,7 +14,7 @@ import (
 
 func TestServerSetup(t *testing.T) {
 	c := config.Configuration{}
-	s := Server{
+	s := Update_Service_Config{
 		Flags:         []string{"-port=9000"},
 		Config:        &c,
 		ConsoleWriter: os.Stdout,
@@ -29,7 +29,7 @@ func TestServerSetupEnv(t *testing.T) {
 	os.Setenv("SCS_PORT", "9000")
 	os.Setenv("INTEL_PROVISIONING_SERVER_API_KEY", "<provide_pcs_server_api_key>")
 	c := config.Configuration{}
-	s := Server{
+	s := Update_Service_Config{
 		Flags:         nil,
 		Config:        &c,
 		ConsoleWriter: os.Stdout,

@@ -127,14 +127,6 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
 	}
 
-	aasAPIURL, err := c.GetenvString("AAS_API_URL", "AAS API URL")
-	if err == nil && aasAPIURL != "" {
-		conf.AuthServiceURL = aasAPIURL
-	} else if conf.AuthServiceURL == "" {
-		commLog.GetDefaultLogger().Error("AAS_API_URL is not defined in environment")
-		return errorLog.Wrap(errors.New("AAS_API_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
-	}
-
 	tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
 	if err == nil && tlsCertCN != "" {
 		conf.Subject.TLSCertCommonName = tlsCertCN
@@ -176,48 +168,6 @@ func (conf *Configuration) SaveConfiguration(c setup.Context) error {
 		conf.CertSANList = sanList
 	} else if conf.CertSANList == "" {
 		conf.CertSANList = constants.DefaultScsTLSSan
-	}
-
-	refreshHours, err := c.GetenvInt("SCS_REFRESH_HOURS", "SCS Automatic Refresh of SGX Data")
-	if err == nil {
-		if refreshHours > 0 {
-			conf.RefreshHours = refreshHours
-		} else {
-			conf.RefreshHours = constants.DefaultScsRefreshHours
-		}
-	} else {
-		conf.RefreshHours = constants.DefaultScsRefreshHours
-	}
-
-	retrycount, err := c.GetenvInt("RETRY_COUNT", "Number of retry to PCS server")
-	if err == nil {
-		if retrycount >= 0 {
-			conf.RetryCount = retrycount
-		} else {
-			conf.RetryCount = constants.DefaultRetrycount
-		}
-	} else {
-		conf.RetryCount = constants.DefaultRetrycount
-	}
-
-	if conf.RetryCount == 0 {
-		conf.WaitTime = 0
-	} else {
-		waittime, err := c.GetenvInt("WAIT_TIME", "time between each retries to PCS")
-		if err == nil {
-			if waittime >= 0 {
-				conf.WaitTime = waittime
-			} else {
-				conf.WaitTime = constants.DefaultWaitTime
-			}
-		} else {
-			conf.WaitTime = constants.DefaultWaitTime
-		}
-	}
-
-	if (conf.WaitTime * constants.DefaultRetrycount) >= 10 {
-		conf.WaitTime = constants.DefaultWaitTime
-		conf.RetryCount = constants.DefaultRetrycount
 	}
 
 	return conf.Save()
