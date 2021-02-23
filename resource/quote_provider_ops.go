@@ -182,17 +182,17 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
-		Fmspc := strings.ToLower(r.URL.Query().Get("fmspc"))
+		fmspc := r.URL.Query().Get("fmspc")
 
-		if !validateInputString(constants.Fmspc_Key, Fmspc) {
+		if !validateInputString(constants.Fmspc_Key, fmspc) {
 			slog.Errorf("resource/quote_provider_ops: getTcbInfo() Input validation failed for query parameter")
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
-		TcbInfo := types.FmspcTcbInfo{Fmspc: Fmspc}
+		TcbInfo := types.FmspcTcbInfo{Fmspc: fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(TcbInfo)
 		if existingFmspc == nil {
-			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, Fmspc, constants.CacheInsert)
+			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, fmspc, constants.CacheInsert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
 			}
