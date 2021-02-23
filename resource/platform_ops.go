@@ -818,6 +818,7 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 		data.PlatformInfo.PceSvn = tmp.PceSvn
 		data.PlatformInfo.PceID = tmp.PceID
 		data.PlatformInfo.QeID = tmp.QeID
+		data.PlatformInfo.Fmspc = tmp.Fmspc
 		data.PlatformInfo.CreatedTime = tmp.CreatedTime
 		data.PlatformInfo.Manifest = tmp.Manifest
 
@@ -829,6 +830,13 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 		data.PlatformTcbInfo.CreatedTime = tmp.CreatedTime
 
 		err = cachePlatformTcbInfo(db, &data)
+		if err != nil {
+			return fmt.Errorf("tcbinfo refresh failed: %s", err.Error())
+		}
+
+		data.PlatformInfo.CreatedTime = tmp.CreatedTime
+
+		err = cachePlatformInfo(db, &data)
 		if err != nil {
 			return fmt.Errorf("tcbinfo refresh failed: %s", err.Error())
 		}
