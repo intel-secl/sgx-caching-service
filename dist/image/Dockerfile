@@ -15,6 +15,6 @@ COPY out/installer/db_rotation.sql /opt/scs/dbscripts/
 
 COPY dist/image/entrypoint.sh /entrypoint.sh
 
-RUN touch /.container-env && chmod 0700 /entrypoint.sh
+RUN touch /.container-env && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
