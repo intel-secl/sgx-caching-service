@@ -22,6 +22,7 @@ func getLazyCachePckCert(db repository.SCSDatabase, platformInfo *types.Platform
 	}
 
 	platformInfo.Fmspc = fmspcTcbInfo.Fmspc
+	platformInfo.Ca = ca
 	err = cachePlatformInfo(db, platformInfo, cacheType)
 	if err != nil {
 		return nil, nil, "", errors.New("cachePlatformInfo:" + err.Error())
@@ -37,7 +38,7 @@ func getLazyCachePckCert(db repository.SCSDatabase, platformInfo *types.Platform
 		return nil, nil, "", errors.New("cacheFmpscTcbInfo:" + err.Error())
 	}
 
-	certChain, err := cachePckCertChainInfo(db, pckCertChain, cacheType)
+	certChain, err := cachePckCertChainInfo(db, pckCertChain, ca, cacheType)
 	if err != nil {
 		return nil, nil, "", errors.New("cachePckCertChainInfo:" + err.Error())
 	}

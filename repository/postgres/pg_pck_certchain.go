@@ -22,13 +22,12 @@ func (r *PostgresPckCertChainRepository) Create(pcc *types.PckCertChain) (*types
 	return pcc, nil
 }
 
-func (r *PostgresPckCertChainRepository) Retrieve() (*types.PckCertChain, error) {
-	var pcc types.PckCertChain
-	err := r.db.Find(&pcc).Error
+func (r *PostgresPckCertChainRepository) Retrieve(pcc *types.PckCertChain) (*types.PckCertChain, error) {
+	err := r.db.Where(pcc).First(pcc).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Retrieve: failed to retrieve record from pck_cert_chains table")
 	}
-	return &pcc, nil
+	return pcc, nil
 }
 
 func (r *PostgresPckCertChainRepository) Update(pcc *types.PckCertChain) error {

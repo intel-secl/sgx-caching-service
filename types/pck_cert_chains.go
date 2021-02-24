@@ -10,6 +10,7 @@ import (
 
 // PckCertChain struct is the database schema for pck_cert_chains table
 type PckCertChain struct {
+	Ca           string    `json:"-" gorm:"primary_key"`
 	PckCertChain string    `json:"-" gorm:"type:text;not null"`
 	CreatedTime  time.Time `json:"-"`
 	UpdatedTime  time.Time `json:"-"`

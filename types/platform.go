@@ -16,6 +16,7 @@ type Platform struct {
 	PceSvn      string    `json:"-"`
 	Encppid     string    `json:"-"`
 	Fmspc       string    `json:"-"`
+	Ca          string    `json:"-"`
 	Manifest    string    `json:"-"`
 	CreatedTime time.Time `json:"-"`
 	UpdatedTime time.Time `json:"-"`

@@ -459,9 +459,11 @@ func cacheQeIdentityInfo(db repository.SCSDatabase, qeIdentity *types.QEIdentity
 	return qeIdentity, nil
 }
 
-func cachePckCertChainInfo(db repository.SCSDatabase, pckCertChain string, cacheType constants.CacheType) (*types.PckCertChain, error) {
+func cachePckCertChainInfo(db repository.SCSDatabase, pckCertChain, ca string, cacheType constants.CacheType) (*types.PckCertChain, error) {
 	certChain := &types.PckCertChain{
-		PckCertChain: pckCertChain}
+		Ca:           ca,
+		PckCertChain: pckCertChain,
+	}
 
 	var err error
 	certChain.UpdatedTime = time.Now().UTC()

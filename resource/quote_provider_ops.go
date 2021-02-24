@@ -76,7 +76,8 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
-			existingPckCertChain, err = db.PckCertChainRepository().Retrieve()
+			certChain := &types.PckCertChain{Ca: existingPinfo.Ca}
+			existingPckCertChain, err = db.PckCertChainRepository().Retrieve(certChain)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
