@@ -193,7 +193,7 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
-		fmspc := strings.ToLower(r.URL.Query().Get("fmspc"))
+		fmspc := r.URL.Query().Get("fmspc")
 
 		if !validateInputString(constants.FmspcKey, fmspc) {
 			slog.Errorf("resource/quote_provider_ops: getTcbInfo() Input validation failed for query parameter")
