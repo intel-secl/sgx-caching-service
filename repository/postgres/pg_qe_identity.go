@@ -5,6 +5,7 @@
 package postgres
 
 import (
+	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"intel/isecl/scs/v3/types"
@@ -15,7 +16,13 @@ type PostgresQEIdentityRepository struct {
 }
 
 func (r *PostgresQEIdentityRepository) Create(qe *types.QEIdentity) (*types.QEIdentity, error) {
-	err := r.db.Create(qe).Error
+
+	newUUID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, errors.Wrap(err, "Create: failed to create new UUID")
+	}
+	qe.Id = newUUID
+	err = r.db.Create(qe).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Create: failed to create a record in qe_identities table")
 	}
@@ -32,8 +39,12 @@ func (r *PostgresQEIdentityRepository) Retrieve() (*types.QEIdentity, error) {
 }
 
 func (r *PostgresQEIdentityRepository) Update(qe *types.QEIdentity) error {
-	if err := r.db.Save(qe).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to update record in qe_identities table")
+	if db := r.db.Model(qe).Updates(qe); db.Error != nil || db.RowsAffected != 1 {
+		if db.Error != nil {
+			return errors.Wrap(db.Error, "Update: failed to update qe identity info")
+		} else {
+			return errors.New("Update: - no rows affected")
+		}
 	}
 	return nil
 }
