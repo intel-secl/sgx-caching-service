@@ -16,8 +16,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -29,6 +29,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	commLogMsg "intel/isecl/lib/common/v3/log/message"
 	"intel/isecl/scs/v3/constants"
 	"intel/isecl/scs/v3/repository"
@@ -48,12 +49,12 @@ type Response struct {
 }
 
 type PlatformInfo struct {
-	EncPpid     string `json:"enc_ppid"`
-	CPUSvn      string `json:"cpu_svn"`
-	PceSvn      string `json:"pce_svn"`
-	PceID       string `json:"pce_id"`
-	QeID        string `json:"qe_id"`
-	Manifest    string `json:"manifest"`
+	EncPpid  string `json:"enc_ppid"`
+	CPUSvn   string `json:"cpu_svn"`
+	PceSvn   string `json:"pce_svn"`
+	PceID    string `json:"pce_id"`
+	QeID     string `json:"qe_id"`
+	Manifest string `json:"manifest"`
 }
 
 type TcbLevels struct {
@@ -570,6 +571,38 @@ func cachePckCrlInfo(db repository.SCSDatabase, pckCrl *types.PckCrl, cacheType 
 	}
 	return pckCrl, nil
 }
+func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *PlatformInfo) (bool, error) {
+	log.Trace("resource/platform_ops:checkPlatformDataCacheStatus() Entering")
+	defer log.Trace("resource/platform_ops:checkPlatformDataCacheStatus() Leaving")
+
+	platform := &types.Platform{
+		QeID:  platformInfo.QeID,
+		PceID: platformInfo.PceID,
+	}
+	existingPlatformData, err := db.PlatformRepository().Retrieve(platform)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, errors.Wrap(err, "resource/platform_ops:checkPlatformDataCacheStatus() Error while retrieving platform data from DB")
+	}
+	if existingPlatformData != nil {
+		if platformInfo.Manifest == "" {
+			platformInfo.Manifest = existingPlatformData.Manifest
+			cert := &types.PckCert{
+				QeID:  platformInfo.QeID,
+				PceID: platformInfo.PceID,
+			}
+			existingPckCert, err := db.PckCertRepository().Retrieve(cert)
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return false, errors.Wrap(err, "resource/platform_ops:checkPlatformDataCacheStatus() Error while retrieving pck cert from DB")
+			}
+			if existingPckCert != nil {
+				return true, nil
+			}
+		} else if existingPlatformData.Manifest == platformInfo.Manifest {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
 func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -602,12 +635,13 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
-		platform := &types.Platform {
-			QeID:  platformInfo.QeID,
-			PceID: platformInfo.PceID,
+		isCached, err := checkPlatformDataCacheStatus(db, &platformInfo)
+		if err != nil {
+			log.WithError(err).Error("Error while checking platform data cache status")
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
-		existingPlatformData, err := db.PlatformRepository().Retrieve(platform)
-		if existingPlatformData != nil {
+
+		if isCached {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			res := Response{Status: "Success", Message: "platform info already cached"}
@@ -622,7 +656,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			return nil
 		}
 
-		platform = &types.Platform{
+		platform := &types.Platform{
 			Encppid:  platformInfo.EncPpid,
 			CPUSvn:   platformInfo.CPUSvn,
 			PceSvn:   platformInfo.PceSvn,
