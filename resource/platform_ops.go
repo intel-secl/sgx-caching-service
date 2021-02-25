@@ -720,9 +720,19 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 	}
 
 	for n := 0; n < len(existingPlatformData); n++ {
-		pckCertInfo, _, _, _, err := fetchPckCertInfo(&existingPlatformData[n])
+		pckCertInfo, _, pckCertChain, ca, err := fetchPckCertInfo(&existingPlatformData[n])
 		if err != nil {
 			return errors.New(fmt.Sprintf("pck cert refresh failed: %s", err.Error()))
+		}
+
+		err = cachePlatformTcbInfo(db, &existingPlatformData[n], pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
+		if err != nil {
+			return errors.New(fmt.Sprintf("tcbinfo refresh failed: %s", err.Error()))
+		}
+
+		_, err = cachePckCertChainInfo(db, pckCertChain, ca, constants.CacheRefresh)
+		if err != nil {
+			return errors.New(fmt.Sprintf("Error in Cache Pck CertChain Info: %s", err.Error()))
 		}
 
 		_, err = cachePckCertInfo(db, pckCertInfo, constants.CacheRefresh)
@@ -730,7 +740,7 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 			return fmt.Errorf("Error in Cache Pck Cert Info: %s", err.Error())
 		}
 	}
-	log.Debug("All PckCerts for the platform refeteched from PCS as part of refresh")
+	log.Debug("All PckCerts for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 
@@ -746,7 +756,7 @@ func refreshAllPckCrl(db repository.SCSDatabase) error {
 			return fmt.Errorf("refresh of pckcrl failed: %s", err.Error())
 		}
 	}
-	log.Debug("All PckCrls for the platform refeteched from PCS as part of refresh")
+	log.Debug("All PckCrls for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 
@@ -763,7 +773,7 @@ func refreshAllTcbInfo(db repository.SCSDatabase) error {
 			return errors.New(fmt.Sprintf("Error in Refresh Tcb info: %s", err.Error()))
 		}
 	}
-	log.Debug("TCBInfo for the platform refeteched from PCS as part of refresh")
+	log.Debug("TCBInfo for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 
@@ -777,7 +787,7 @@ func refreshAllQE(db repository.SCSDatabase) error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error in Refresh QEIdentity info: %s", err.Error()))
 	}
-	log.Debug("QEIdentity for the platform refeteched from PCS as part of refresh")
+	log.Debug("QEIdentity for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 

@@ -42,8 +42,12 @@ func (r *PostgresPlatformTcbRepository) RetrieveAll() (types.PlatformTcbs, error
 }
 
 func (r *PostgresPlatformTcbRepository) Update(p *types.PlatformTcb) error {
-	if err := r.db.Save(p).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to update a record in platform_tcbs table")
+	if db := r.db.Model(p).Updates(p); db.Error != nil || db.RowsAffected != 1 {
+		if db.Error != nil {
+			return errors.Wrap(db.Error, "Update: failed to update a record in platform_tcbs table")
+		} else {
+			return errors.New("Update: - no rows affected")
+		}
 	}
 	return nil
 }

@@ -41,8 +41,12 @@ func (r *PostgresPckCertRepository) RetrieveAll() (types.PckCerts, error) {
 }
 
 func (r *PostgresPckCertRepository) Update(p *types.PckCert) error {
-	if err := r.db.Save(p).Error; err != nil {
-		return errors.Wrap(err, "Update: failed to update a record in pck_certs table")
+	if db := r.db.Model(p).Updates(p); db.Error != nil || db.RowsAffected != 1 {
+		if db.Error != nil {
+			return errors.Wrap(db.Error, "Update: failed to update a record in pck_certs table")
+		} else {
+			return errors.New("Update: - no rows affected")
+		}
 	}
 	return nil
 }
