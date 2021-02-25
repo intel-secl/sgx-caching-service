@@ -5,7 +5,6 @@
 package postgres
 
 import (
-	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"intel/isecl/scs/v3/types"
@@ -16,13 +15,8 @@ type PostgresQEIdentityRepository struct {
 }
 
 func (r *PostgresQEIdentityRepository) Create(qe *types.QEIdentity) (*types.QEIdentity, error) {
-
-	newUUID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, errors.Wrap(err, "Create: failed to create new UUID")
-	}
-	qe.Id = newUUID
-	err = r.db.Create(qe).Error
+	qe.Id = "QE"
+	err := r.db.Create(qe).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Create: failed to create a record in qe_identities table")
 	}
