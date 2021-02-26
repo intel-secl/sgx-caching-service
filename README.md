@@ -87,6 +87,6 @@ make installer
 | testify     | github.com/stretchr/testify | v1.5.1                             |
 | pq          | github.com/lib/pq           | v1.3.0                             |
 | yaml.v2     | gopkg.in/yaml.v2            | v2.4.0                             |
-| common      | github.com/intel-secl/common| v3.3.1                             |
+| common      | github.com/intel-secl/common| v3.4.0                             |
 
 *Note: All dependencies are listed in go.mod*
