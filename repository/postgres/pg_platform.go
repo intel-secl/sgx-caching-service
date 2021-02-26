@@ -40,12 +40,11 @@ func (r *PostgresPlatformRepository) RetrieveAll() (types.Platforms, error) {
 }
 
 func (r *PostgresPlatformRepository) Update(p *types.Platform) error {
-	if db := r.db.Model(p).Updates(p); db.Error != nil || db.RowsAffected != 1 {
-		if db.Error != nil {
-			return errors.Wrap(db.Error, "Update: failed to update a record in platforms table")
-		} else {
-			return errors.New("Update: - no rows affected")
-		}
+	db := r.db.Model(p).Updates(p)
+	if db.Error != nil {
+		return errors.Wrap(db.Error, "Update: failed to update a record in platforms table")
+	} else if db.RowsAffected != 1 {
+		return errors.New("Update: - no rows affected")
 	}
 	return nil
 }

@@ -31,12 +31,11 @@ func (r *PostgresPckCertChainRepository) Retrieve(pcc *types.PckCertChain) (*typ
 }
 
 func (r *PostgresPckCertChainRepository) Update(pcc *types.PckCertChain) error {
-	if db := r.db.Model(pcc).Updates(pcc); db.Error != nil || db.RowsAffected != 1 {
-		if db.Error != nil {
-			return errors.Wrap(db.Error, "Update: failed to update a record in pck_cert_chains table")
-		} else {
-			return errors.New("Update: - no rows affected")
-		}
+	db := r.db.Model(pcc).Updates(pcc)
+	if db.Error != nil {
+		return errors.Wrap(db.Error, "Update: failed to update a record in pck_cert_chains table")
+	} else if db.RowsAffected != 1 {
+		return errors.New("Update: - no rows affected")
 	}
 	return nil
 }

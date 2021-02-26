@@ -40,12 +40,11 @@ func (r *PostgresFmspcTcbInfoRepository) RetrieveAll() (types.FmspcTcbInfos, err
 }
 
 func (r *PostgresFmspcTcbInfoRepository) Update(tcb *types.FmspcTcbInfo) error {
-	if db := r.db.Model(tcb).Updates(tcb); db.Error != nil || db.RowsAffected != 1 {
-		if db.Error != nil {
-			return errors.Wrap(db.Error, "Update: failed to update a record in fmspctcb table")
-		} else {
-			return errors.New("Update: - no rows affected")
-		}
+	db := r.db.Model(tcb).Updates(tcb)
+	if db.Error != nil {
+		return errors.Wrap(db.Error, "Update: failed to update a record in fmspctcb table")
+	} else if db.RowsAffected != 1 {
+		return errors.New("Update: - no rows affected")
 	}
 	return nil
 }

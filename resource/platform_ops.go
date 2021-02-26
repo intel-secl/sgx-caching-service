@@ -450,6 +450,7 @@ func cacheQeIdentityInfo(db repository.SCSDatabase, qeIdentity *types.QEIdentity
 			return nil, err
 		}
 	} else {
+		qeIdentity.Id = "QE"
 		qeIdentity.CreatedTime = time.Now().UTC()
 		qeIdentity, err = db.QEIdentityRepository().Create(qeIdentity)
 		if err != nil {
@@ -722,22 +723,22 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 	for n := 0; n < len(existingPlatformData); n++ {
 		pckCertInfo, _, pckCertChain, ca, err := fetchPckCertInfo(&existingPlatformData[n])
 		if err != nil {
-			return errors.New(fmt.Sprintf("pck cert refresh failed: %s", err.Error()))
+			return errors.Wrap(err, "Error while fetching Pck Cert Info from PCS")
 		}
 
 		err = cachePlatformTcbInfo(db, &existingPlatformData[n], pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
 		if err != nil {
-			return errors.New(fmt.Sprintf("tcbinfo refresh failed: %s", err.Error()))
+			return errors.Wrap(err, "Error while caching Platform Tcb Info")
 		}
 
 		_, err = cachePckCertChainInfo(db, pckCertChain, ca, constants.CacheRefresh)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error in Cache Pck CertChain Info: %s", err.Error()))
+			return errors.Wrap(err, "Error while caching Pck CertChain Info")
 		}
 
 		_, err = cachePckCertInfo(db, pckCertInfo, constants.CacheRefresh)
 		if err != nil {
-			return fmt.Errorf("Error in Cache Pck Cert Info: %s", err.Error())
+			return errors.Wrap(err, "Error while caching Pck Cert Info")
 		}
 	}
 	log.Debug("All PckCerts for the platform re-fetched from PCS as part of refresh")
@@ -843,8 +844,8 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 
 		err = refreshPckCerts(db)
 		if err != nil {
+			log.WithError(err).Error("Error while refreshing PCK Certs")
 			w.WriteHeader(http.StatusNotFound)
-
 			res := Response{Status: "Failure", Message: "could not find platform info in database"}
 			js, err := json.Marshal(res)
 			if err != nil {

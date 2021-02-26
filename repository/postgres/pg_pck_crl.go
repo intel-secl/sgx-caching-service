@@ -40,12 +40,11 @@ func (r *PostgresPckCrlRepository) RetrieveAll() (types.PckCrls, error) {
 }
 
 func (r *PostgresPckCrlRepository) Update(crl *types.PckCrl) error {
-	if db := r.db.Model(crl).Updates(crl); db.Error != nil || db.RowsAffected != 1 {
-		if db.Error != nil {
-			return errors.Wrap(db.Error, "Update: failed to update a record in pckcrl table")
-		} else {
-			return errors.New("Update: - no rows affected")
-		}
+	db := r.db.Model(crl).Updates(crl)
+	if db.Error != nil {
+		return errors.Wrap(db.Error, "Update: failed to update a record in pckcrl table")
+	} else if db.RowsAffected != 1 {
+		return errors.New("Update: - no rows affected")
 	}
 	return nil
 }

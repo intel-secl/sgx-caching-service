@@ -15,7 +15,6 @@ type PostgresQEIdentityRepository struct {
 }
 
 func (r *PostgresQEIdentityRepository) Create(qe *types.QEIdentity) (*types.QEIdentity, error) {
-	qe.Id = "QE"
 	err := r.db.Create(qe).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "Create: failed to create a record in qe_identities table")
@@ -33,12 +32,11 @@ func (r *PostgresQEIdentityRepository) Retrieve() (*types.QEIdentity, error) {
 }
 
 func (r *PostgresQEIdentityRepository) Update(qe *types.QEIdentity) error {
-	if db := r.db.Model(qe).Updates(qe); db.Error != nil || db.RowsAffected != 1 {
-		if db.Error != nil {
-			return errors.Wrap(db.Error, "Update: failed to update qe identity info")
-		} else {
-			return errors.New("Update: - no rows affected")
-		}
+	db := r.db.Model(qe).Updates(qe)
+	if db.Error != nil {
+		return errors.Wrap(db.Error, "Update: failed to update qe identity info")
+	} else if db.RowsAffected != 1 {
+		return errors.New("Update: - no rows affected")
 	}
 	return nil
 }
