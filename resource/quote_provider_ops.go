@@ -5,7 +5,6 @@
 package resource
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -26,14 +25,14 @@ func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {
 }
 
 func getVersion() http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		verStr := fmt.Sprintf("%s-%s", version.Version, version.GitHash)
+	return func(w http.ResponseWriter, r *http.Request) {
+		verStr := version.GetVersion()
 		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		_, err := w.Write([]byte(verStr))
 		if err != nil {
 			log.WithError(err).Error("Could not write version to response")
 		}
-	})
+	}
 }
 
 // Invoked by DCAP Quote Provider Library to fetch PCK certificate

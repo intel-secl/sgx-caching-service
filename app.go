@@ -11,6 +11,7 @@ import (
 	"crypto/x509/pkix"
 	"flag"
 	"fmt"
+	"intel/isecl/scs/v3/version"
 	"io"
 	"io/ioutil"
 	stdlog "log"
@@ -24,6 +25,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v3/crypt"
 	e "intel/isecl/lib/common/v3/exec"
 	commLog "intel/isecl/lib/common/v3/log"
@@ -39,11 +43,6 @@ import (
 	"intel/isecl/scs/v3/repository/postgres"
 	"intel/isecl/scs/v3/resource"
 	"intel/isecl/scs/v3/tasks"
-	"intel/isecl/scs/v3/version"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -292,7 +291,7 @@ func (a *App) Run(args []string) error {
 		log.Info("app:Run() Uninstalled SGX Caching Service")
 		os.Exit(0)
 	case "version", "--version", "-v":
-		fmt.Fprintf(a.consoleWriter(), "SGX Caching Service %s-%s\nBuilt %s\n", version.Version, version.GitHash, version.BuildDate)
+		fmt.Println(version.GetVersion())
 		return nil
 	case "setup":
 		a.configureLogs(a.configuration().LogEnableStdout, true)

@@ -25,6 +25,7 @@ const (
 	ServiceRemoveCmd               = "systemctl disable scs"
 	DefaultSSLCertFilePath         = ConfigDir + "scsdbcert.pem"
 	ServiceName                    = "SCS"
+	ExplicitServiceName            = "SGX Caching Service"
 	HostDataUpdaterGroupName       = "HostDataUpdater"
 	HostDataReaderGroupName        = "HostDataReader"
 	CacheManagerGroupName          = "CacheManager"
@@ -42,7 +43,6 @@ const (
 	QeIDKey                        = "qe_id"
 	CaKey                          = "ca"
 	EncodingValue                  = "der"
-	CaProcessor                    = "processor"
 	FmspcKey                       = "fmspc"
 	HwUUIDKey                      = "hardware_uuid"
 	DefaultScsRefreshHours         = 24
@@ -61,18 +61,9 @@ const (
 	DefaultWaitTime                = 1
 )
 
-// State represents whether or not a daemon is running or not
-type State bool
 type CacheType int
 
 const (
 	CacheInsert = iota + 1
 	CacheRefresh
-)
-
-const (
-	// Stopped is the default nil value, indicating not running
-	Stopped State = false
-	// Running means the daemon is active
-	Running State = true
 )
