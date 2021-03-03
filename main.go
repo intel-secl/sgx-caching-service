@@ -10,7 +10,6 @@ import (
 	_ "intel/isecl/scs/v3/swagger/docs"
 	"os"
 	"os/user"
-	"runtime"
 	"strconv"
 )
 
@@ -111,6 +110,6 @@ func main() {
 	err = app.Run(os.Args)
 	if err != nil {
 		fmt.Println("Application returned with error:", err.Error())
-		runtime.Goexit()
+		os.Exit(1)
 	}
 }
