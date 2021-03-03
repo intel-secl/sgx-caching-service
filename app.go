@@ -101,8 +101,6 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "            - db-sslcertsrc <path to where the database ssl/tls certificate file>")
 	fmt.Fprintln(w, "                         mandatory if db-sslcert does not already exist")
 	fmt.Fprintln(w, "                         alternatively, set environment variable SCS_DB_SSLCERTSRC")
-	fmt.Fprintln(w, "        - Run this command with environment variable SCS_DB_REPORT_MAX_ROWS and")
-	fmt.Fprintln(w, "          SCS_DB_REPORT_NUM_ROTATIONS can update db rotation arguments")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "    update_service_config    Updates Service Configuration")
 	fmt.Fprintln(w, "                             Required env variables:")
