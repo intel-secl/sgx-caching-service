@@ -10,7 +10,7 @@ import (
 
 // QEIdentity struct is the database schema for qe_identities table
 type QEIdentity struct {
-	Id            string    `json:"-" gorm:"primary_key"`
+	ID            string    `json:"-" gorm:"primary_key"`
 	QeInfo        string    `json:"-" gorm:"type:text;not null"`
 	QeIssuerChain string    `json:"-" gorm:"type:text;not null"`
 	CreatedTime   time.Time `json:"-"`

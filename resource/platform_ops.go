@@ -453,7 +453,7 @@ func cacheQeIdentityInfo(db repository.SCSDatabase, qeIdentity *types.QEIdentity
 			return nil, err
 		}
 	} else {
-		qeIdentity.Id = "QE"
+		qeIdentity.ID = "QE"
 		qeIdentity.CreatedTime = time.Now().UTC()
 		qeIdentity, err = db.QEIdentityRepository().Create(qeIdentity)
 		if err != nil {

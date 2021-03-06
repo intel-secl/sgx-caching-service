@@ -60,7 +60,6 @@ installer: scs
 	cp dist/linux/db_rotation.sql out/installer/db_rotation.sql
 	cp out/scs out/installer/scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
-	cp dist/linux/install_pgscsdb.sh out/install_pgscsdb.sh && chmod +x out/install_pgscsdb.sh
 
 docker: installer
 ifeq ($(PROXY_EXISTS),1)

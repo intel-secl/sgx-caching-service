@@ -176,9 +176,9 @@ func (u Update_Service_Config) Run(c setup.Context) error {
 		u.Config.RetryCount = constants.DefaultRetrycount
 	}
 
-	aasApiURL, err := c.GetenvString("AAS_API_URL", "AAS API URL")
-	if err == nil && aasApiURL != "" {
-		u.Config.AuthServiceURL = aasApiURL
+	aasAPIURL, err := c.GetenvString("AAS_API_URL", "AAS API URL")
+	if err == nil && aasAPIURL != "" {
+		u.Config.AuthServiceURL = aasAPIURL
 	} else if u.Config.AuthServiceURL == "" {
 		commLog.GetDefaultLogger().Error("AAS_API_URL is not defined in environment")
 		return errors.Wrap(errors.New("AAS_API_URL is not defined in environment"), "tasks/Update_Service_Config:Run() ENV variable not found")
