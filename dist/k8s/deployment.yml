@@ -1,0 +1,74 @@
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scs-deployment
+  namespace: isecl
+  labels:
+    app: scs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scs
+  template:
+    metadata:
+      labels:
+        app: scs
+    spec:
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: scs
+          image: <image-name>:<image-tag>
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 1001
+            runAsGroup: 1001
+          ports:
+            - containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: scs-config
+          env:
+            - name: SCS_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: scs-service-credentials
+                  key: SCS_ADMIN_USERNAME
+            - name: SCS_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scs-service-credentials
+                  key: SCS_ADMIN_PASSWORD
+            - name: SCS_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: scs-db-credentials
+                  key: SCS_DB_USERNAME
+            - name: SCS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: scs-db-credentials
+                  key: SCS_DB_PASSWORD
+          volumeMounts:
+            - name: scs-config-volume
+              mountPath: /etc/scs/
+            - name: scs-logs-volume
+              mountPath: /var/log/scs/
+            - name: scs-db-certs
+              mountPath: /etc/postgresql/
+      volumes:
+        - name: scs-logs-volume
+          persistentVolumeClaim:
+            claimName: scs-logs-pvc 
+        - name: scs-config-volume
+          persistentVolumeClaim:
+            claimName: scs-config-pvc
+        - name: scs-db-certs
+          secret:
+            secretName: scs-db-certs
+            defaultMode: 0640

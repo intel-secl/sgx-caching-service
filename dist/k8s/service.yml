@@ -1,0 +1,19 @@
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scs-svc
+  namespace: isecl
+  labels:
+    app: scs
+spec:
+  selector:
+    app: scs
+  type: NodePort
+  ports:
+    - port: 9000
+      targetPort: 9000
+      nodePort: 30501

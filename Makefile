@@ -22,7 +22,7 @@ endif
 
 .PHONY: SKCPCKCertSelection docker scs installer all test clean
 
-all: clean installer
+all: clean installer k8s
 
 SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
@@ -61,7 +61,9 @@ installer: scs
 	cp out/scs out/installer/scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 
-docker: installer
+docker: scs
+	cp $(LIB_PATH)/libPCKCertSelection.so out/libPCKCertSelection.so
+	cp dist/linux/db_rotation.sql out/db_rotation.sql
 ifeq ($(PROXY_EXISTS),1)
 	docker build ${DOCKER_PROXY_FLAGS} -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
 else
@@ -70,6 +72,9 @@ endif
 
 oci-archive: docker
 	skopeo copy docker-daemon:isecl/scs:$(VERSION) oci-archive:out/scs-$(VERSION)-$(GITCOMMIT).tar
+
+k8s: oci-archive
+	cp -r dist/k8s out/k8s
 
 clean:
 	rm -f cover.*
