@@ -45,7 +45,7 @@ const (
 	EncodingValue                  = "der"
 	FmspcKey                       = "fmspc"
 	HwUUIDKey                      = "hardware_uuid"
-	DefaultScsRefreshHours         = 24
+	DefaultScsRefreshHours         = 720
 	DefaultJwtValidateCacheKeyMins = 60
 	SCSLogLevel                    = "SCS_LOGLEVEL"
 	DefaultReadTimeout             = 30 * time.Second

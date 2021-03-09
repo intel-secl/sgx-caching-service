@@ -712,7 +712,42 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			HwUUID:   uuid.MustParse(platformInfo.HwUUID),
 		}
 
-		_, _, ca, err := getLazyCachePckCert(db, platform, constants.CacheInsert)
+		pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platform)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+
+		platform.Fmspc = fmspcTcbInfo.Fmspc
+		platform.Ca = ca
+		err = cachePlatformInfo(db, platform, constants.CacheInsert)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+
+		err = cachePlatformTcbInfo(db, platform, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheInsert)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+
+		tcbInfo := &types.FmspcTcbInfo{Fmspc: platform.Fmspc}
+		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
+		if existingFmspc == nil {
+			_, err = getLazyCacheFmspcTcbInfo(db, platform.Fmspc, constants.CacheInsert)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+		}
+
+		certChain := &types.PckCertChain{Ca: ca}
+		existingPckCertChain, err := db.PckCertChainRepository().Retrieve(certChain)
+		if existingPckCertChain == nil {
+			_, err = cachePckCertChainInfo(db, pckCertChain, ca, constants.CacheInsert)
+			if err != nil {
+				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+			}
+		}
+
+		_, err = cachePckCertInfo(db, pckCertInfo, constants.CacheInsert)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
