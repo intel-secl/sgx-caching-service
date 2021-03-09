@@ -27,7 +27,7 @@ func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {
 var pckCertificateRetrieveParams = map[string]bool{"encrypted_ppid": true, "cpusvn": true, "pcesvn": true, "pceid": true,
 	"qeid": true}
 
-var pckCrlRetrieveParams = map[string]bool{"ca": true}
+var pckCrlRetrieveParams = map[string]bool{"ca": true, "encoding": true}
 
 var tcbInfoRetrieveParams = map[string]bool{"fmspc": true}
 
