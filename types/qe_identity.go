@@ -16,3 +16,32 @@ type QEIdentity struct {
 	CreatedTime   time.Time `json:"-"`
 	UpdatedTime   time.Time `json:"-"`
 }
+
+type QeIdentityJSON struct {
+	EnclaveIdentity EnclaveIdentityType `json:"enclaveIdentity"`
+	Signature       string              `json:"signature"`
+}
+type EnclaveIdentityType struct {
+	ID                      string          `json:"id"`
+	Version                 uint16          `json:"version"`
+	IssueDate               string          `json:"issueDate"`
+	NextUpdate              string          `json:"nextUpdate"`
+	TcbEvaluationDataNumber uint16          `json:"tcbEvaluationDataNumber"`
+	MiscSelect              string          `json:"miscselect"`
+	MiscSelectMask          string          `json:"miscselectMask"`
+	Attributes              string          `json:"attributes"`
+	AttributesMask          string          `json:"attributesMask"`
+	MrSigner                string          `json:"mrsigner"`
+	IsvProdID               uint16          `json:"isvprodid"`
+	TcbLevels               []TcbLevelsInfo `json:"tcbLevels"`
+}
+
+type TcbLevelsInfo struct {
+	Tcb       TcbInfo `json:"tcb"`
+	TcbDate   string  `json:"tcbDate"`
+	TcbStatus string  `json:"tcbStatus"`
+}
+
+type TcbInfo struct {
+	IsvSvn uint16 `json:"isvsvn"`
+}

@@ -24,6 +24,13 @@ func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {
 	r.Handle("/version", getVersion()).Methods("GET")
 }
 
+var pckCertificateRetrieveParams = map[string]bool{"encrypted_ppid": true, "cpusvn": true, "pcesvn": true, "pceid": true,
+	"qeid": true}
+
+var pckCrlRetrieveParams = map[string]bool{"ca": true}
+
+var tcbInfoRetrieveParams = map[string]bool{"fmspc": true}
+
 func getVersion() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		verStr := version.GetVersion()
@@ -42,6 +49,11 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		if len(r.URL.Query()) < 5 {
 			return &resourceError{Message: "query data not provided",
 				StatusCode: http.StatusBadRequest}
+		}
+
+		if err := validateQueryParams(r.URL.Query(), pckCertificateRetrieveParams); err != nil {
+			slog.Errorf("resource/platform_ops: getTcbStatus() %s", err.Error())
+			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
 		encryptedppid := strings.ToLower(r.URL.Query().Get("encrypted_ppid"))
@@ -122,6 +134,11 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
+		if err := validateQueryParams(r.URL.Query(), pckCrlRetrieveParams); err != nil {
+			slog.Errorf("resource/platform_ops: getPckCrl() %s", err.Error())
+			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
+		}
+
 		ca := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("ca")))
 
 		if !validateInputString(constants.CaKey, ca) {
@@ -133,11 +150,10 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 		pckCrl := &types.PckCrl{Ca: ca}
 
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
-
 		if existingPckCrl == nil {
 			existingPckCrl, err = getLazyCachePckCrl(db, ca, constants.CacheInsert)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+			if existingPckCrl == nil || err != nil {
+				return &resourceError{Message: "Error retrieving required PCK CRL", StatusCode: http.StatusNotFound}
 			}
 		}
 
@@ -158,8 +174,8 @@ func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 		existingQeInfo, err := db.QEIdentityRepository().Retrieve()
 		if existingQeInfo == nil {
 			existingQeInfo, err = getLazyCacheQEIdentityInfo(db, constants.CacheInsert)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+			if err != nil || existingQeInfo == nil {
+				return &resourceError{Message: "Error retrieving QEIdentity info", StatusCode: http.StatusNotFound}
 			}
 		}
 
@@ -183,6 +199,11 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 				StatusCode: http.StatusBadRequest}
 		}
 
+		if err := validateQueryParams(r.URL.Query(), tcbInfoRetrieveParams); err != nil {
+			slog.Errorf("resource/platform_ops: getTcbInfo() %s", err.Error())
+			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
+		}
+
 		fmspc := r.URL.Query().Get("fmspc")
 
 		if !validateInputString(constants.FmspcKey, fmspc) {
@@ -194,8 +215,8 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
 		if existingFmspc == nil {
 			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, fmspc, constants.CacheInsert)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+			if err != nil || existingFmspc == nil {
+				return &resourceError{Message: "Error retrieving TCB info", StatusCode: http.StatusNotFound}
 			}
 		}
 

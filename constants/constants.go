@@ -59,6 +59,7 @@ const (
 	MaxTcbLevels                   = 16
 	DefaultRetrycount              = 3
 	DefaultWaitTime                = 1
+	MaxQueryParamsLength           = 50
 )
 
 type CacheType int

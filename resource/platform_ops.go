@@ -12,6 +12,7 @@ package resource
 import "C"
 
 import (
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -93,7 +94,7 @@ type TcbInfoType struct {
 	Fmspc                   string          `json:"fmspc"`
 	PceID                   string          `json:"pceId"`
 	TcbType                 int             `json:"tcbType"`
-	TcbEvaluationDataNumber int             `josn:"tcbEvaluationDataNumber"`
+	TcbEvaluationDataNumber int             `json:"tcbEvaluationDataNumber"`
 	TcbLevels               []TcbLevelsType `json:"tcbLevels"`
 }
 
@@ -111,6 +112,8 @@ type PckCertsInfo struct {
 type cpuSvn struct {
 	bytes []byte
 }
+
+var tcbStatusRetrieveParams = map[string]bool{"qeid": true, "pceid": true}
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 	r.Handle("/platforms", handlers.ContentTypeHandler(pushPlatformInfo(db), "application/json")).Methods("POST")
@@ -342,6 +345,12 @@ func fetchPckCrlInfo(ca string) (*types.PckCrl, error) {
 		log.WithError(err).Error("could not read getPckCrl http response")
 		return nil, err
 	}
+
+	//To validate if the response read from PCS is actually a DER encoded CRL
+	if _, err = x509.ParseDERCRL(body); err != nil {
+		log.WithError(err).Error("error decoding DER CRL")
+		return nil, err
+	}
 	pckCRLInfo.PckCrl = base64.StdEncoding.EncodeToString(body)
 	return &pckCRLInfo, nil
 }
@@ -381,6 +390,14 @@ func fetchFmspcTcbInfo(fmspc string) (*types.FmspcTcbInfo, error) {
 		log.WithError(err).Error("could not read getTCBInfo http response")
 		return nil, err
 	}
+
+	//To validate that tcbinfo response read from PCS is as per the expected json response
+	var tcbInfo TcbInfoJSON
+	if err = json.Unmarshal(body, &tcbInfo); err != nil {
+		log.WithError(err).Error("error unmarshalling TCB info")
+		return nil, err
+	}
+
 	fmspcTcbInfo.TcbInfo = string(body)
 	return &fmspcTcbInfo, nil
 }
@@ -419,6 +436,14 @@ func fetchQeIdentityInfo() (*types.QEIdentity, error) {
 		log.WithError(err).Error("could not read getQeIdentity http response")
 		return nil, err
 	}
+
+	//To validate that QE identity info response read from PCS is as per the expected json response
+	var qeIdentityInfo types.QeIdentityJSON
+	if err = json.Unmarshal(body, &qeIdentityInfo); err != nil {
+		log.WithError(err).Error("error unmarshalling enclave identity info")
+		return nil, err
+	}
+
 	qeInfo.QeInfo = string(body)
 	return &qeInfo, nil
 }
@@ -696,15 +721,6 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 		if existingPckCrl == nil {
 			_, err = getLazyCachePckCrl(db, ca, constants.CacheInsert)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
-			}
-		}
-
-		tcbInfo := &types.FmspcTcbInfo{Fmspc: platform.Fmspc}
-		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
-		if existingFmspc == nil {
-			_, err = getLazyCacheFmspcTcbInfo(db, platform.Fmspc, constants.CacheInsert)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -990,6 +1006,12 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: "query data not provided",
 				StatusCode: http.StatusBadRequest}
 		}
+
+		if err := validateQueryParams(r.URL.Query(), tcbStatusRetrieveParams); err != nil {
+			slog.Errorf("resource/platform_ops: getTcbStatus() %s", err.Error())
+			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
+		}
+
 		qeID := r.URL.Query().Get("qeid")
 		pceID := r.URL.Query().Get("pceid")
 		if !validateInputString(constants.QeIDKey, qeID) || !validateInputString(constants.PceIDKey, pceID) {

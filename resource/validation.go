@@ -5,7 +5,9 @@
 package resource
 
 import (
+	"github.com/pkg/errors"
 	"intel/isecl/scs/v3/constants"
+	"net/url"
 	"regexp"
 )
 
@@ -26,4 +28,18 @@ func validateInputString(key, inString string) bool {
 		return false
 	}
 	return true
+}
+
+func validateQueryParams(params url.Values, validQueries map[string]bool) error {
+	log.Trace("resource/validation:validateQueryParams() Entering")
+	defer log.Trace("resource/validation:validateQueryParams() Leaving")
+	if len(params) > constants.MaxQueryParamsLength {
+		return errors.New("Invalid query parameters provided. Number of query parameters exceeded maximum value")
+	}
+	for param := range params {
+		if _, hasQuery := validQueries[param]; !hasQuery {
+			return errors.New("Invalid query parameter provided. Refer to Swagger doc for details.")
+		}
+	}
+	return nil
 }
