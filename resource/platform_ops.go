@@ -615,7 +615,7 @@ func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *Platf
 			StatusCode: http.StatusInternalServerError}
 	}
 	if existingPlatformData != nil {
-		if existingPlatformData.HwUUID.String() != tokenSubject {
+		if !strings.EqualFold(existingPlatformData.HwUUID.String(), tokenSubject) {
 			slog.Errorf("resource/platform_ops:checkPlatformDataCacheStatus() %s : Failed to match host identity from database", commLogMsg.AuthenticationFailed)
 			return false, &resourceError{Message: "Invalid Token",
 				StatusCode: http.StatusUnauthorized}
