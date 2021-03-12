@@ -22,7 +22,8 @@ endif
 
 .PHONY: SKCPCKCertSelection docker scs installer all test clean
 
-all: clean installer k8s
+scs:SKCPCKCertSelection
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/v3/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v3/version.Version=$(VERSION) -X intel/isecl/scs/v3/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
@@ -31,9 +32,6 @@ SKCPCKCertSelection:
 	cp $(TMP)/tools/PCKCertSelection/out/libPCKCertSelection.so $(LIB_PATH)
 	chmod 755 $(LIB_PATH)/libPCKCertSelection.so
 	rm -rf $(TMP)
-
-scs:SKCPCKCertSelection
-	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/v3/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v3/version.Version=$(VERSION) -X intel/isecl/scs/v3/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 swagger-get:
 	wget https://github.com/go-swagger/go-swagger/releases/download/v0.26.1/swagger_linux_amd64 -O /usr/local/bin/swagger
@@ -76,6 +74,8 @@ oci-archive: docker
 
 k8s: oci-archive
 	cp -r dist/k8s out/k8s
+
+all: clean installer k8s
 
 clean:
 	rm -f cover.*
