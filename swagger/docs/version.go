@@ -6,7 +6,7 @@
 package docs
 
 //
-// swagger:operation GET /version Version GetVersion
+// swagger:operation GET /version Version getVersion
 // ---
 // description: |
 //   GetVersion is used to get the version of the application.

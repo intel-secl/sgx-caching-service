@@ -22,20 +22,3 @@
 //
 // swagger:meta
 package docs
-
-// swagger:operation GET /sgx/certification/v1/version Version getVersion
-// ---
-// description: Retrieves the version of the SGX Caching Service.
-//
-// produces:
-// - text/plain
-// responses:
-//   "200":
-//     description: Successfully retrieved the version of SGX Caching Service.
-//     schema:
-//       type: string
-//       example: skc_M12-SKC_SCS_M10_WW01.01-58-g2efaa71
-//
-// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/version
-// x-sample-call-output: skc_M12-SKC_SCS_M10_WW01.01-58-g2efaa71
-// ---

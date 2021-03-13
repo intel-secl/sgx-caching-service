@@ -186,6 +186,10 @@ type StatusResponse struct {
 //   description: Quoting Enclave ID specific to a platform.
 //   in: query
 //   type: string
+// - name: pceid
+//   description: Provisioning Certificate Enclave ID specific to a platform.
+//   in: query
+//   type: string
 // responses:
 //   '200':
 //     description: Successfully retrieved the latest TCB up-to-date status for the provided qeid.
