@@ -56,13 +56,11 @@ installer: scs
 	cp dist/linux/scs.service out/installer/scs.service
 	cp $(LIB_PATH)/libPCKCertSelection.so out/installer/libPCKCertSelection.so
 	cp dist/linux/install.sh out/installer/install.sh && chmod +x out/installer/install.sh
-	cp dist/linux/db_rotation.sql out/installer/db_rotation.sql
 	cp out/scs out/installer/scs
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 
 docker: scs
 	cp $(LIB_PATH)/libPCKCertSelection.so out/libPCKCertSelection.so
-	cp dist/linux/db_rotation.sql out/db_rotation.sql
 ifeq ($(PROXY_EXISTS),1)
 	docker build ${DOCKER_PROXY_FLAGS} -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
 else

@@ -37,7 +37,6 @@ echo "Installing SGX Caching Service..."
 COMPONENT_NAME=scs
 PRODUCT_HOME=/opt/$COMPONENT_NAME
 BIN_PATH=$PRODUCT_HOME/bin
-DB_SCRIPT_PATH=$PRODUCT_HOME/dbscripts
 LOG_PATH=/var/log/$COMPONENT_NAME/
 CONFIG_PATH=/etc/$COMPONENT_NAME/
 CERTS_PATH=$CONFIG_PATH/certs
@@ -47,7 +46,7 @@ CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
 echo "Setting up SGX Caching Service Linux User..."
 id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
 
-for directory in $BIN_PATH $DB_SCRIPT_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS; do
+for directory in $BIN_PATH $LOG_PATH $CONFIG_PATH $CERTS_PATH $CERTDIR_TRUSTEDJWTCERTS $CERTDIR_TRUSTEDJWTCAS; do
   # mkdir -p will return 0 if directory exists or is a symlink to an existing directory or directory and parents can be created
   mkdir -p $directory
   if [ $? -ne 0 ]; then
@@ -69,8 +68,6 @@ elif [ "$OS" == "ubuntu" ]; then
 	cp libPCKCertSelection.so /usr/lib/libPCKCertSelection.so
 	chmod 755 /usr/lib/libPCKCertSelection.so
 fi
-
-cp db_rotation.sql $DB_SCRIPT_PATH/ && chown $SERVICE_USERNAME:$SERVICE_USERNAME $DB_SCRIPT_PATH/*
 
 # Create logging dir in /var/log
 mkdir -p $LOG_PATH && chown scs:scs $LOG_PATH
