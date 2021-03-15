@@ -13,7 +13,7 @@ type TcbInfoJSONResp struct {
 	Body resource.TcbInfoJSON
 }
 
-// swagger:operation GET /sgx/certification/v1/pckcert Certificates getPckCertificate
+// swagger:operation GET /pckcert Certificates getPckCertificate
 // ---
 // description: |
 //   Retrieves the Platform Certification Key (PCK) Certificate for the current TCB level of SGX enabled platform
@@ -78,7 +78,7 @@ type TcbInfoJSONResp struct {
 //    -----END CERTIFICATE-----
 // ---
 
-// swagger:operation GET /sgx/certification/v1/pckcrl Certificates getPckCrl
+// swagger:operation GET /pckcrl Certificates getPckCrl
 // ---
 // description: |
 //   Retrieves the base64 encoded latest PCK Certificate Revocation List (CRL) for any SGX enabled platforms.
@@ -103,7 +103,7 @@ type TcbInfoJSONResp struct {
 //    MIIBKTCB0QIBATAKBggqhkjOPQQDAjBxMSMwIQYDVQQDDBpJbnRlbCBTR1ggUENLIFByb2Nlc3NvciBDQTEaMBgGA1UECgwRSW50ZWwgQ29ycG9yYXRpb24xFDASBgNVBAcMC1NhbnRhIENsYXJhMQswCQYDVQQIDAJDQTELMAkGA1UEBhMCVVMXDTIwMTExMzA0Mzc1NVoXDTIwMTIxMzA0Mzc1NVqgLzAtMAoGA1UdFAQDAgEBMB8GA1UdIwQYMBaAFMHp3Hk19b3/LlphIQ0b13g7pUxaMAoGCCqGSM49BAMCA0cAMEQCIGWhZDw8yQ56EfFYNaIX96ZaEEurMTcyGlxsNYBjBUXAAiBNRVW27AQvV04YimDhB+evEHvgbyOjj1+7bemmpQZoOg==
 // ---
 
-// swagger:operation GET /sgx/certification/v1/tcb Certificates getTcbInfo
+// swagger:operation GET /tcb Certificates getTcbInfo
 // ---
 // description: |
 //   Retrieves the Trusted Computing Base (TCB) information for all TCB levels of the SGX enabled platform
@@ -209,7 +209,7 @@ type TcbInfoJSONResp struct {
 //    }
 // ---
 
-// swagger:operation GET /sgx/certification/v1/qe/identity Certificates getQeIdentityInfo
+// swagger:operation GET /qe/identity Certificates getQeIdentityInfo
 // ---
 // description: |
 //   Retrieves the Quote Identity information for Quoting Enclave issued by Intel for a platform.

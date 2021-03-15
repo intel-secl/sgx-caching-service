@@ -30,7 +30,7 @@ type StatusResponse struct {
 	Body resource.Response
 }
 
-// swagger:operation POST /sgx/certification/v1/platforms PlatformInfo pushPlatformInfo
+// swagger:operation POST /platforms PlatformInfo pushPlatformInfo
 // ---
 //
 // description: |
@@ -145,7 +145,7 @@ type StatusResponse struct {
 //    }
 // ---
 
-// swagger:operation GET /sgx/certification/v1/refreshes PlatformInfo refreshPlatformInfo
+// swagger:operation GET /refreshes PlatformInfo refreshPlatformInfo
 // ---
 // description: |
 //   This API is used to refresh the platform collaterals stored in the SGX Caching Service (SCS) database,
@@ -171,7 +171,7 @@ type StatusResponse struct {
 //    }
 // ---
 
-// swagger:operation GET /sgx/certification/v1/tcbstatus PlatformInfo getTcbStatus
+// swagger:operation GET /tcbstatus PlatformInfo getTcbStatus
 // ---
 // description: |
 //   This API is used by SGX Agent to determine the TCB up-to-date status of a platform.

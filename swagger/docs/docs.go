@@ -9,7 +9,7 @@
 //
 //  Version: 1.0
 //  Host: scs.server.com:9000
-//  BasePath: /scs
+//  BasePath: /scs/sgx/certification/v1/
 //
 //  Schemes: https
 //
