@@ -15,7 +15,7 @@ var BuildDate = ""
 
 func GetVersion() string {
 	verStr := fmt.Sprintf("Service Name: %s\n", constants.ExplicitServiceName)
-	verStr = verStr + fmt.Sprintf("Version: %s-%s\n", Version, GitHash)
-	verStr = verStr + fmt.Sprintf("Build Date: %s\n", BuildDate)
+	verStr += fmt.Sprintf("Version: %s-%s\n", Version, GitHash)
+	verStr += fmt.Sprintf("Build Date: %s\n", BuildDate)
 	return verStr
 }

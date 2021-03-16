@@ -24,6 +24,7 @@
 ## Software requirements
 - git
 - makeself
+- docker
 - Go 1.14.1
 
 # Step By Step Build Instructions
@@ -32,7 +33,7 @@
 
 ### Install tools from `dnf`
 ```shell
-sudo dnf install -y git wget makeself
+sudo dnf install -y git wget makeself docker
 ```
 
 ### Install `go 1.14.1`
@@ -53,7 +54,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```shell
 git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
-git checkout v3.4.0
+git checkout v3.5.0
 make installer
 ```
 
@@ -85,8 +86,10 @@ make installer
 | testify     | github.com/stretchr/testify | v1.3.0                             |
 | jwt-go      | github.com/dgrijalva/jwt-go | v3.2.0                             |
 | testify     | github.com/stretchr/testify | v1.5.1                             |
+| logrus      | github.com/sirupsen/logrus  | v1.5.0                             |
 | pq          | github.com/lib/pq           | v1.3.0                             |
 | yaml.v2     | gopkg.in/yaml.v2            | v2.4.0                             |
+| yaml.v3     | gopkg.in/yaml.v2            | v3.0.0                             |
 | common      | github.com/intel-secl/common| v3.3.1                             |
 
 *Note: All dependencies are listed in go.mod*
