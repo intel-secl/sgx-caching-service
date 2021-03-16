@@ -12,12 +12,12 @@ import (
 	commLog "intel/isecl/lib/common/v3/log"
 	"intel/isecl/lib/common/v3/setup"
 	"intel/isecl/scs/v3/constants"
+	"net/url"
 	"os"
 	"path"
+	"strings"
 	"time"
 )
-
-var slog = commLog.GetSecurityLogger()
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
 // Probably should embed a config generic struct
@@ -94,7 +94,7 @@ func (conf *Configuration) Save() error {
 				return err
 			}
 		} else {
-			// someother I/O related error
+			// some other I/O related error
 			return err
 		}
 	}
@@ -108,66 +108,61 @@ func (conf *Configuration) Save() error {
 	return yaml.NewEncoder(file).Encode(conf)
 }
 
-func (conf *Configuration) SaveConfiguration(c setup.Context) error {
-	var err error
+func (conf *Configuration) SaveConfiguration(taskName string, c setup.Context) error {
+	// target config changes only in scope for the setup task
+	if taskName == "all" || taskName == "download_ca_cert" || taskName == "download_cert" {
 
-	tlsCertDigest, err := c.GetenvString("CMS_TLS_CERT_SHA384", "TLS certificate digest")
-	if err == nil && tlsCertDigest != "" {
-		conf.CmsTLSCertDigest = tlsCertDigest
-	} else if conf.CmsTLSCertDigest == "" {
-		commLog.GetDefaultLogger().Error("CMS_TLS_CERT_SHA384 is not defined in environment")
-		return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "SaveConfiguration() ENV variable not found")
-	}
+		tlsCertDigest, err := c.GetenvString("CMS_TLS_CERT_SHA384", "TLS certificate digest")
+		if err == nil && strings.TrimSpace(tlsCertDigest) != "" {
+			conf.CmsTLSCertDigest = tlsCertDigest
+		} else if conf.CmsTLSCertDigest == "" {
+			commLog.GetDefaultLogger().Error("config/config:SaveConfiguration() CMS_TLS_CERT_SHA384 is not defined in environment")
+			return errorLog.Wrap(errors.New("CMS_TLS_CERT_SHA384 is not defined in environment"), "SaveConfiguration() ENV variable not found")
+		}
 
-	cmsBaseURL, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
-	if err == nil && cmsBaseURL != "" {
-		conf.CMSBaseURL = cmsBaseURL
-	} else if conf.CMSBaseURL == "" {
-		commLog.GetDefaultLogger().Error("CMS_BASE_URL is not defined in environment")
-		return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
-	}
-
-	tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
-	if err == nil && tlsCertCN != "" {
-		conf.Subject.TLSCertCommonName = tlsCertCN
-	} else if conf.Subject.TLSCertCommonName == "" {
-		conf.Subject.TLSCertCommonName = constants.DefaultScsTLSCn
-	}
-
-	tlsKeyPath, err := c.GetenvString("KEY_PATH", "Path of file where TLS key needs to be stored")
-	if err == nil && tlsKeyPath != "" {
-		conf.TLSKeyFile = tlsKeyPath
-	} else if conf.TLSKeyFile == "" {
-		conf.TLSKeyFile = constants.DefaultTLSKeyFile
-	}
-
-	tlsCertPath, err := c.GetenvString("CERT_PATH", "Path of file/directory where TLS certificate needs to be stored")
-	if err == nil && tlsCertPath != "" {
-		conf.TLSCertFile = tlsCertPath
-	} else if conf.TLSCertFile == "" {
-		conf.TLSCertFile = constants.DefaultTLSCertFile
-	}
-
-	logLevel, err := c.GetenvString("SCS_LOGLEVEL", "SCS Log Level")
-	if err != nil {
-		slog.Infof("config/config:SaveConfiguration() %s not defined, using default log level: Info", constants.SCSLogLevel)
-		conf.LogLevel = log.InfoLevel
-	} else {
-		llp, err := log.ParseLevel(logLevel)
-		if err != nil {
-			slog.Info("config/config:SaveConfiguration() Invalid log level specified in env, using default log level: Info")
-			conf.LogLevel = log.InfoLevel
-		} else {
-			conf.LogLevel = llp
-			slog.Infof("config/config:SaveConfiguration() Log level set %s\n", logLevel)
+		cmsBaseURL, err := c.GetenvString("CMS_BASE_URL", "CMS Base URL")
+		if err == nil && strings.TrimSpace(cmsBaseURL) != "" {
+			if _, err = url.ParseRequestURI(cmsBaseURL); err != nil {
+				log.Error("config/config:SaveConfiguration() CMS_BASE_URL provided is invalid")
+				return errorLog.Wrap(err, "CMS_BASE_URL provided is invalid")
+			} else {
+				conf.CMSBaseURL = cmsBaseURL
+			}
+		} else if conf.CMSBaseURL == "" {
+			log.Error("config/config:SaveConfiguration() CMS_BASE_URL is not defined in environment")
+			return errorLog.Wrap(errors.New("CMS_BASE_URL is not defined in environment"),
+				"SaveConfiguration() ENV variable not found")
 		}
 	}
 
-	sanList, err := c.GetenvString("SAN_LIST", "SAN list for TLS")
-	if err == nil && sanList != "" {
-		conf.CertSANList = sanList
-	} else if conf.CertSANList == "" {
-		conf.CertSANList = constants.DefaultScsTLSSan
+	if taskName == "all" || taskName == "download_cert" {
+		tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
+		if err == nil && strings.TrimSpace(tlsCertCN) != "" {
+			conf.Subject.TLSCertCommonName = tlsCertCN
+		} else if conf.Subject.TLSCertCommonName == "" {
+			conf.Subject.TLSCertCommonName = constants.DefaultScsTLSCn
+		}
+
+		tlsKeyPath, err := c.GetenvString("KEY_PATH", "Path of file where TLS key needs to be stored")
+		if err == nil && strings.TrimSpace(tlsKeyPath) != "" {
+			conf.TLSKeyFile = tlsKeyPath
+		} else if conf.TLSKeyFile == "" {
+			conf.TLSKeyFile = constants.DefaultTLSKeyFile
+		}
+
+		tlsCertPath, err := c.GetenvString("CERT_PATH", "Path of file/directory where TLS certificate needs to be stored")
+		if err == nil && strings.TrimSpace(tlsCertPath) != "" {
+			conf.TLSCertFile = tlsCertPath
+		} else if conf.TLSCertFile == "" {
+			conf.TLSCertFile = constants.DefaultTLSCertFile
+		}
+
+		sanList, err := c.GetenvString("SAN_LIST", "SAN list for TLS")
+		if err == nil && strings.TrimSpace(sanList) != "" {
+			conf.CertSANList = sanList
+		} else if conf.CertSANList == "" {
+			conf.CertSANList = constants.DefaultScsTLSSan
+		}
 	}
 
 	return conf.Save()

@@ -314,8 +314,9 @@ func (a *App) Run(args []string) error {
 			return errors.Wrap(err, "app:Run() Invalid setup task arguments")
 		}
 
+		taskName := args[2]
 		a.Config = config.Global()
-		err = a.Config.SaveConfiguration(setupContext)
+		err = a.Config.SaveConfiguration(taskName, setupContext)
 		if err != nil {
 			fmt.Println("Error saving configuration: " + err.Error())
 			os.Exit(1)

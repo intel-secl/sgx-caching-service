@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	commLog "intel/isecl/lib/common/v3/log"
 	"intel/isecl/lib/common/v3/setup"
 	"intel/isecl/scs/v3/config"
 	"intel/isecl/scs/v3/constants"
 	"io"
+	"net/url"
 	"time"
 )
 
@@ -95,6 +95,8 @@ func (u Update_Service_Config) Run(c setup.Context) error {
 	intelProvURL, err := c.GetenvString("INTEL_PROVISIONING_SERVER", "Intel ECDSA Provisioning Server URL")
 	if err != nil {
 		intelProvURL = constants.DefaultIntelProvServerURL
+	} else if _, err = url.ParseRequestURI(intelProvURL); err != nil {
+		return errors.Wrap(err, "SaveConfiguration() INTEL_PROVISIONING_SERVER provided is invalid")
 	}
 	u.Config.ProvServerInfo.ProvServerURL = intelProvURL
 
@@ -176,12 +178,16 @@ func (u Update_Service_Config) Run(c setup.Context) error {
 		u.Config.RetryCount = constants.DefaultRetrycount
 	}
 
-	aasAPIURL, err := c.GetenvString("AAS_API_URL", "AAS API URL")
+	aasAPIURL, err := c.GetenvString("AAS_API_URL", "AAS Base URL")
 	if err == nil && aasAPIURL != "" {
-		u.Config.AuthServiceURL = aasAPIURL
+		if _, err = url.ParseRequestURI(aasAPIURL); err != nil {
+			return errors.Wrap(err, "SaveConfiguration() AAS_API_URL provided is invalid")
+		} else {
+			u.Config.AuthServiceURL = aasAPIURL
+		}
 	} else if u.Config.AuthServiceURL == "" {
-		commLog.GetDefaultLogger().Error("AAS_API_URL is not defined in environment")
-		return errors.Wrap(errors.New("AAS_API_URL is not defined in environment"), "tasks/Update_Service_Config:Run() ENV variable not found")
+		log.Error("AAS_API_URL is not defined in environment")
+		return errors.Wrap(errors.New("AAS_API_URL is not defined in environment"), "SaveConfiguration() ENV variable not found")
 	}
 
 	err = u.Config.Save()
