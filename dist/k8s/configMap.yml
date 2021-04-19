@@ -14,7 +14,6 @@ data:
   INTEL_PROVISIONING_SERVER: https://sbx.api.trustedservices.intel.com/sgx/certification/v3
   INTEL_PROVISIONING_SERVER_API_KEY:
   SAN_LIST:
-  BEARER_TOKEN:
   SCS_DB_HOSTNAME: scsdb-svc.isecl.svc.cluster.local
   SCS_DB_NAME: pgscsdb
   SCS_DB_SSLCERTSRC: /etc/postgresql/server.crt

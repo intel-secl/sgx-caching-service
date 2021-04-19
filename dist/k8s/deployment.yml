@@ -33,27 +33,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: scs-config
-          env:
-            - name: SCS_ADMIN_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: scs-service-credentials
-                  key: SCS_ADMIN_USERNAME
-            - name: SCS_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: scs-service-credentials
-                  key: SCS_ADMIN_PASSWORD
-            - name: SCS_DB_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: scs-db-credentials
-                  key: SCS_DB_USERNAME
-            - name: SCS_DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: scs-db-credentials
-                  key: SCS_DB_PASSWORD
           volumeMounts:
             - name: scs-config-volume
               mountPath: /etc/scs/
@@ -61,6 +40,9 @@ spec:
               mountPath: /var/log/scs/
             - name: scs-db-certs
               mountPath: /etc/postgresql/
+            - mountPath: /etc/secret-volume/
+              name: scs-credentials
+              readOnly: true
       volumes:
         - name: scs-logs-volume
           persistentVolumeClaim:
@@ -72,3 +54,6 @@ spec:
           secret:
             secretName: scs-db-certs
             defaultMode: 0640
+        - name: scs-credentials
+          secret:
+              secretName: scs-secret            

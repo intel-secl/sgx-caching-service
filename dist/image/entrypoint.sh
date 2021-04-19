@@ -1,5 +1,12 @@
 #!/bin/bash
 
+source /etc/secret-volume/secrets.txt
+export SCS_ADMIN_USERNAME
+export SCS_ADMIN_PASSWORD
+export SCS_DB_USERNAME
+export SCS_DB_PASSWORD
+export BEARER_TOKEN
+
 USER_ID=$(id -u)
 LOG_PATH=/var/log/scs
 CONFIG_PATH=/etc/scs
