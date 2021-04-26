@@ -6,6 +6,9 @@ PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
 PCKCERTGITTAG := DCAP_1.10
 PROXY_EXISTS := $(shell if [[ "${https_proxy}" || "${http_proxy}" ]]; then echo 1; else echo 0; fi)
 DOCKER_PROXY_FLAGS := ""
+MONOREPO_GITURL := "ssh://git@gitlab.devtools.intel.com:29418/sst/isecl/intel-secl.git"
+MONOREPO_GITBRANCH := "v3.6/develop"
+
 ifeq ($(PROXY_EXISTS),1)
         DOCKER_PROXY_FLAGS = --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy}
 endif
@@ -57,6 +60,14 @@ installer: scs
 	cp $(LIB_PATH)/libPCKCertSelection.so out/installer/libPCKCertSelection.so
 	cp dist/linux/install.sh out/installer/install.sh && chmod +x out/installer/install.sh
 	cp out/scs out/installer/scs
+
+	git archive --remote=$(MONOREPO_GITURL) $(MONOREPO_GITBRANCH) pkg/lib/common/upgrades/ | tar xvf -
+	cp -a pkg/lib/common/upgrades/* out/installer
+	rm -rf pkg/
+	cp -a upgrades/* out/installer
+	mv out/installer/build/* out/installer
+	chmod +x out/installer/*.sh
+
 	makeself out/installer out/scs-$(VERSION).bin "SGX Caching Service $(VERSION)" ./install.sh
 
 docker: scs

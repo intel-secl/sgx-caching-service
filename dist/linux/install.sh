@@ -43,6 +43,13 @@ CERTS_PATH=$CONFIG_PATH/certs
 CERTDIR_TRUSTEDJWTCERTS=$CERTS_PATH/trustedjwt
 CERTDIR_TRUSTEDJWTCAS=$CERTS_PATH/trustedca
 
+# Upgrade if component is already installed
+if command -v $COMPONENT_NAME &>/dev/null; then
+  echo "$COMPONENT_NAME is installed, proceeding with the upgrade"
+  ./${COMPONENT_NAME}_upgrade.sh
+  exit $?
+fi
+
 echo "Setting up SGX Caching Service Linux User..."
 id -u $SERVICE_USERNAME 2> /dev/null || useradd --comment "SGX Caching Service" --home $PRODUCT_HOME --shell /bin/false $SERVICE_USERNAME
 
