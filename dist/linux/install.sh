@@ -78,7 +78,7 @@ fi
 
 # Create logging dir in /var/log
 mkdir -p $LOG_PATH && chown scs:scs $LOG_PATH
-chmod 700 $LOG_PATH
+chmod 640 $LOG_PATH
 
 # Install systemd script
 cp scs.service $PRODUCT_HOME && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME/scs.service && chown $SERVICE_USERNAME:$SERVICE_USERNAME $PRODUCT_HOME
