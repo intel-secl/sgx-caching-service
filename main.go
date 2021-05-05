@@ -14,7 +14,7 @@ import (
 )
 
 func openLogFiles() (logFile, httpLogFile, secLogFile *os.File, err error) {
-	logFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	logFile, err = os.OpenFile(constants.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0640)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -22,7 +22,7 @@ func openLogFiles() (logFile, httpLogFile, secLogFile *os.File, err error) {
 		return nil, nil, nil, err
 	}
 
-	httpLogFile, err = os.OpenFile(constants.HTTPLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	httpLogFile, err = os.OpenFile(constants.HTTPLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0640)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -30,7 +30,7 @@ func openLogFiles() (logFile, httpLogFile, secLogFile *os.File, err error) {
 		return nil, nil, nil, err
 	}
 
-	secLogFile, err = os.OpenFile(constants.SecLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	secLogFile, err = os.OpenFile(constants.SecLogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0640)
 	if err != nil {
 		return nil, nil, nil, err
 	}
