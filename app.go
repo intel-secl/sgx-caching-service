@@ -112,7 +112,7 @@ func (a *App) printUsage() {
 	fmt.Fprintln(w, "                                 - SCS_SERVER_MAX_HEADER_BYTES                      : SGX Caching Service Max Length Of Request Header Bytes")
 	fmt.Fprintln(w, "                                 - INTEL_PROVISIONING_SERVER                        : Intel ECDSA Provisioning Server URL")
 	fmt.Fprintln(w, "                                 - INTEL_PROVISIONING_SERVER_API_KEY                : Intel ECDSA Provisioning Server API Subscription key")
-	fmt.Fprintln(w, "                                 - SCS_LOG_LEVEL                                    : SGX Caching Service Log Level")
+	fmt.Fprintln(w, "                                 - SCS_LOGLEVEL                                     : SGX Caching Service Log Level")
 	fmt.Fprintln(w, "                                 - SCS_LOG_MAX_LENGTH                               : SGX Caching Service Log maximum length")
 	fmt.Fprintln(w, "                                 - SCS_ENABLE_CONSOLE_LOG                           : SGX Caching Service Enable standard output")
 	fmt.Fprintln(w, "                                 - SCS_REFRESH_HOURS                                : SCS Automatic Refresh of SGX Data")
