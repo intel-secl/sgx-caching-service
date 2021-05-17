@@ -60,6 +60,22 @@ const (
 	DefaultRetrycount              = 3
 	DefaultWaitTime                = 1
 	MaxQueryParamsLength           = 50
+	MaxConcurrentRefreshRequests   = 5
+	MaxConcurrentRefreshDBUpdates  = MaxConcurrentRefreshRequests * 5
+	RefreshCoolOffTimeout          = 10
+	RefreshStatusSucceeded         = "success"
+	RefreshStatusTooMany           = "toomanyrequests"
+	RefreshStatusFailed            = "failed"
+	RefreshStatusIdle              = "idle"
+	RefreshStatusStarted           = "started"
+	RefreshStatusInProgress        = "inprogress"
+)
+
+type RefreshTrigger int
+
+const (
+	TriggerStatus = iota + 1
+	TriggerStart
 )
 
 type CacheType int

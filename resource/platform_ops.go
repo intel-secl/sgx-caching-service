@@ -18,15 +18,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
-	"unsafe"
-
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -37,6 +28,18 @@ import (
 	"intel/isecl/scs/v4/constants"
 	"intel/isecl/scs/v4/repository"
 	"intel/isecl/scs/v4/types"
+	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
+	"unsafe"
 )
 
 const (
@@ -45,6 +48,12 @@ const (
 	Lower
 	Undefined
 )
+
+type RefreshResponse struct {
+	Status      string             `json:"status"`
+	RetryAfter  *int               `json:"retry-after,omitempty"`
+	LastRefresh *types.LastRefresh `json:"last-refresh,omitempty"`
+}
 
 type Response struct {
 	Status  string
@@ -117,8 +126,12 @@ var tcbStatusRetrieveParams = map[string]bool{"qeid": true, "pceid": true}
 
 func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
 	r.Handle("/platforms", handlers.ContentTypeHandler(pushPlatformInfo(db), "application/json")).Methods("POST")
-	r.Handle("/refreshes", handlers.ContentTypeHandler(refreshPlatformInfo(db), "application/json")).Methods("GET")
 	r.Handle("/tcbstatus", handlers.ContentTypeHandler(getTcbStatus(db), "application/json")).Methods("GET")
+}
+
+func RefreshPlatformInfoOps(r *mux.Router, db repository.SCSDatabase, trigger chan<- constants.RefreshTrigger) {
+	r.Handle("/refreshes", handlers.ContentTypeHandler(refreshPlatformInfoStatus(db, trigger), "application/json")).Methods("GET")
+	r.Handle("/refreshes", handlers.ContentTypeHandler(refreshPlatformInfoStart(db, trigger), "application/json")).Methods("POST")
 }
 
 // This function invokes SGX DCAP PCK Certificate Selection Library (C++)
@@ -787,34 +800,137 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 func refreshPckCerts(db repository.SCSDatabase) error {
+
 	existingPlatformData, _ := db.PlatformRepository().RetrieveAll()
 	if len(existingPlatformData) == 0 {
-		return errors.New("no platform value records are found in db, cannot perform refresh")
+		return errors.New("No platform value records are found in db, cannot perform refresh.")
 	}
 
+	// Envelope to pass data to go routines.
+	type refreshedDataResponse struct {
+		pckCertInfo  *types.PckCert
+		pckCertChain string
+		ca           string
+		platformInfo *types.Platform
+		err          error
+	}
+
+	dbRows := make(chan *types.Platform)
+	refreshedData := make(chan refreshedDataResponse)
+	errC := make(chan error)
+	errorStatus := make(chan error)
+
+	var fetchPckCertWG sync.WaitGroup
+	var dbUpdateWG sync.WaitGroup
+
+	// Create a pool of DB update routines.
+	for n := 0; n < constants.MaxConcurrentRefreshDBUpdates; n++ {
+		// Update DB with new pckCertInfo returned by fetchPckCertInfo
+		go func(inst int, refreshedData <-chan refreshedDataResponse,
+			errC chan<- error) {
+
+			dbUpdateWG.Add(1)
+			defer dbUpdateWG.Done()
+
+			for responseEnvelope := range refreshedData {
+				pckCertInfo := responseEnvelope.pckCertInfo
+				pckCertChain := responseEnvelope.pckCertChain
+				ca := responseEnvelope.ca
+				existingPlatformData := responseEnvelope.platformInfo
+				responseErr := responseEnvelope.err
+
+				if responseErr != nil {
+					errC <- errors.Wrap(responseErr, "Error while requesting PCS.")
+					break
+				}
+
+				err := cachePlatformTcbInfo(db, existingPlatformData, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
+				if err != nil {
+					errC <- errors.Wrap(err, "Error while caching Platform Tcb Info")
+					break
+				}
+
+				err = cachePlatformTcbInfo(db, existingPlatformData, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
+				if err != nil {
+					errC <- errors.Wrap(err, "Error while caching Platform Tcb Info")
+					break
+				}
+
+				_, err = cachePckCertChainInfo(db, pckCertChain, ca, constants.CacheRefresh)
+				if err != nil {
+					errC <- errors.Wrap(err, "Error while caching Pck CertChain Info")
+					break
+				}
+
+				_, err = cachePckCertInfo(db, pckCertInfo, constants.CacheRefresh)
+				if err != nil {
+					errC <- errors.Wrap(err, "Error while caching Pck Cert Info")
+					break
+				}
+			}
+		}(n, refreshedData, errC)
+	}
+
+	// Goroutine pool for outbound PCCS requests.
+	for n := 0; n < constants.MaxConcurrentRefreshRequests; n++ {
+		go func(dbRows <-chan *types.Platform, errC chan<- error) {
+			fetchPckCertWG.Add(1)
+			defer fetchPckCertWG.Done()
+
+			for platformInfo := range dbRows {
+				pckCertInfo, _, pckCertChain, ca, err := fetchPckCertInfo(platformInfo)
+
+				if err != nil {
+					errC <- errors.Wrap(err, "Error while fetching pck cert info.")
+				} else {
+					// Send the response from fetchPckCertInfo inside an envelope
+					refreshed := refreshedDataResponse{
+						pckCertInfo:  pckCertInfo,
+						pckCertChain: pckCertChain,
+						ca:           ca,
+						err:          err,
+						platformInfo: platformInfo,
+					}
+					refreshedData <- refreshed
+				}
+			}
+		}(dbRows, errC)
+	}
+
+	// Error Collection.
+	go func(errC <-chan error, errorStatus chan<- error) {
+		refreshHadErrors := false
+		for err := range errC {
+			log.Error(err)
+			refreshHadErrors = true
+		}
+
+		if refreshHadErrors {
+			errorStatus <- errors.New("refreshPckCerts encounted errors!")
+		} else {
+			errorStatus <- nil
+		}
+	}(errC, errorStatus)
+
+	// Stage 1 - Send rows from DB to PCCS Request Pool.
 	for n := 0; n < len(existingPlatformData); n++ {
-		pckCertInfo, _, pckCertChain, ca, err := fetchPckCertInfo(&existingPlatformData[n])
-		if err != nil {
-			return errors.Wrap(err, "Error while fetching Pck Cert Info from PCS")
-		}
-
-		err = cachePlatformTcbInfo(db, &existingPlatformData[n], pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
-		if err != nil {
-			return errors.Wrap(err, "Error while caching Platform Tcb Info")
-		}
-
-		_, err = cachePckCertChainInfo(db, pckCertChain, ca, constants.CacheRefresh)
-		if err != nil {
-			return errors.Wrap(err, "Error while caching Pck CertChain Info")
-		}
-
-		_, err = cachePckCertInfo(db, pckCertInfo, constants.CacheRefresh)
-		if err != nil {
-			return errors.Wrap(err, "Error while caching Pck Cert Info")
-		}
+		dbRows <- &existingPlatformData[n]
 	}
-	log.Debug("All PckCerts for the platform re-fetched from PCS as part of refresh")
-	return nil
+	close(dbRows)
+
+	// Stage 2 - Wait for outbound PCCS requests
+	fetchPckCertWG.Wait()
+	close(refreshedData)
+
+	// Stage 3 - Wait for DB updates
+	dbUpdateWG.Wait()
+	close(errC)
+
+	// Stage 4 - Check on errors
+	err := <-errorStatus
+	log.Debug("refreshPckCerts Complete.")
+
+	return err
 }
 
 func refreshAllPckCrl(db repository.SCSDatabase) error {
@@ -885,26 +1001,108 @@ func refreshNonPCKCollaterals(db repository.SCSDatabase) error {
 	return nil
 }
 
-func RefreshPlatformInfoTimer(db repository.SCSDatabase, rtype string) error {
-	var err error
-	if strings.Compare(rtype, constants.TypeRefreshCert) == 0 {
-		err = refreshPckCerts(db)
-		if err != nil {
-			log.WithError(err).Error("could not complete refresh of Pck Certificates")
-			return err
+func RefreshPlatformInfo(db repository.SCSDatabase, trigger <-chan constants.RefreshTrigger) {
+	for {
+		triggerType := <-trigger
+		status := constants.RefreshStatusSucceeded
+
+		if triggerType == constants.TriggerStatus {
+			log.Debug("Ignoring status trigger.")
+			continue
 		}
-	} else if strings.Compare(rtype, constants.TypeRefreshTcb) == 0 {
+
+		// Start refresh
+		err := refreshPckCerts(db)
+		if err != nil {
+			status = constants.RefreshStatusFailed
+			log.WithError(err).Error("Error while refreshing PCK Certs")
+		}
+
 		err = refreshNonPCKCollaterals(db)
 		if err != nil {
-			log.WithError(err).Error("could not complete refresh of TcbInfo")
-			return err
+			status = constants.RefreshStatusFailed
+			log.WithError(err).Error("Error while refreshing Non PCK Collaterals")
 		}
+
+		// Update status in DB
+		refreshInfo := types.LastRefresh{CompletedAt: time.Now(), Status: status}
+		err = db.LastRefreshRepository().Update(&refreshInfo)
+		if err != nil {
+			log.WithError(err).Error("Error while updating lastRefresh Info in DB.")
+		}
+
 	}
-	log.Debug("Refresh Timer Callback: refreshPlatformInfoTimer, completed")
+}
+
+func fetchLastRefreshInfo(db repository.SCSDatabase) (*types.LastRefresh, error) {
+	refreshInfo, err := db.LastRefreshRepository().Retrieve()
+	if err != nil {
+		log.WithError(err).Error("Error while fetching lastRefresh Info in DB.")
+	}
+
+	return refreshInfo, nil
+}
+
+func isCoolOffTimeout(lastRefresh *types.LastRefresh) *int {
+	if lastRefresh == nil {
+		// We might not have previous refresh info.
+		return nil
+	}
+
+	sinceLastRefresh := time.Since(lastRefresh.CompletedAt)
+	var lastRefreshinSeconds int
+	lastRefreshinSeconds = int(sinceLastRefresh.Seconds())
+
+	if lastRefreshinSeconds > 0 && lastRefreshinSeconds <= constants.RefreshCoolOffTimeout {
+		log.Debug("Too many refresh requests.")
+		lastRefreshinSeconds = constants.RefreshCoolOffTimeout - lastRefreshinSeconds
+		return &lastRefreshinSeconds
+	}
+
 	return nil
 }
 
-func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
+func InitAutoRefreshTimer(db repository.SCSDatabase, refreshTrigger chan<- constants.RefreshTrigger, refreshHours int) error {
+
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start the timer.
+	go func() {
+		ticker := time.NewTicker(time.Hour * time.Duration(refreshHours))
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stop:
+				fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
+				return
+			case t := <-ticker.C:
+				log.Debug("Timer started", t)
+				// TODO : Timer expired. Check if we are in coolOff period.
+				lastRefresh, err := fetchLastRefreshInfo(db)
+				if err != nil {
+					log.Error("Unable to get last refresh info")
+					break
+				}
+
+				coolOffTimeout := isCoolOffTimeout(lastRefresh)
+				if coolOffTimeout != nil {
+					log.Debug("Timer triggered during cooloff timeout.")
+				} else {
+					select {
+					case refreshTrigger <- constants.TriggerStart:
+						log.Debug("Timer triggered a platforminfo refresh.")
+					default:
+						log.Debug("Timer triggered - Refresh is already in progress.")
+					}
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+func refreshPlatformInfoStatus(db repository.SCSDatabase, refreshTrigger chan<- constants.RefreshTrigger) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		err := authorizeEndpoint(r, constants.CacheManagerGroupName, true)
@@ -914,42 +1112,69 @@ func refreshPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		err = refreshPckCerts(db)
+		res := RefreshResponse{}
+		res.LastRefresh, err = fetchLastRefreshInfo(db)
 		if err != nil {
-			log.WithError(err).Error("Error while refreshing PCK Certs")
-			w.WriteHeader(http.StatusNotFound)
-			res := Response{Status: "Failure", Message: "could not find platform info in database"}
-			js, err := json.Marshal(res)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
-			}
-			_, err = w.Write(js)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
-			}
 			return err
 		}
 
-		err = refreshNonPCKCollaterals(db)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-
-			res := Response{Status: "Failure", Message: "could not find platform info in database"}
-			js, err := json.Marshal(res)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
-			}
-			_, err = w.Write(js)
-			if err != nil {
-				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
-			}
-			return err
+		select {
+		// Check if refresh is already running or not
+		// without triggering a new async refresh.
+		case refreshTrigger <- constants.TriggerStatus:
+			res.Status = constants.RefreshStatusIdle
+		default:
+			res.Status = constants.RefreshStatusInProgress
 		}
 
 		w.WriteHeader(http.StatusOK)
 
-		res := Response{Status: "Success", Message: "sgx collaterals refreshed successfully"}
 		js, err := json.Marshal(res)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+		_, err = w.Write(js)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
+		}
+		slog.Infof("%s: Platform data refresh status requested by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
+		return nil
+	}
+}
+
+func refreshPlatformInfoStart(db repository.SCSDatabase, refreshTrigger chan<- constants.RefreshTrigger) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+
+		err := authorizeEndpoint(r, constants.CacheManagerGroupName, true)
+		if err != nil {
+			return err
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		res := RefreshResponse{}
+		res.LastRefresh, err = fetchLastRefreshInfo(db)
+		if err != nil {
+			return err
+		}
+
+		coolOffTimeout := isCoolOffTimeout(res.LastRefresh)
+		if coolOffTimeout != nil {
+			res.RetryAfter = coolOffTimeout
+			res.Status = constants.RefreshStatusTooMany
+		} else {
+			select {
+			case refreshTrigger <- constants.TriggerStart:
+				res.Status = constants.RefreshStatusStarted
+			default:
+				res.Status = constants.RefreshStatusInProgress
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+		js, err := json.Marshal(res)
+		log.Info(string(js))
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
