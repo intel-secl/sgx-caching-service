@@ -7,7 +7,7 @@ PCKCERTGITTAG := DCAP_1.10
 PROXY_EXISTS := $(shell if [[ "${https_proxy}" || "${http_proxy}" ]]; then echo 1; else echo 0; fi)
 DOCKER_PROXY_FLAGS := ""
 MONOREPO_GITURL := "https://github.com/intel-secl/intel-secl.git"
-MONOREPO_GITBRANCH := "v3.6/develop"
+MONOREPO_GITBRANCH := "v3.6.0"
 
 ifeq ($(PROXY_EXISTS),1)
         DOCKER_PROXY_FLAGS = --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${https_proxy}
@@ -61,9 +61,10 @@ installer: scs
 	cp dist/linux/install.sh out/installer/install.sh && chmod +x out/installer/install.sh
 	cp out/scs out/installer/scs
 
-	git archive --remote=$(MONOREPO_GITURL) $(MONOREPO_GITBRANCH) pkg/lib/common/upgrades/ | tar xvf -
-	cp -a pkg/lib/common/upgrades/* out/installer
-	rm -rf pkg/
+	tmpdir=$(mktemp)
+	git clone --depth 1 -b $(MONOREPO_GITBRANCH) $(MONOREPO_GITURL) $tmpdir
+	cp -a $tmpdir/pkg/lib/common/upgrades/* out/installer/
+	rm -rf $tmpdir
 	cp -a upgrades/* out/installer
 	mv out/installer/build/* out/installer
 	chmod +x out/installer/*.sh
