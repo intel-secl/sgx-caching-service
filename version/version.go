@@ -6,7 +6,7 @@ package version
 
 import (
 	"fmt"
-	"intel/isecl/scs/v3/constants"
+	"intel/isecl/scs/v4/constants"
 )
 
 var Version = ""

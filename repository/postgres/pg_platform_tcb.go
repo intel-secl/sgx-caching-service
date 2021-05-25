@@ -5,7 +5,7 @@
 package postgres
 
 import (
-	"intel/isecl/scs/v3/types"
+	"intel/isecl/scs/v4/types"
 
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"

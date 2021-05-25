@@ -6,8 +6,8 @@ package tasks
 
 import (
 	"github.com/stretchr/testify/assert"
-	"intel/isecl/lib/common/v3/setup"
-	"intel/isecl/scs/v3/config"
+	"intel/isecl/lib/common/v4/setup"
+	"intel/isecl/scs/v4/config"
 	"os"
 	"testing"
 )

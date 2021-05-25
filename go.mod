@@ -1,4 +1,4 @@
-module intel/isecl/scs/v3
+module intel/isecl/scs/v4
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-	intel/isecl/lib/common/v3 v3.6.0
+	intel/isecl/lib/common/v4 v4.0.0
 )
 
-replace intel/isecl/lib/common/v3 => github.com/intel-secl/common/v3 v3.6.0
+replace intel/isecl/lib/common/v4 => gitlab.devtools.intel.com/sst/isecl/lib/common.git/v4 v4.0/develop

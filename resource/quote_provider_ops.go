@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"intel/isecl/scs/v3/constants"
-	"intel/isecl/scs/v3/repository"
-	"intel/isecl/scs/v3/types"
-	"intel/isecl/scs/v3/version"
+	commLogMsg "intel/isecl/lib/common/v4/log/message"
+	"intel/isecl/scs/v4/constants"
+	"intel/isecl/scs/v4/repository"
+	"intel/isecl/scs/v4/types"
+	"intel/isecl/scs/v4/version"
 )
 
 func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {

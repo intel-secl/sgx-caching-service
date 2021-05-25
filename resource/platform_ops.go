@@ -32,11 +32,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"intel/isecl/lib/common/v3/context"
-	commLogMsg "intel/isecl/lib/common/v3/log/message"
-	"intel/isecl/scs/v3/constants"
-	"intel/isecl/scs/v3/repository"
-	"intel/isecl/scs/v3/types"
+	"intel/isecl/lib/common/v4/context"
+	commLogMsg "intel/isecl/lib/common/v4/log/message"
+	"intel/isecl/scs/v4/constants"
+	"intel/isecl/scs/v4/repository"
+	"intel/isecl/scs/v4/types"
 )
 
 const (

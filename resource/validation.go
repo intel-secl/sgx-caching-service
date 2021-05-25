@@ -6,7 +6,7 @@ package resource
 
 import (
 	"github.com/pkg/errors"
-	"intel/isecl/scs/v3/constants"
+	"intel/isecl/scs/v4/constants"
 	"net/url"
 	"regexp"
 )
