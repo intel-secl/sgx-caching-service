@@ -14,9 +14,9 @@ Stylechecker:
     stage: scan
     only:
       - merge_requests
-    image: gta-devel
-    tags:
-       - gta
+    image: golang:1.14
+    tags: 
+       - go
     script:
        - gofmt -l .
        - |
