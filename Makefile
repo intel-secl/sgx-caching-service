@@ -1,6 +1,5 @@
-GITTAG := $(shell git describe --tags --abbrev=0 2> /dev/null)
 GITCOMMIT := $(shell git describe --always)
-VERSION := $(or ${GITTAG}, v0.0.0)
+VERSION := "v4.0.0"
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
 PCKCERTGITTAG := DCAP_1.10
