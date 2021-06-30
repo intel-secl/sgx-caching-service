@@ -13,6 +13,5 @@ type SCSDatabase interface {
 	PckCrlRepository() PckCrlRepository
 	FmspcTcbInfoRepository() FmspcTcbInfoRepository
 	QEIdentityRepository() QEIdentityRepository
-	LastRefreshRepository() LastRefreshRepository
 	Close()
 }

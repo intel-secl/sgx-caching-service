@@ -417,6 +417,33 @@ func (a *App) Run(args []string) error {
 	return nil
 }
 
+func (a *App) initRefreshRoutine(db repository.SCSDatabase) error {
+	stop := make(chan os.Signal)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		ticker := time.NewTicker(time.Hour * time.Duration(a.configuration().RefreshHours))
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stop:
+				fmt.Fprintln(os.Stderr, "Got Signal for exit and exiting.... Refresh Timer")
+				return
+			case t := <-ticker.C:
+				log.Debug("Timer started", t)
+				err := resource.RefreshPlatformInfoTimer(db, constants.TypeRefreshCert)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: refresh pck cert failed  with error:%s", err.Error())
+				}
+				err = resource.RefreshPlatformInfoTimer(db, constants.TypeRefreshTcb)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error: refresh tcbinfo failed  with error:%s", err.Error())
+				}
+			}
+		}
+	}()
+	return nil
+}
+
 func (a *App) startServer() error {
 	c := a.configuration()
 
@@ -436,18 +463,8 @@ func (a *App) startServer() error {
 		log.WithError(err).Error("Failed to migrate database")
 	}
 
-	// Start Refresh routine
-	refreshTrigger := make(chan constants.RefreshTrigger)
-	go resource.RefreshPlatformInfo(scsDB, refreshTrigger)
-
-	// Start refresh timer
-	err = resource.InitAutoRefreshTimer(scsDB, refreshTrigger, a.configuration().RefreshHours)
-	if err != nil {
-		log.WithError(err).Info("Refresh Timer init failed")
-		return err
-	}
-
 	r := mux.NewRouter()
+
 	r.SkipClean(true)
 
 	// Create Router, set routes
@@ -470,12 +487,6 @@ func (a *App) startServer() error {
 		}
 	}(resource.PlatformInfoOps)
 
-	func(setters ...func(*mux.Router, repository.SCSDatabase, chan<- constants.RefreshTrigger)) {
-		for _, setter := range setters {
-			setter(sr, scsDB, refreshTrigger)
-		}
-	}(resource.RefreshPlatformInfoOps)
-
 	tlsconfig := &tls.Config{
 		MinVersion: tls.VersionTLS13,
 		CipherSuites: []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
@@ -487,7 +498,11 @@ func (a *App) startServer() error {
 	stop := make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	httpLog := stdlog.New(a.httpLogWriter(), "", 0)
-
+	err = a.initRefreshRoutine(scsDB)
+	if err != nil {
+		log.WithError(err).Info("Refresh Routine Init failed")
+		return err
+	}
 	h := &http.Server{
 		Addr:              fmt.Sprintf(":%d", c.Port),
 		Handler:           handlers.RecoveryHandler(handlers.RecoveryLogger(httpLog), handlers.PrintRecoveryStack(true))(handlers.CombinedLoggingHandler(a.httpLogWriter(), r)),
