@@ -31,6 +31,7 @@ func (pd *PostgresDatabase) Migrate() error {
 	pd.DB.AutoMigrate(types.PckCert{})
 	pd.DB.AutoMigrate(types.PckCrl{})
 	pd.DB.AutoMigrate(types.FmspcTcbInfo{})
+	pd.DB.AutoMigrate(types.LastRefresh{})
 	pd.DB.AutoMigrate(types.QEIdentity{})
 	return nil
 }
@@ -57,6 +58,10 @@ func (pd *PostgresDatabase) PckCertRepository() repository.PckCertRepository {
 
 func (pd *PostgresDatabase) PckCrlRepository() repository.PckCrlRepository {
 	return &PostgresPckCrlRepository{db: pd.DB}
+}
+
+func (pd *PostgresDatabase) LastRefreshRepository() repository.LastRefreshRepository {
+	return &PostgresLastRefreshRepository{db: pd.DB}
 }
 
 func (pd *PostgresDatabase) QEIdentityRepository() repository.QEIdentityRepository {
