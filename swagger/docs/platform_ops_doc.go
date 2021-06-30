@@ -4,7 +4,21 @@
  */
 package docs
 
-import "intel/isecl/scs/v5/resource"
+import (
+	"intel/isecl/scs/v5/resource"
+	"time"
+)
+
+type LastRefresh struct {
+	CompletedAt time.Time `json:"completed-at"`
+	Status      string    `json:"status"`
+}
+
+type RefreshResponse struct {
+	Status      string      `json:"status"`
+	RetryAfter  int         `json:"retry-after,omitempty"`
+	LastRefresh LastRefresh `json:"last-refresh,omitempty"`
+}
 
 type PlatformInfoInput struct {
 	EncPpid          string `json:"enc_ppid"`
@@ -28,6 +42,13 @@ type PlatformInfoReq struct {
 type StatusResponse struct {
 	// in:body
 	Body resource.Response
+}
+
+// RefreshStatusResponse response payload
+// swagger:response RefreshStatusResponse
+type RefreshStatusResponse struct {
+	// in:body
+	Body RefreshResponse
 }
 
 // swagger:operation POST /platforms PlatformInfo pushPlatformInfo
@@ -145,13 +166,23 @@ type StatusResponse struct {
 //    }
 // ---
 
-// swagger:operation GET /refreshes PlatformInfo refreshPlatformInfo
+// swagger:operation GET /refreshes PlatformInfo refreshPlatformInfoStatus
 // ---
 // description: |
 //   This API is used to refresh the platform collaterals stored in the SGX Caching Service (SCS) database,
 //   outside of the periodic refresh cycles. An Admin can make use of this REST endpoint to force the refresh of
 //   PCK Certificates, PCK CRL, TCB info and QE Identity information. This is useful in scenarios like TCB recovery.
 //   A valid bearer token should be provided to authorize this REST call.
+//
+//
+//   The status field in the response conveys the following  :
+//       "idle" - No refresh is currently in progress.
+//       "inprogress" - A refresh is already in progress.
+//       "toomanyrequests" - A refresh will not be started if the last refresh was completed less than 900 seconds ago.
+//
+//   The last-refresh.status field in the response conveys the following  :
+//       "success" - The last refresh was successfull.
+//       "failed" - The last refresh failed.
 //
 // security:
 //  - bearerAuth: []
@@ -161,13 +192,55 @@ type StatusResponse struct {
 //   '200':
 //     description: Successfully refreshed the platform collaterals.
 //     schema:
-//       "$ref": "#/definitions/Response"
+//       "$ref": "#/definitions/RefreshResponse"
 //
 // x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/refreshes
 // x-sample-call-output: |
 //    {
-//        "Status": "Success",
-//        "Message": "sgx collaterals refreshed successfully"
+//        "status": "started",
+//        "last-refresh": {
+//            "completed-at": "2021-06-22T10:16:34.859762Z",
+//            "status": "success"
+//        }
+//    }
+// ---
+
+// swagger:operation POST /refreshes PlatformInfo refreshPlatformInfoStart
+// ---
+// description: |
+//   This API is used to refresh the PCK certificates and platform collaterals stored in the SGX Caching Service (SCS) database,
+//   outside of the periodic refresh cycles. An Admin can make use of this REST endpoint to force the refresh of
+//   PCK Certificates, PCK CRL, TCB info and QE Identity information. This is useful in scenarios like TCB recovery.
+//   A valid bearer token should be provided to authorize this REST call.
+//
+//   The status field in the response conveys the following states.
+//       "started" - A new refresh is started.
+//       "inprogress" - A refresh is already in progress.
+//       "toomanyrequests" - A refresh will not be started if the last refresh was completed less 900 seconds.
+//
+//   The last-refresh.status field in the response conveys the following states.
+//       "success" - The last refresh was successfull.
+//       "failed" - The last refresh failed.
+//   If there is no record of previous refresh, last-refresh field will not be populated.
+//
+// security:
+//  - bearerAuth: []
+// produces:
+//  - application/json
+// responses:
+//   '200':
+//     description: Successfully refreshed the platform collaterals.
+//     schema:
+//       "$ref": "#/definitions/RefreshResponse"
+//
+// x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/refreshes
+// x-sample-call-output: |
+//    {
+//        "status": "started",
+//        "last-refresh": {
+//            "completed-at": "2021-06-22T10:16:34.859762Z",
+//            "status": "success"
+//        }
 //    }
 // ---
 

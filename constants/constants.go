@@ -62,6 +62,22 @@ const (
 	MaxQueryParamsLength           = 50
 	DBMaxConnPercentage            = 70 // Percentage of DB's max connection. Ideally this should be around 25 to 75 % as we don't want to exhaust DB's connections.
 	DBConnMaxLifetimeMinutes       = 20 // DB connection lifetime.
+	MaxConcurrentRefreshRequests   = 5
+	MaxConcurrentRefreshDBUpdates  = MaxConcurrentRefreshRequests * 5
+	RefreshCoolOffTimeout          = 10
+	RefreshStatusSucceeded         = "success"
+	RefreshStatusTooMany           = "toomanyrequests"
+	RefreshStatusFailed            = "failed"
+	RefreshStatusIdle              = "idle"
+	RefreshStatusStarted           = "started"
+	RefreshStatusInProgress        = "inprogress"
+)
+
+type RefreshTrigger int
+
+const (
+	TriggerStatus = iota + 1
+	TriggerStart
 )
 
 type CacheType int

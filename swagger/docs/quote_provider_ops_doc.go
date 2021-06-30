@@ -120,7 +120,7 @@ type TcbInfoJSONResp struct {
 //   '200':
 //     description: Successfully retrieved the TCB info of the platform with the matching fmpsc value.
 //     schema:
-//       "$ref": "#/definitions/TcbInfoJson"
+//       "$ref": "#/definitions/TcbInfoJSON"
 //
 // x-sample-call-endpoint: https://scs.server.com:9000/scs/sgx/certification/v1/tcb?fmspc=20606a000000
 // x-sample-call-output: |
