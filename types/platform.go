@@ -19,7 +19,7 @@ type Platform struct {
 	Fmspc       string    `json:"-"`
 	Ca          string    `json:"-"`
 	Manifest    string    `json:"-"`
-	HwUUID      uuid.UUID `json:"-" gorm:"column:hardware_uuid;type:uuid;not null"`
+	HwUUID      uuid.UUID `json:"-" gorm:"index:idx_hwuuid;column:hardware_uuid;type:uuid;not null"`
 	CreatedTime time.Time `json:"-"`
 	UpdatedTime time.Time `json:"-"`
 }

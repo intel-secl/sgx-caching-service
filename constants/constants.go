@@ -60,6 +60,8 @@ const (
 	DefaultRetrycount              = 3
 	DefaultWaitTime                = 1
 	MaxQueryParamsLength           = 50
+	DBMaxConnPercentage            = 70 // Percentage of DB's max connection. Ideally this should be around 25 to 75 % as we don't want to exhaust DB's connections.
+	DBConnMaxLifetimeMinutes       = 20 // DB connection lifetime.
 )
 
 type CacheType int

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	commLog "intel/isecl/lib/common/v4/log"
 	commLogMsg "intel/isecl/lib/common/v4/log/message"
+	"intel/isecl/scs/v4/constants"
 	"intel/isecl/scs/v4/repository"
 	"intel/isecl/scs/v4/types"
 	"strings"
@@ -71,6 +72,28 @@ func (pd *PostgresDatabase) Close() {
 	}
 }
 
+func setConnectionPool(db *gorm.DB) {
+	// Query DB's max_connections settings
+	type Result struct {
+		Setting int
+	}
+	var result Result
+
+	// Note : pg_setting is specific to postgres
+	err := db.Raw("SELECT * FROM pg_settings WHERE name = ?", "max_connections").Scan(&result).Error
+
+	if err == nil && result.Setting > 0 {
+		log.Debug("DB maximum connection limit is : ", result.Setting)
+		serviceDBConnectionLimit := (result.Setting / 100) * constants.DBMaxConnPercentage
+		db.DB().SetMaxIdleConns(serviceDBConnectionLimit)
+		db.DB().SetMaxOpenConns(serviceDBConnectionLimit)
+		db.DB().SetConnMaxLifetime(constants.DBConnMaxLifetimeMinutes * time.Minute)
+	} else {
+		// Not fatal.
+		log.Info("Unable to retrive DB's max_connection. Using default connection pool params.", err)
+	}
+}
+
 func Open(host string, port int, dbname, user, password, sslMode, sslCert string) (*PostgresDatabase, error) {
 	sslMode = strings.TrimSpace(strings.ToLower(sslMode))
 	if sslMode != "allow" && sslMode != "prefer" && sslMode != "require" && sslMode != "verify-ca" {
@@ -101,5 +124,8 @@ func Open(host string, port int, dbname, user, password, sslMode, sslCert string
 		slog.Errorf("%s: Failed to connect to db after %d attempts", commLogMsg.BadConnection, numAttempts)
 		return nil, dbErr
 	}
+
+	setConnectionPool(db)
+
 	return &PostgresDatabase{DB: db}, nil
 }
