@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
-	"intel/isecl/scs/v4/config"
+	"intel/isecl/scs/v5/config"
 	"net/http"
 	"time"
 )

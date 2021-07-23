@@ -4,7 +4,7 @@
  */
 package repository
 
-import "intel/isecl/scs/v4/types"
+import "intel/isecl/scs/v5/types"
 
 type PckCrlRepository interface {
 	Create(*types.PckCrl) (*types.PckCrl, error)

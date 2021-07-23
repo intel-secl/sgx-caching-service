@@ -6,11 +6,11 @@ package postgres
 
 import (
 	"fmt"
-	commLog "intel/isecl/lib/common/v4/log"
-	commLogMsg "intel/isecl/lib/common/v4/log/message"
-	"intel/isecl/scs/v4/constants"
-	"intel/isecl/scs/v4/repository"
-	"intel/isecl/scs/v4/types"
+	commLog "intel/isecl/lib/common/v5/log"
+	commLogMsg "intel/isecl/lib/common/v5/log/message"
+	"intel/isecl/scs/v5/constants"
+	"intel/isecl/scs/v5/repository"
+	"intel/isecl/scs/v5/types"
 	"strings"
 	"time"
 

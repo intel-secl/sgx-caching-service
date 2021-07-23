@@ -4,7 +4,7 @@
  */
 package docs
 
-import "intel/isecl/scs/v4/resource"
+import "intel/isecl/scs/v5/resource"
 
 // TcbInfoJSONResp response payload
 // swagger:response TcbInfoJSONResp
