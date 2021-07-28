@@ -14,7 +14,7 @@ Stylechecker:
     stage: scan
     only:
       - merge_requests
-    image: golang:1.14
+    image: golang:1.16
     tags: 
        - go
     script:
