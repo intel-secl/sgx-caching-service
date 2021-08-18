@@ -3,7 +3,7 @@ GITCOMMIT := $(shell git describe --always)
 VERSION := $(or ${GITTAG}, v0.0.0)
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
 PCKCERTGITURL := https://github.com/intel/SGXDataCenterAttestationPrimitives
-PCKCERTGITTAG := DCAP_1.10
+PCKCERTGITTAG := DCAP_1.11
 PROXY_EXISTS := $(shell if [[ "${https_proxy}" || "${http_proxy}" ]]; then echo 1; else echo 0; fi)
 DOCKER_PROXY_FLAGS := ""
 MONOREPO_GITURL := "https://gitlab.devtools.intel.com/sst/isecl/intel-secl.git"
