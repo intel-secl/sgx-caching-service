@@ -708,6 +708,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
+			w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 			_, err = w.Write(js)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
