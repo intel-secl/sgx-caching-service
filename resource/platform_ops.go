@@ -785,6 +785,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
+		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 
 		res := Response{Status: "Created", Message: "platform data pushed to scs"}
 		js, err := json.Marshal(res)
