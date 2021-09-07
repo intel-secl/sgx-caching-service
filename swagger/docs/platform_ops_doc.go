@@ -178,7 +178,7 @@ type RefreshStatusResponse struct {
 //   The status field in the response conveys the following  :
 //       "idle" - No refresh is currently in progress.
 //       "inprogress" - A refresh is already in progress.
-//       "toomanyrequests" - A refresh will not be started if the last refresh was completed less 900 seconds ago.
+//       "toomanyrequests" - A refresh will not be started if the last refresh was completed less than 900 seconds ago.
 //
 //   The last-refresh.status field in the response conveys the following  :
 //       "success" - The last refresh was successfull.
