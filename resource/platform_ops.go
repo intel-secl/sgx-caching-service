@@ -844,7 +844,7 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 					break
 				}
 
-				err = cachePlatformTcbInfo(db, existingPlatformData, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
+				err := cachePlatformTcbInfo(db, existingPlatformData, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
 				if err != nil {
 					errC <- errors.Wrap(err, "Error while caching Platform Tcb Info")
 					break
