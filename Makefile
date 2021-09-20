@@ -25,7 +25,7 @@ endif
 .PHONY: SKCPCKCertSelection docker scs installer all test clean
 
 scs:SKCPCKCertSelection
-	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/v5/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v5/version.Version=$(VERSION) -X intel/isecl/scs/v5/version.GitHash=$(GITCOMMIT)" -o out/scs
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go mod tidy && env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/v5/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v5/version.Version=$(VERSION) -X intel/isecl/scs/v5/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
@@ -41,6 +41,7 @@ swagger-get:
 	wget https://repo1.maven.org/maven2/io/swagger/codegen/v3/swagger-codegen-cli/3.0.24/swagger-codegen-cli-3.0.24.jar -O /usr/local/bin/swagger-codegen-cli.jar
 
 swagger-doc:
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go mod tidy
 	mkdir -p out/swagger
 	env GOOS=linux GOSUMDB=off GOPROXY=direct \
 	/usr/local/bin/swagger generate spec -o ./out/swagger/openapi.yml --scan-models
@@ -49,6 +50,7 @@ swagger-doc:
 swagger: swagger-get swagger-doc
 
 test:
+	env GOOS=linux GOSUMDB=off GOPROXY=direct go mod tidy
 	go test ./... -coverprofile cover.out
 	go tool cover -func cover.out
 	go tool cover -html=cover.out -o cover.html

@@ -11,29 +11,28 @@ variables:
   no_proxy: "${NO_PROXY}"
 
 Stylechecker:
-    stage: scan
-    only:
-      - merge_requests
-    image: golang:1.14
-    tags: 
-       - go
-    script:
-       - gofmt -l .
-       - |
-             if [ "$(gofmt -l . | wc -l)"  -gt 0 ]; then
-                    exit 1
-             fi
-       
+  stage: scan
+  only:
+    - merge_requests
+  image: golang:1.16
+  tags:
+    - k8s
+  script:
+    - |
+      if [ "$(GOPROXY=direct GOSUMDB=off gofmt -l . | wc -l)"  -gt 0 ]; then
+             exit 1
+      fi
+
 checkmarx:
   stage: scan
   only:
-     - merge_requests
+    - merge_requests
   allow_failure: true
   services:
-      - docker:dind
+    - docker:dind
   image:
     name: ${DOCKER_REGISTRY_SERVER}:${DOCKER_REGISTRY_PORT}/checkmarx:isecl
-    entrypoint: ['']
+    entrypoint: [""]
   tags:
     - docker-checkmarx
 

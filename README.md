@@ -25,7 +25,7 @@
 - git
 - makeself
 - docker
-- Go 1.14.4
+- Go 1.16.7
 
 # Step By Step Build Instructions
 
@@ -36,11 +36,11 @@
 sudo dnf install -y git wget makeself docker
 ```
 
-### Install `go 1.14.4`
-The `SGX Caching Service` requires Go version 1.14.4 that has support for `go modules`. The build was validated with the version 1.14.4 of `go`. It is recommended that you use 1.14.4 version of `go`. More recent versions may introduce compatibility issues. You can use the following to install `go`.
+### Install `go 1.16.7`
+The `SGX Caching Service` requires Go version 1.16.7 that has support for `go modules`. The build was validated with the version 1.16.7 of `go`. It is recommended that you use 1.16.7 version of `go`. More recent versions may introduce compatibility issues. You can use the following to install `go`.
 ```shell
-wget https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz
-tar -xzf go1.14.4.linux-amd64.tar.gz
+wget https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz
+tar -xzf go1.16.7.linux-amd64.tar.gz
 sudo mv go /usr/local
 export GOROOT=/usr/local/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
