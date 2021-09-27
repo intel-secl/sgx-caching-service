@@ -54,7 +54,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```shell
 git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
-git checkout v4.0.0
+git checkout v5.0.0
 make installer
 ```
 

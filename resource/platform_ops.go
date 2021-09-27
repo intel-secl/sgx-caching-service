@@ -708,6 +708,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
+			w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 			_, err = w.Write(js)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -784,6 +785,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
+		w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 
 		res := Response{Status: "Created", Message: "platform data pushed to scs"}
 		js, err := json.Marshal(res)
@@ -845,6 +847,12 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 				}
 
 				err := cachePlatformTcbInfo(db, existingPlatformData, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
+				if err != nil {
+					errC <- errors.Wrap(err, "Error while caching Platform Tcb Info")
+					break
+				}
+
+				err = cachePlatformTcbInfo(db, existingPlatformData, pckCertInfo.Tcbms[pckCertInfo.CertIndex], constants.CacheRefresh)
 				if err != nil {
 					errC <- errors.Wrap(err, "Error while caching Platform Tcb Info")
 					break
