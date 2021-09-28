@@ -40,8 +40,8 @@ spec:
               mountPath: /var/log/scs/
             - name: scs-db-certs
               mountPath: /etc/postgresql/
-            - mountPath: /etc/secret-volume/
-              name: scs-credentials
+            - mountPath: /etc/secrets/
+              name: scs-secrets
               readOnly: true
       volumes:
         - name: scs-logs-volume
@@ -54,6 +54,10 @@ spec:
           secret:
             secretName: scs-db-certs
             defaultMode: 0640
-        - name: scs-credentials
-          secret:
-              secretName: scs-secret            
+        - name: scs-secrets
+          projected:
+            sources:
+              - secret:
+                  name: scs-credentials
+              - secret:
+                  name: bearer-token
