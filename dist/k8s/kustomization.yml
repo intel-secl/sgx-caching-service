@@ -9,6 +9,7 @@ namespace: isecl
 
 resources:
   - configMap.yml
+  - secrets.yml
   - config-pv.yml
   - config-pvc.yml
   - logs-pv.yml
