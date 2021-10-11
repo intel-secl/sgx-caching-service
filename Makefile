@@ -74,9 +74,9 @@ installer: scs
 docker: scs
 	cp $(LIB_PATH)/libPCKCertSelection.so out/libPCKCertSelection.so
 ifeq ($(PROXY_EXISTS),1)
-	docker build ${DOCKER_PROXY_FLAGS} -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
+	docker build ${DOCKER_PROXY_FLAGS} --label org.label-schema.build-date=$(BUILDDATE) -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
 else
-	docker build -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
+	docker build --label org.label-schema.build-date=$(BUILDDATE) -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
 endif
 
 oci-archive: docker
