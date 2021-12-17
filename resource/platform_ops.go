@@ -930,7 +930,7 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 
 	// Stage 4 - Check on errors
 	err := <-errorStatus
-	log.Debug("refreshPckCerts Complete.")
+	log.Info("refreshPckCerts Complete.")
 
 	return err
 }
@@ -947,7 +947,7 @@ func refreshAllPckCrl(db repository.SCSDatabase) error {
 			return fmt.Errorf("refresh of pckcrl failed: %s", err.Error())
 		}
 	}
-	log.Debug("All PckCrls for the platform re-fetched from PCS as part of refresh")
+	log.Info("All PckCrls for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 
@@ -964,7 +964,7 @@ func refreshAllTcbInfo(db repository.SCSDatabase) error {
 			return errors.New(fmt.Sprintf("Error in Refresh Tcb info: %s", err.Error()))
 		}
 	}
-	log.Debug("TCBInfo for the platform re-fetched from PCS as part of refresh")
+	log.Info("TCBInfo for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 
@@ -978,7 +978,7 @@ func refreshAllQE(db repository.SCSDatabase) error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error in Refresh QEIdentity info: %s", err.Error()))
 	}
-	log.Debug("QEIdentity for the platform re-fetched from PCS as part of refresh")
+	log.Info("QEIdentity for the platform re-fetched from PCS as part of refresh")
 	return nil
 }
 
