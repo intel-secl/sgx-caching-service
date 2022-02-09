@@ -1,13 +1,17 @@
 # Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM centos:8
+FROM ubuntu:focal
+
+RUN apt-get update -y
+
+RUN apt-get install ca-certificates openssl -y
 
 COPY out/scs /usr/bin/scs
 
-COPY out/libPCKCertSelection.so /usr/lib64/libPCKCertSelection.so
+COPY out/libPCKCertSelection.so /usr/lib/libPCKCertSelection.so
 
-RUN chmod 755 /usr/lib64/libPCKCertSelection.so
+RUN chmod 755 /usr/lib/libPCKCertSelection.so
 
 COPY dist/image/entrypoint.sh /entrypoint.sh
 
