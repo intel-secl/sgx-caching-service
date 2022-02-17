@@ -1,12 +1,16 @@
 # Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM centos:8
+FROM ubuntu:focal
 
 LABEL org.label-schema.name="SGX Caching Service" \
       org.label-schema.vendor="Intel Corporation" \
       org.label-schema.license="BSD-3-Clause" \
       org.label-schema.url="https://github.com/intel-secl/intel-secl"
+
+RUN apt-get update -y
+
+RUN apt-get install ca-certificates openssl -y
 
 COPY out/scs /usr/bin/scs
 
