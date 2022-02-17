@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 GITCOMMIT := $(shell git describe --always)
 VERSION := "v4.1.1"
 BUILDDATE := $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%S%z)
