@@ -8,35 +8,36 @@ import (
 	"github.com/stretchr/testify/assert"
 	"intel/isecl/lib/common/v4/setup"
 	"intel/isecl/scs/v4/config"
+	"math/rand"
 	"os"
 	"testing"
 )
 
-func TestDatabaseSetup(t *testing.T) {
-	testAssert := assert.New(t)
-	c := config.Configuration{}
-	s := Database{
-		Flags:         []string{"-db-host=hostname", "-db-port=5432", "-db-user=user", "-db-pass=password", "-db-name=scs_db"},
-		Config:        &c,
-		ConsoleWriter: os.Stdout,
+func RandomString() string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+
+	// choose random string length to be 8
+	letter := make([]rune, 8)
+	for i := range letter {
+		letter[i] = letters[rand.Intn(len(letters))]
 	}
-	ctx := setup.Context{}
-	err := s.Run(ctx)
-	testAssert.Error(err)
-	testAssert.Equal("hostname", c.Postgres.Hostname)
-	testAssert.Equal(5432, c.Postgres.Port)
-	testAssert.Equal("user", c.Postgres.Username)
-	testAssert.Equal("password", c.Postgres.Password)
-	testAssert.Equal("scs_db", c.Postgres.DBName)
+	return string(letter)
 }
 
 func TestDatabaseSetupEnv(t *testing.T) {
 	testAssert := assert.New(t)
-	os.Setenv("SCS_DB_HOSTNAME", "hostname")
+
+	hostName := RandomString()
+	dbName := RandomString()
+	dbUser := RandomString()
+	dbPassword := RandomString()
+
+	os.Setenv("SCS_DB_HOSTNAME", hostName)
 	os.Setenv("SCS_DB_PORT", "5432")
-	os.Setenv("SCS_DB_USERNAME", "user")
-	os.Setenv("SCS_DB_PASSWORD", "password")
-	os.Setenv("SCS_DB_NAME", "scs_db")
+	os.Setenv("SCS_DB_USERNAME", dbUser)
+	os.Setenv("SCS_DB_PASSWORD", dbPassword)
+	os.Setenv("SCS_DB_NAME", dbName)
+
 	c := config.Configuration{}
 	s := Database{
 		Flags:         nil,
@@ -46,9 +47,9 @@ func TestDatabaseSetupEnv(t *testing.T) {
 	ctx := setup.Context{}
 	err := s.Run(ctx)
 	testAssert.Error(err)
-	testAssert.Equal("hostname", c.Postgres.Hostname)
+	testAssert.Equal(hostName, c.Postgres.Hostname)
 	testAssert.Equal(5432, c.Postgres.Port)
-	testAssert.Equal("user", c.Postgres.Username)
-	testAssert.Equal("password", c.Postgres.Password)
-	testAssert.Equal("scs_db", c.Postgres.DBName)
+	testAssert.Equal(dbUser, c.Postgres.Username)
+	testAssert.Equal(dbPassword, c.Postgres.Password)
+	testAssert.Equal(dbName, c.Postgres.DBName)
 }
