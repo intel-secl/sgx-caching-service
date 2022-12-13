@@ -13,16 +13,15 @@ import "C"
 
 import (
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/pem"
+
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v5/context"
 	commLogMsg "intel/isecl/lib/common/v5/log/message"
 	"intel/isecl/scs/v5/constants"
@@ -35,11 +34,15 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -628,12 +631,6 @@ func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *Platf
 			StatusCode: http.StatusInternalServerError}
 	}
 	if existingPlatformData != nil {
-		if !strings.EqualFold(existingPlatformData.HwUUID.String(), tokenSubject) {
-			slog.Errorf("resource/platform_ops:checkPlatformDataCacheStatus() %s : Failed to match host identity from database", commLogMsg.AuthenticationFailed)
-			return false, &resourceError{Message: "Invalid Token",
-				StatusCode: http.StatusUnauthorized}
-		}
-
 		if platformInfo.Manifest == "" {
 			platformInfo.Manifest = existingPlatformData.Manifest
 			cert := &types.PckCert{
@@ -723,7 +720,6 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			PceID:    platformInfo.PceID,
 			QeID:     platformInfo.QeID,
 			Manifest: platformInfo.Manifest,
-			HwUUID:   uuid.MustParse(platformInfo.HwUUID),
 		}
 
 		pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platform)
@@ -731,8 +727,14 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
+		ppid, err := getPPID(pckCertInfo.PckCerts[0])
+		if err != nil {
+			return &resourceError{Message: "Failed to extract ppid from PCK Cert", StatusCode: http.StatusInternalServerError}
+		}
+
 		platform.Fmspc = fmspcTcbInfo.Fmspc
 		platform.Ca = ca
+		platform.Ppid = ppid
 		err = cachePlatformInfo(db, platform, constants.CacheInsert)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -1362,4 +1364,57 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 		slog.Infof("%s: TCB status retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
+}
+
+// Function to get PPID from provided PCK Certificate.
+// PCK Certficate has customised extensions. These extensions contain sgx platform information.
+// Following function decodes the PCK Certificate. It parses these extensions 
+// On parsing these extensions it gets PPID.
+func getPPID(pckCert string) (string, error) {
+	log.Trace("resource/platform_ops: getPPID() Entering")
+	defer log.Trace("resource/platform_ops: getPPID() Leaving")
+
+	var ppid string
+	block, _ := pem.Decode([]byte(pckCert))
+	if block == nil {
+		return "", errors.New("Failed to decode given pck certificate")
+	}
+	if block.Type == "CERTIFICATE" {
+		certificate, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			log.WithError(err).Error("Failed to parse given pck certificate")
+			return "", err
+		}
+
+		var ExtSgxPPIDOid = asn1.ObjectIdentifier{1, 2, 840, 113741, 1, 13, 1, 1}
+		var ExtSgxOid = asn1.ObjectIdentifier{1, 2, 840, 113741, 1, 13, 1}
+		var ext pkix.Extension
+		var sgxExtensions []asn1.RawValue
+		for _, ext = range certificate.Extensions {
+			if ExtSgxOid.Equal(ext.Id) {
+				_, err := asn1.Unmarshal(ext.Value, &sgxExtensions)
+				if err != nil {
+					return "", errors.Wrap(err, "Failed to unmarshal extensions in pck certificate")
+				}
+				var oid asn1.ObjectIdentifier
+
+				for j := 0; j < len(sgxExtensions); j++ {
+					rest, err := asn1.Unmarshal(sgxExtensions[j].Bytes, &oid)
+					if err != nil {
+						return "", errors.Wrap(err, "Failed to unmarshal sgx extensions in pck certficate")
+					}
+
+					if ExtSgxPPIDOid.Equal(oid) {
+						var ppidExt []byte
+						_, err := asn1.Unmarshal(rest, &ppidExt)
+						if err != nil {
+							return "", errors.Wrap(err, "Failed to unmarshal ppid extension in pck certificate")
+						}
+						ppid = hex.EncodeToString(ppidExt)
+					}
+				}
+			}
+		}
+	}
+	return ppid, nil
 }

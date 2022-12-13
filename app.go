@@ -25,9 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 	"intel/isecl/lib/common/v5/crypt"
 	e "intel/isecl/lib/common/v5/exec"
 	commLog "intel/isecl/lib/common/v5/log"
@@ -43,6 +40,10 @@ import (
 	"intel/isecl/scs/v5/repository/postgres"
 	"intel/isecl/scs/v5/resource"
 	"intel/isecl/scs/v5/tasks"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )

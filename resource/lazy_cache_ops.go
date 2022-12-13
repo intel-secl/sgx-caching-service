@@ -5,10 +5,11 @@
 package resource
 
 import (
-	"github.com/pkg/errors"
 	"intel/isecl/scs/v5/constants"
 	"intel/isecl/scs/v5/repository"
 	"intel/isecl/scs/v5/types"
+
+	"github.com/pkg/errors"
 )
 
 // perform an api call to pcs server to get PCK Certificate for a sgx platform and store in db

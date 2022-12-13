@@ -6,7 +6,6 @@ package resource
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"intel/isecl/lib/common/v5/auth"
 	"intel/isecl/lib/common/v5/context"
 	clog "intel/isecl/lib/common/v5/log"
@@ -14,6 +13,8 @@ import (
 	ct "intel/isecl/lib/common/v5/types/aas"
 	"intel/isecl/scs/v5/constants"
 	"net/http"
+
+	"github.com/jinzhu/gorm"
 )
 
 var log = clog.GetDefaultLogger()

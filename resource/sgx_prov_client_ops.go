@@ -8,10 +8,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"intel/isecl/scs/v5/config"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func getProvClientObj() (*http.Client, *config.Configuration, error) {
