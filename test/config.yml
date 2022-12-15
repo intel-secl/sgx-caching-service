@@ -1,0 +1,36 @@
+port: 9000
+cmstlscertdigest: 1c361db1a2a8d5bae151a66dab9312b2cf9862fa0e2d16060a198ef496df1f013f537a3eb53b4fb4b015edf1bc681ae9
+postgres:
+    dbname: scsdb
+    username: 
+    password: 
+    hostname: localhost
+    port: 5432
+    sslmode: verify-full
+    sslcert: scsdbcert.pem
+logmaxlength: 300
+logenablestdout: false
+loglevel: info
+token:
+    includekid: false
+    tokendurationmins: 0
+cmsbaseurl: https://scs.com:8445/cms/v1/
+authserviceurl: https://scs.com:8444/aas/v1
+refreshhours: 720
+provserverinfo:
+    provserverurl: https://test.api.trustedservices.intel.com/sgx/certification/v3
+    apisubscriptionkey: abcdefghijklmnopqrstuvwxyz123456
+subject:
+    tlscertcommonname: SCS TLS Certificate
+    jwtcertcommonname: ""
+tlskeyfile: tls.key
+tlscertfile: tls-cert.pem
+certsanlist: scs.com
+readtimeout: 30s
+readheadertimeout: 10s
+writetimeout: 10s
+idletimeout: 1s
+maxheaderbytes: 1048576
+cachingmodel: 0
+waittime: 1
+retrycount: 3

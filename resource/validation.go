@@ -5,11 +5,10 @@
 package resource
 
 import (
+	"github.com/pkg/errors"
 	"intel/isecl/scs/v5/constants"
 	"net/url"
 	"regexp"
-
-	"github.com/pkg/errors"
 )
 
 var regExMap = map[string]*regexp.Regexp{
@@ -20,8 +19,7 @@ var regExMap = map[string]*regexp.Regexp{
 	constants.CaKey:      regexp.MustCompile(`^(processor|platform)$`),
 	constants.FmspcKey:   regexp.MustCompile(`^[0-9a-fA-F]{12}$`),
 	constants.QeIDKey:    regexp.MustCompile(`^[0-9a-fA-F]{32}$`),
-	constants.HwUUIDKey:  regexp.MustCompile(`([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}`),
-	constants.PPID:       regexp.MustCompile(`^[0-9a-f]{32}$`)}
+	constants.HwUUIDKey:  regexp.MustCompile(`([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}){1}`)}
 
 func validateInputString(key, inString string) bool {
 	regEx := regExMap[key]

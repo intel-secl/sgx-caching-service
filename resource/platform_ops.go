@@ -13,10 +13,6 @@ import "C"
 
 import (
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
-
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -24,7 +20,9 @@ import (
 	"fmt"
 	"intel/isecl/lib/common/v5/context"
 	commLogMsg "intel/isecl/lib/common/v5/log/message"
+	"intel/isecl/scs/v5/config"
 	"intel/isecl/scs/v5/constants"
+	"intel/isecl/scs/v5/domain"
 	"intel/isecl/scs/v5/repository"
 	"intel/isecl/scs/v5/types"
 	"io/ioutil"
@@ -34,11 +32,13 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 	"unsafe"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -127,8 +127,8 @@ type cpuSvn struct {
 
 var tcbStatusRetrieveParams = map[string]bool{"qeid": true, "pceid": true}
 
-func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase) {
-	r.Handle("/platforms", handlers.ContentTypeHandler(pushPlatformInfo(db), "application/json")).Methods("POST")
+func PlatformInfoOps(r *mux.Router, db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) {
+	r.Handle("/platforms", handlers.ContentTypeHandler(pushPlatformInfo(db, conf, client), "application/json")).Methods("POST")
 	r.Handle("/tcbstatus", handlers.ContentTypeHandler(getTcbStatus(db), "application/json")).Methods("GET")
 }
 
@@ -211,7 +211,7 @@ func getBestPckCert(platformInfo *types.Platform, pckCerts []string, tcb string)
 	return uint8(certIdx), err
 }
 
-func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.FmspcTcbInfo, string, string, error) {
+func fetchPckCertInfo(platformInfo *types.Platform, conf *config.Configuration, client *domain.HttpClient) (*types.PckCert, *types.FmspcTcbInfo, string, string, error) {
 	log.Trace("resource/platform_ops: fetchPckCertInfo() Entering")
 	defer log.Trace("resource/platform_ops: fetchPckCertInfo() Leaving")
 
@@ -225,10 +225,10 @@ func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.Fmsp
 
 	if platformInfo.Manifest != "" {
 		resp, err = getPckCertsWithManifestFromProvServer(platformInfo.Manifest,
-			platformInfo.PceID)
+			platformInfo.PceID, conf, client)
 	} else {
 		resp, err = getPckCertFromProvServer(platformInfo.Encppid,
-			platformInfo.PceID)
+			platformInfo.PceID, conf, client)
 	}
 	if resp != nil {
 		defer func() {
@@ -309,7 +309,7 @@ func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.Fmsp
 	pckCertInfo.QeID = platformInfo.QeID
 	pckCertInfo.PceID = platformInfo.PceID
 
-	fmspcTcbInfo, err := fetchFmspcTcbInfo(fmspc)
+	fmspcTcbInfo, err := fetchFmspcTcbInfo(fmspc, conf, client)
 	if err != nil {
 		return nil, nil, "", "", err
 	}
@@ -327,8 +327,8 @@ func fetchPckCertInfo(platformInfo *types.Platform) (*types.PckCert, *types.Fmsp
 // Fetches the latest PCK Certificate Revocation List for the sgx intel processor
 // SVS will make use of this to verify if PCK certificate in a quote is valid
 // by comparing against this CRL
-func fetchPckCrlInfo(ca string) (*types.PckCrl, error) {
-	resp, err := getPckCrlFromProvServer(ca, constants.EncodingValue)
+func fetchPckCrlInfo(ca string, conf *config.Configuration, client *domain.HttpClient) (*types.PckCrl, error) {
+	resp, err := getPckCrlFromProvServer(ca, constants.EncodingValue, conf, client)
 	if resp != nil {
 		defer func() {
 			derr := resp.Body.Close()
@@ -372,8 +372,8 @@ func fetchPckCrlInfo(ca string) (*types.PckCrl, error) {
 }
 
 // for a platform FMSPC value, fetches corresponding TCBInfo structure from Intel PCS server
-func fetchFmspcTcbInfo(fmspc string) (*types.FmspcTcbInfo, error) {
-	resp, err := getFmspcTcbInfoFromProvServer(fmspc)
+func fetchFmspcTcbInfo(fmspc string, conf *config.Configuration, client *domain.HttpClient) (*types.FmspcTcbInfo, error) {
+	resp, err := getFmspcTcbInfoFromProvServer(fmspc, conf, client)
 	if resp != nil {
 		defer func() {
 			derr := resp.Body.Close()
@@ -419,8 +419,8 @@ func fetchFmspcTcbInfo(fmspc string) (*types.FmspcTcbInfo, error) {
 }
 
 // Fetches Quoting Enclave ID details for a platform from intel PCS server
-func fetchQeIdentityInfo() (*types.QEIdentity, error) {
-	resp, err := getQeInfoFromProvServer()
+func fetchQeIdentityInfo(conf *config.Configuration, client *domain.HttpClient) (*types.QEIdentity, error) {
+	resp, err := getQeInfoFromProvServer(conf, client)
 	if resp != nil {
 		defer func() {
 			derr := resp.Body.Close()
@@ -631,6 +631,12 @@ func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *Platf
 			StatusCode: http.StatusInternalServerError}
 	}
 	if existingPlatformData != nil {
+		if !strings.EqualFold(existingPlatformData.HwUUID.String(), tokenSubject) {
+			slog.Errorf("resource/platform_ops:checkPlatformDataCacheStatus() %s : Failed to match host identity from database", commLogMsg.AuthenticationFailed)
+			return false, &resourceError{Message: "Invalid Token",
+				StatusCode: http.StatusUnauthorized}
+		}
+
 		if platformInfo.Manifest == "" {
 			platformInfo.Manifest = existingPlatformData.Manifest
 			cert := &types.PckCert{
@@ -653,7 +659,7 @@ func checkPlatformDataCacheStatus(db repository.SCSDatabase, platformInfo *Platf
 	return false, nil
 }
 
-func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
+func pushPlatformInfo(db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		err := authorizeEndpoint(r, constants.HostDataUpdaterGroupName, true)
 		if err != nil {
@@ -720,21 +726,16 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 			PceID:    platformInfo.PceID,
 			QeID:     platformInfo.QeID,
 			Manifest: platformInfo.Manifest,
+			HwUUID:   uuid.MustParse(platformInfo.HwUUID),
 		}
 
-		pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platform)
+		pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platform, config, client)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 		}
 
-		ppid, err := getPPID(pckCertInfo.PckCerts[0])
-		if err != nil {
-			return &resourceError{Message: "Failed to extract ppid from PCK Cert", StatusCode: http.StatusInternalServerError}
-		}
-
 		platform.Fmspc = fmspcTcbInfo.Fmspc
 		platform.Ca = ca
-		platform.Ppid = ppid
 		err = cachePlatformInfo(db, platform, constants.CacheInsert)
 		if err != nil {
 			return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
@@ -748,7 +749,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		tcbInfo := &types.FmspcTcbInfo{Fmspc: platform.Fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
 		if existingFmspc == nil {
-			_, err = getLazyCacheFmspcTcbInfo(db, platform.Fmspc, constants.CacheInsert)
+			_, err = getLazyCacheFmspcTcbInfo(db, platform.Fmspc, constants.CacheInsert, config, client)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -771,7 +772,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 		pckCrl := &types.PckCrl{Ca: ca}
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 		if existingPckCrl == nil {
-			_, err = getLazyCachePckCrl(db, ca, constants.CacheInsert)
+			_, err = getLazyCachePckCrl(db, ca, constants.CacheInsert, config, client)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -779,7 +780,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 
 		qeIdentity, err := db.QEIdentityRepository().Retrieve()
 		if qeIdentity == nil {
-			_, err = getLazyCacheQEIdentityInfo(db, constants.CacheInsert)
+			_, err = getLazyCacheQEIdentityInfo(db, constants.CacheInsert, config, client)
 			if err != nil {
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusInternalServerError}
 			}
@@ -803,7 +804,7 @@ func pushPlatformInfo(db repository.SCSDatabase) errorHandlerFunc {
 	}
 }
 
-func refreshPckCerts(db repository.SCSDatabase) error {
+func refreshPckCerts(db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) error {
 
 	existingPlatformData, _ := db.PlatformRepository().RetrieveAll()
 	if len(existingPlatformData) == 0 {
@@ -882,7 +883,7 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 			defer fetchPckCertWG.Done()
 
 			for platformInfo := range dbRows {
-				pckCertInfo, _, pckCertChain, ca, err := fetchPckCertInfo(platformInfo)
+				pckCertInfo, _, pckCertChain, ca, err := fetchPckCertInfo(platformInfo, conf, client)
 
 				if err != nil {
 					errC <- errors.Wrap(err, "Error while fetching pck cert info.")
@@ -937,14 +938,14 @@ func refreshPckCerts(db repository.SCSDatabase) error {
 	return err
 }
 
-func refreshAllPckCrl(db repository.SCSDatabase) error {
+func refreshAllPckCrl(db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) error {
 	existingPckCrlData, err := db.PckCrlRepository().RetrieveAll()
 	if len(existingPckCrlData) == 0 {
 		return errors.New("no pck crl record found in db, cannot perform refresh operation")
 	}
 
 	for n := 0; n < len(existingPckCrlData); n++ {
-		_, err = getLazyCachePckCrl(db, existingPckCrlData[n].Ca, constants.CacheRefresh)
+		_, err = getLazyCachePckCrl(db, existingPckCrlData[n].Ca, constants.CacheRefresh, config, client)
 		if err != nil {
 			return fmt.Errorf("refresh of pckcrl failed: %s", err.Error())
 		}
@@ -953,7 +954,7 @@ func refreshAllPckCrl(db repository.SCSDatabase) error {
 	return nil
 }
 
-func refreshAllTcbInfo(db repository.SCSDatabase) error {
+func refreshAllTcbInfo(db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) error {
 	existingTcbInfoData, err := db.FmspcTcbInfoRepository().RetrieveAll()
 	if len(existingTcbInfoData) == 0 {
 		return errors.New("no tcbinfo record found in db, cannot perform refresh operation")
@@ -961,7 +962,7 @@ func refreshAllTcbInfo(db repository.SCSDatabase) error {
 
 	log.Debug("Existing Fmspc count:", len(existingTcbInfoData))
 	for n := 0; n < len(existingTcbInfoData); n++ {
-		_, err = getLazyCacheFmspcTcbInfo(db, existingTcbInfoData[n].Fmspc, constants.CacheRefresh)
+		_, err = getLazyCacheFmspcTcbInfo(db, existingTcbInfoData[n].Fmspc, constants.CacheRefresh, config, client)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error in Refresh Tcb info: %s", err.Error()))
 		}
@@ -970,13 +971,13 @@ func refreshAllTcbInfo(db repository.SCSDatabase) error {
 	return nil
 }
 
-func refreshAllQE(db repository.SCSDatabase) error {
+func refreshAllQE(db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) error {
 	existingQEData, err := db.QEIdentityRepository().Retrieve()
 	if existingQEData == nil {
 		return errors.New("no qe identity record found in db, cannot perform refresh operation")
 	}
 
-	_, err = getLazyCacheQEIdentityInfo(db, constants.CacheRefresh)
+	_, err = getLazyCacheQEIdentityInfo(db, constants.CacheRefresh, config, client)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error in Refresh QEIdentity info: %s", err.Error()))
 	}
@@ -984,20 +985,20 @@ func refreshAllQE(db repository.SCSDatabase) error {
 	return nil
 }
 
-func refreshNonPCKCollaterals(db repository.SCSDatabase) error {
-	err := refreshAllPckCrl(db)
+func refreshNonPCKCollaterals(db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) error {
+	err := refreshAllPckCrl(db, conf, client)
 	if err != nil {
 		log.WithError(err).Error("could not complete refresh of PCK Crl")
 		return err
 	}
 
-	err = refreshAllTcbInfo(db)
+	err = refreshAllTcbInfo(db, conf, client)
 	if err != nil {
 		log.WithError(err).Error("could not complete refresh of TcbInfo")
 		return err
 	}
 
-	err = refreshAllQE(db)
+	err = refreshAllQE(db, conf, client)
 	if err != nil {
 		log.WithError(err).Error("could not complete refresh of QE Identity")
 		return err
@@ -1005,7 +1006,7 @@ func refreshNonPCKCollaterals(db repository.SCSDatabase) error {
 	return nil
 }
 
-func RefreshPlatformInfo(db repository.SCSDatabase, trigger <-chan constants.RefreshTrigger) {
+func RefreshPlatformInfo(db repository.SCSDatabase, trigger <-chan constants.RefreshTrigger, conf *config.Configuration, client *domain.HttpClient) {
 	for {
 		triggerType := <-trigger
 		status := constants.RefreshStatusSucceeded
@@ -1016,13 +1017,13 @@ func RefreshPlatformInfo(db repository.SCSDatabase, trigger <-chan constants.Ref
 		}
 
 		// Start refresh
-		err := refreshPckCerts(db)
+		err := refreshPckCerts(db, conf, client)
 		if err != nil {
 			status = constants.RefreshStatusFailed
 			log.WithError(err).Error("Error while refreshing PCK Certs")
 		}
 
-		err = refreshNonPCKCollaterals(db)
+		err = refreshNonPCKCollaterals(db, conf, client)
 		if err != nil {
 			status = constants.RefreshStatusFailed
 			log.WithError(err).Error("Error while refreshing Non PCK Collaterals")
@@ -1364,57 +1365,4 @@ func getTcbStatus(db repository.SCSDatabase) errorHandlerFunc {
 		slog.Infof("%s: TCB status retrieved by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
 		return nil
 	}
-}
-
-// Function to get PPID from provided PCK Certificate.
-// PCK Certficate has customised extensions. These extensions contain sgx platform information.
-// Following function decodes the PCK Certificate. It parses these extensions 
-// On parsing these extensions it gets PPID.
-func getPPID(pckCert string) (string, error) {
-	log.Trace("resource/platform_ops: getPPID() Entering")
-	defer log.Trace("resource/platform_ops: getPPID() Leaving")
-
-	var ppid string
-	block, _ := pem.Decode([]byte(pckCert))
-	if block == nil {
-		return "", errors.New("Failed to decode given pck certificate")
-	}
-	if block.Type == "CERTIFICATE" {
-		certificate, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			log.WithError(err).Error("Failed to parse given pck certificate")
-			return "", err
-		}
-
-		var ExtSgxPPIDOid = asn1.ObjectIdentifier{1, 2, 840, 113741, 1, 13, 1, 1}
-		var ExtSgxOid = asn1.ObjectIdentifier{1, 2, 840, 113741, 1, 13, 1}
-		var ext pkix.Extension
-		var sgxExtensions []asn1.RawValue
-		for _, ext = range certificate.Extensions {
-			if ExtSgxOid.Equal(ext.Id) {
-				_, err := asn1.Unmarshal(ext.Value, &sgxExtensions)
-				if err != nil {
-					return "", errors.Wrap(err, "Failed to unmarshal extensions in pck certificate")
-				}
-				var oid asn1.ObjectIdentifier
-
-				for j := 0; j < len(sgxExtensions); j++ {
-					rest, err := asn1.Unmarshal(sgxExtensions[j].Bytes, &oid)
-					if err != nil {
-						return "", errors.Wrap(err, "Failed to unmarshal sgx extensions in pck certficate")
-					}
-
-					if ExtSgxPPIDOid.Equal(oid) {
-						var ppidExt []byte
-						_, err := asn1.Unmarshal(rest, &ppidExt)
-						if err != nil {
-							return "", errors.Wrap(err, "Failed to unmarshal ppid extension in pck certificate")
-						}
-						ppid = hex.EncodeToString(ppidExt)
-					}
-				}
-			}
-		}
-	}
-	return ppid, nil
 }

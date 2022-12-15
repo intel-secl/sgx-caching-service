@@ -6,6 +6,9 @@ package config
 
 import (
 	"errors"
+	errorLog "github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 	commLog "intel/isecl/lib/common/v5/log"
 	"intel/isecl/lib/common/v5/setup"
 	"intel/isecl/scs/v5/constants"
@@ -14,10 +17,6 @@ import (
 	"path"
 	"strings"
 	"time"
-
-	errorLog "github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file

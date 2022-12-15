@@ -37,7 +37,6 @@ const (
 	DefaultScsTLSCn                = "SCS TLS Certificate"
 	DefaultIntelProvServerURL      = "https://sbx.api.trustedservices.intel.com/sgx/certification/v3/"
 	EncPPIDKey                     = "encrypted_ppid"
-	PPID                           = "ppid"
 	CPUSvnKey                      = "cpu_svn"
 	PceSvnKey                      = "pce_svn"
 	PceIDKey                       = "pce_id"

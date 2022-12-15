@@ -7,6 +7,7 @@ package tasks
 import (
 	"flag"
 	"fmt"
+	"github.com/pkg/errors"
 	commLog "intel/isecl/lib/common/v5/log"
 	commLogMsg "intel/isecl/lib/common/v5/log/message"
 	cos "intel/isecl/lib/common/v5/os"
@@ -18,8 +19,6 @@ import (
 	"io"
 	"os"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 var slog = commLog.GetSecurityLogger()

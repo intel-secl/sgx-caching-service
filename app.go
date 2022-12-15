@@ -11,6 +11,7 @@ import (
 	"crypto/x509/pkix"
 	"flag"
 	"fmt"
+	"intel/isecl/scs/v5/domain"
 	"intel/isecl/scs/v5/version"
 	"io"
 	"io/ioutil"
@@ -43,9 +44,8 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
-
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/pkg/errors"
 )
 
 type App struct {
@@ -437,9 +437,12 @@ func (a *App) startServer() error {
 		log.WithError(err).Error("Failed to migrate database")
 	}
 
+	// create provision server client
+	pccsClient := domain.NewPCCSClient()
+
 	// Start Refresh routine
 	refreshTrigger := make(chan constants.RefreshTrigger)
-	go resource.RefreshPlatformInfo(scsDB, refreshTrigger)
+	go resource.RefreshPlatformInfo(scsDB, refreshTrigger, c, &pccsClient)
 
 	// Start refresh timer
 	err = resource.InitAutoRefreshTimer(scsDB, refreshTrigger, a.configuration().RefreshHours)
@@ -454,9 +457,9 @@ func (a *App) startServer() error {
 	// Create Router, set routes
 	// no JWT token authentication for this url as its invoked by QPL lib
 	sr := r.PathPrefix("/scs/sgx/certification/v1").Subrouter()
-	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
+	func(setters ...func(*mux.Router, repository.SCSDatabase, *config.Configuration, *domain.HttpClient)) {
 		for _, setter := range setters {
-			setter(sr, scsDB)
+			setter(sr, scsDB, c, &pccsClient)
 		}
 	}(resource.QuoteProviderOps)
 
@@ -465,9 +468,9 @@ func (a *App) startServer() error {
 	sr.Use(middleware.NewTokenAuth(constants.TrustedJWTSigningCertsDir,
 		constants.TrustedCAsStoreDir, fnGetJwtCerts,
 		time.Minute*constants.DefaultJwtValidateCacheKeyMins))
-	func(setters ...func(*mux.Router, repository.SCSDatabase)) {
+	func(setters ...func(*mux.Router, repository.SCSDatabase, *config.Configuration, *domain.HttpClient)) {
 		for _, setter := range setters {
-			setter(sr, scsDB)
+			setter(sr, scsDB, c, &pccsClient)
 		}
 	}(resource.PlatformInfoOps)
 

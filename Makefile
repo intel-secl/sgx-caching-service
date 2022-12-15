@@ -75,9 +75,9 @@ installer: scs
 docker: scs
 	cp $(LIB_PATH)/libPCKCertSelection.so out/libPCKCertSelection.so
 ifeq ($(PROXY_EXISTS),1)
-	docker build ${DOCKER_PROXY_FLAGS} --label org.label-schema.build-date=$(BUILDDATE) -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
+	docker build ${DOCKER_PROXY_FLAGS} --label org.label-schema.build-date=$(BUILDDATE) -f dist/image/Dockerfile -t $(DOCKER_REGISTRY)isecl/scs:$(VERSION)-$(GITCOMMIT) .
 else
-	docker build --label org.label-schema.build-date=$(BUILDDATE) -f dist/image/Dockerfile -t isecl/scs:$(VERSION) .
+	docker build --label org.label-schema.build-date=$(BUILDDATE) -f dist/image/Dockerfile -t $(DOCKER_REGISTRY)isecl/scs:$(VERSION)-$(GITCOMMIT) .
 endif
 
 oci-archive: docker
@@ -85,6 +85,11 @@ oci-archive: docker
 
 k8s: oci-archive
 	cp -r dist/k8s out/k8s
+
+scs-docker-push: docker
+	docker tag $(DOCKER_REGISTRY)isecl/scs:$(VERSION)-$(GITCOMMIT) $(DOCKER_REGISTRY)isecl/scs:$(VERSION)
+	docker push $(DOCKER_REGISTRY)isecl/scs:$(VERSION)
+	docker push $(DOCKER_REGISTRY)isecl/scs:$(VERSION)-$(GITCOMMIT)
 
 all: clean installer k8s
 
