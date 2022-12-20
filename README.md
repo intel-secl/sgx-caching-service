@@ -54,7 +54,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 ```shell
 git clone https://github.com/intel-secl/sgx-caching-service.git
 cd sgx-caching-service
-git checkout v5.0.0
+git checkout v5.1.0
 make installer
 ```
 
@@ -88,6 +88,6 @@ make installer
 | pq          | github.com/lib/pq           | v1.3.0                             |
 | errors      | github.com/pkg/errors       | v0.9.1                             |
 | yaml.v3     | gopkg.in/yaml.v3            | v3.0.1                             |
-| common      | github.com/intel-secl/common| v5.0.0                             |
+| common      | github.com/intel-secl/common| v5.1.0                             |
 
 *Note: All dependencies are listed in go.mod*
