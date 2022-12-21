@@ -7,6 +7,7 @@ package resource
 import (
 	"net/http"
 	"strings"
+	"text/template"
 
 	"encoding/json"
 	commLogMsg "intel/isecl/lib/common/v5/log/message"
@@ -108,8 +109,8 @@ func getPckCertificate(db repository.SCSDatabase, conf *config.Configuration, cl
 		encryptedppid := strings.ToLower(r.URL.Query().Get("encrypted_ppid"))
 		cpusvn := strings.ToLower(r.URL.Query().Get("cpusvn"))
 		pcesvn := strings.ToLower(r.URL.Query().Get("pcesvn"))
-		pceid := strings.ToLower(r.URL.Query().Get("pceid"))
-		qeid := strings.ToLower(r.URL.Query().Get("qeid"))
+		pceid := strings.ToLower(template.HTMLEscapeString(r.URL.Query().Get("pceid")))
+		qeid := strings.ToLower(template.HTMLEscapeString(r.URL.Query().Get("qeid")))
 
 		if !validateInputString(constants.EncPPIDKey, encryptedppid) ||
 			!validateInputString(constants.CPUSvnKey, cpusvn) ||
@@ -187,7 +188,7 @@ func getPckCrl(db repository.SCSDatabase, conf *config.Configuration, client *do
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
-		ca := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("ca")))
+		ca := strings.TrimSpace(strings.ToLower(template.HTMLEscapeString(r.URL.Query().Get("ca"))))
 
 		if !validateInputString(constants.CaKey, ca) {
 			slog.Errorf("resource/quote_provider_ops: getPckCrl() Input validation failed for query parameter")
@@ -252,7 +253,7 @@ func getTcbInfo(db repository.SCSDatabase, config *config.Configuration, client 
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
-		fmspc := r.URL.Query().Get("fmspc")
+		fmspc := template.HTMLEscapeString(r.URL.Query().Get("fmspc"))
 
 		if !validateInputString(constants.FmspcKey, fmspc) {
 			slog.Errorf("resource/quote_provider_ops: getTcbInfo() Input validation failed for query parameter")
@@ -271,7 +272,10 @@ func getTcbInfo(db repository.SCSDatabase, config *config.Configuration, client 
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["SGX-TCB-Info-Issuer-Chain"] = []string{existingFmspc.TcbInfoIssuerChain}
 		w.WriteHeader(http.StatusOK)
+
 		_, err = w.Write([]byte(existingFmspc.TcbInfo))
+		//err = tmpl.ExecuteTemplate(w, "T", []byte(existingFmspc.TcbInfo))
+
 		if err != nil {
 			log.WithError(err).Error("Could not write tcbinfo data to response")
 		}
