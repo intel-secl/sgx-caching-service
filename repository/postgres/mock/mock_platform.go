@@ -36,7 +36,6 @@ func (r *MockPlatformRepository) Create(p *types.Platform) (*types.Platform, err
 		Fmspc:       p.Fmspc,
 		Ca:          p.Ca,
 		Manifest:    p.Manifest,
-		HwUUID:      p.HwUUID,
 		CreatedTime: time.Now(),
 		UpdatedTime: time.Now().Add(2 * time.Hour),
 	}
