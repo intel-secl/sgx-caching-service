@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"encoding/json"
 	commLogMsg "intel/isecl/lib/common/v5/log/message"
 	"intel/isecl/scs/v5/config"
 	"intel/isecl/scs/v5/constants"
@@ -19,8 +20,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type PCKCertInfo struct {
+	Ppid string `json:"ppid"`
+}
+
 func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) {
 	r.Handle("/pckcert", getPckCertificate(db, config, client)).Methods("GET")
+	r.Handle("/pckcert", updatePckCertificate(db, config, client)).Methods("PUT")
 	r.Handle("/pckcrl", getPckCrl(db, config, client)).Methods("GET")
 	r.Handle("/tcb", getTcbInfo(db, config, client)).Methods("GET")
 	r.Handle("/qe/identity", getQeIdentityInfo(db, config, client)).Methods("GET")
@@ -42,6 +48,46 @@ func getVersion() http.HandlerFunc {
 		if err != nil {
 			log.WithError(err).Error("Could not write version to response")
 		}
+	}
+}
+
+// Invoked by vmware python client to update PCK certificate
+func updatePckCertificate(db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if r.ContentLength == 0 {
+			slog.Error("resource/platform_ops: updatePckCertificate() The request body was not provided")
+			return &resourceError{Message: "platform data not provided",
+				StatusCode: http.StatusBadRequest}
+		}
+
+		var certData PCKCertInfo
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		err := dec.Decode(&certData)
+		if err != nil {
+			slog.WithError(err).Errorf("resource/quote_provider_ops.go: updatePckCertificate() %s :  Failed to decode request body", commLogMsg.InvalidInputBadEncoding)
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
+		}
+		ppid := strings.ToLower(certData.Ppid)
+		if !validateInputString(constants.PPID, ppid) {
+			slog.Errorf("resource/quote_provider_ops: updatePckCertificate() Input validation failed for ppid given")
+			return &resourceError{Message: "invalid input param",
+				StatusCode: http.StatusBadRequest}
+		}
+
+		pInfo := &types.Platform{Ppid: ppid}
+		existingPinfo, err := db.PlatformRepository().Retrieve(pInfo)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+		}
+		// getLazyCachePckCert API will get PCK Certs and will cache it as well.
+		_, _, _, err = getLazyCachePckCert(db, existingPinfo, constants.CacheRefresh, conf, client)
+		if err != nil {
+			log.WithError(err).Error("Pck Cert Retrieval failed")
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+		}
+		slog.Infof("%s: PCK certificate updated by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
+		return nil
 	}
 }
 
@@ -100,7 +146,6 @@ func getPckCertificate(db repository.SCSDatabase, conf *config.Configuration, cl
 			pInfo.Encppid = encryptedppid
 			if existingPinfo != nil {
 				pInfo.Manifest = existingPinfo.Manifest
-				pInfo.HwUUID = existingPinfo.HwUUID
 			}
 
 			// getLazyCachePckCert API will get PCK Certs and will cache it as well.

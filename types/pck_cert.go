@@ -5,8 +5,9 @@
 package types
 
 import (
-	"github.com/lib/pq"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // PckCert struct is the database schema for pck_certs table

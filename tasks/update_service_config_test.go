@@ -118,7 +118,7 @@ func TestServerSetupInvalidLogLevelArg(t *testing.T) {
 func TestServerSetupWithInvalidValues(t *testing.T) {
 	os.Setenv("AAS_API_URL", "http://localhost:8444/aas/v1")
 	os.Setenv("SCS_PORT", "1000")
-	
+
 	c := *config.Load("testconfig.yml")
 	defer func() {
 		os.Remove("testconfig.yml")

@@ -5,9 +5,10 @@
 package postgres
 
 import (
+	"intel/isecl/scs/v5/types"
+
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
-	"intel/isecl/scs/v5/types"
 )
 
 type PostgresPlatformRepository struct {

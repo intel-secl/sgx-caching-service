@@ -7,14 +7,15 @@ package tasks
 import (
 	"flag"
 	"fmt"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"intel/isecl/lib/common/v5/setup"
 	"intel/isecl/scs/v5/config"
 	"intel/isecl/scs/v5/constants"
 	"io"
 	"net/url"
 	"time"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type Update_Service_Config struct {
