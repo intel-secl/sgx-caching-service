@@ -13,4 +13,4 @@ require (
 	intel/isecl/lib/common/v5 v5.1.0
 )
 
-replace intel/isecl/lib/common/v5 => github.com/intel-innersource/libraries.security.isecl.common/v5 v5.1/develop
+replace intel/isecl/lib/common/v5 => github.com/intel-secl/common/v5 v5.1.0
