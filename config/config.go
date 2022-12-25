@@ -6,17 +6,18 @@ package config
 
 import (
 	"errors"
-	errorLog "github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
-	commLog "intel/isecl/lib/common/v4/log"
-	"intel/isecl/lib/common/v4/setup"
-	"intel/isecl/scs/v4/constants"
+	commLog "intel/isecl/lib/common/v5/log"
+	"intel/isecl/lib/common/v5/setup"
+	"intel/isecl/scs/v5/constants"
 	"net/url"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	errorLog "github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 // Configuration is the global configuration struct that is marshalled/unmarshaled to a persisted yaml file
@@ -110,7 +111,7 @@ func (conf *Configuration) Save() error {
 
 func (conf *Configuration) SaveConfiguration(taskName string, c setup.Context) error {
 	// target config changes only in scope for the setup task
-	if taskName == "all" || taskName == "download_ca_cert" || taskName == "download_cert" {
+	if taskName == "all" || taskName == "download_ca_cert" || taskName == "download_cert_tls" {
 
 		tlsCertDigest, err := c.GetenvString("CMS_TLS_CERT_SHA384", "TLS certificate digest")
 		if err == nil && strings.TrimSpace(tlsCertDigest) != "" {
@@ -135,7 +136,7 @@ func (conf *Configuration) SaveConfiguration(taskName string, c setup.Context) e
 		}
 	}
 
-	if taskName == "all" || taskName == "download_cert" {
+	if taskName == "all" || taskName == "download_cert_tls" {
 		tlsCertCN, err := c.GetenvString("SCS_TLS_CERT_CN", "SCS TLS Certificate Common Name")
 		if err == nil && strings.TrimSpace(tlsCertCN) != "" {
 			conf.Subject.TLSCertCommonName = tlsCertCN

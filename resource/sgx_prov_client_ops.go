@@ -8,29 +8,26 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"intel/isecl/scs/v4/config"
+	"intel/isecl/scs/v5/config"
+	"intel/isecl/scs/v5/domain"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
-func getProvClientObj() (*http.Client, *config.Configuration, error) {
-	conf := config.Global()
-	if conf == nil {
-		return nil, nil, errors.New("Configuration details not found")
-	}
-
-	timeout := time.Duration(3 * time.Second)
-	client := &http.Client{
-		Timeout: timeout,
-	}
-
-	return client, conf, nil
-}
-
-func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.Configuration) (*http.Response, error) {
+func getRespFromProvServer(req *http.Request, client domain.HttpClient, conf *config.Configuration) (*http.Response, error) {
 	var err error
 	var resp *http.Response
+
+	if conf == nil {
+		return nil, errors.New("getRespFromProvServer(): Configuration not provided")
+	}
+
+	if client == nil {
+		return nil, errors.New("getRespFromProvServer(): Empty client provided")
+	}
+
 	var retries int = conf.RetryCount
 	var timeBwCalls int = conf.WaitTime
 
@@ -57,14 +54,18 @@ func getRespFromProvServer(req *http.Request, client *http.Client, conf *config.
 	return resp, err
 }
 
-func getPckCertFromProvServer(encryptedPPID, pceID string) (*http.Response, error) {
+func getPckCertFromProvServer(encryptedPPID, pceID string, conf *config.Configuration, client *domain.HttpClient) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCertFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCertFromProvServer() Leaving")
 
-	client, conf, err := getProvClientObj()
-	if err != nil {
-		return nil, errors.Wrap(err, "getPckCertFromProvServer: Cannot get provclient Object")
+	if conf == nil {
+		return nil, errors.New("getPckCertFromProvServer(): Configuration not provided")
 	}
+
+	if client == nil {
+		return nil, errors.New("getPckCertFromProvServer(): Empty client provided")
+	}
+
 	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerURL)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -79,7 +80,7 @@ func getPckCertFromProvServer(encryptedPPID, pceID string) (*http.Response, erro
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := getRespFromProvServer(req, client, conf)
+	resp, err := getRespFromProvServer(req, *client, conf)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCertFromProvServer: Getpckcerts call to PCS Server Failed")
@@ -87,13 +88,18 @@ func getPckCertFromProvServer(encryptedPPID, pceID string) (*http.Response, erro
 	return resp, nil
 }
 
-func getPckCertsWithManifestFromProvServer(manifest, pceID string) (*http.Response, error) {
+func getPckCertsWithManifestFromProvServer(manifest, pceID string, conf *config.Configuration, client *domain.HttpClient) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCertsWithManifestFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCertsWithManifestFromProvServer() Leaving")
-	client, conf, err := getProvClientObj()
-	if err != nil {
-		return nil, errors.Wrap(err, "getPckCertsWithManifestFromProvServer: Cannot get provclient Object")
+
+	if conf == nil {
+		return nil, errors.New("getPckCertsWithManifestFromProvServer(): Configuration not provided")
 	}
+
+	if client == nil {
+		return nil, errors.New("getPckCertsWithManifestFromProvServer(): Empty client provided")
+	}
+
 	url := fmt.Sprintf("%s/pckcerts", conf.ProvServerInfo.ProvServerURL)
 
 	requestStr := map[string]string{
@@ -113,7 +119,7 @@ func getPckCertsWithManifestFromProvServer(manifest, pceID string) (*http.Respon
 	req.Header.Add("Ocp-Apim-Subscription-Key", conf.ProvServerInfo.APISubscriptionkey)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := getRespFromProvServer(req, client, conf)
+	resp, err := getRespFromProvServer(req, *client, conf)
 	if err != nil {
 		log.Error("error came: ", err)
 		return nil, errors.Wrap(err, "getPckCertsWithManifestFromProvServer: Getpckcerts call to PCS Server Failed")
@@ -121,13 +127,18 @@ func getPckCertsWithManifestFromProvServer(manifest, pceID string) (*http.Respon
 	return resp, nil
 }
 
-func getPckCrlFromProvServer(ca, encoding string) (*http.Response, error) {
+func getPckCrlFromProvServer(ca, encoding string, conf *config.Configuration, client *domain.HttpClient) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getPckCrlFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getPckCrlFromProvServer() Leaving")
-	client, conf, err := getProvClientObj()
-	if err != nil {
-		return nil, errors.Wrap(err, "getPckCrlFromProvServer(): Cannot get provclient Object")
+
+	if conf == nil {
+		return nil, errors.New("getPckCrlFromProvServer(): Configuration not provided")
 	}
+
+	if client == nil {
+		return nil, errors.New("getPckCrlFromProvServer(): Empty client provided")
+	}
+
 	url := fmt.Sprintf("%s/pckcrl", conf.ProvServerInfo.ProvServerURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -140,7 +151,7 @@ func getPckCrlFromProvServer(ca, encoding string) (*http.Response, error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := getRespFromProvServer(req, client, conf)
+	resp, err := getRespFromProvServer(req, *client, conf)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getPckCrlFromProvServer(): GetPckCrl call to PCS Server Failed")
@@ -148,13 +159,18 @@ func getPckCrlFromProvServer(ca, encoding string) (*http.Response, error) {
 	return resp, nil
 }
 
-func getFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
+func getFmspcTcbInfoFromProvServer(fmspc string, conf *config.Configuration, client *domain.HttpClient) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getFmspcTcbInfoFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getFmspcTcbInfoFromProvServer() Leaving")
-	client, conf, err := getProvClientObj()
-	if err != nil {
-		return nil, errors.Wrap(err, "getFmspcTcbInfoFromProvServer(): Cannot get provclient Object")
+
+	if conf == nil {
+		return nil, errors.New("getFmspcTcbInfoFromProvServer(): Configuration not provided")
 	}
+
+	if client == nil {
+		return nil, errors.New("getFmspcTcbInfoFromProvServer(): Empty client provided")
+	}
+
 	url := fmt.Sprintf("%s/tcb", conf.ProvServerInfo.ProvServerURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -166,7 +182,7 @@ func getFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	resp, err := getRespFromProvServer(req, client, conf)
+	resp, err := getRespFromProvServer(req, *client, conf)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getFmspcTcbInfoFromProvServer(): GetTcb call to PCS Server Failed")
@@ -174,20 +190,25 @@ func getFmspcTcbInfoFromProvServer(fmspc string) (*http.Response, error) {
 	return resp, nil
 }
 
-func getQeInfoFromProvServer() (*http.Response, error) {
+func getQeInfoFromProvServer(conf *config.Configuration, client *domain.HttpClient) (*http.Response, error) {
 	log.Trace("resource/sgx_prov_client_ops: getQeInfoFromProvServer() Entering")
 	defer log.Trace("resource/sgx_prov_client_ops: getQeInfoFromProvServer() Leaving")
-	client, conf, err := getProvClientObj()
-	if err != nil {
-		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): Cannot get provclient Object")
+
+	if conf == nil {
+		return nil, errors.New("getQeInfoFromProvServer(): Configuration not provided")
 	}
+
+	if client == nil {
+		return nil, errors.New("getQeInfoFromProvServer(): Empty client provided")
+	}
+
 	url := fmt.Sprintf("%s/qe/identity", conf.ProvServerInfo.ProvServerURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): getQeIdentity http request Failed")
 	}
 
-	resp, err := getRespFromProvServer(req, client, conf)
+	resp, err := getRespFromProvServer(req, *client, conf)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getQeInfoFromProvServer(): getQeIdentity call to PCS Server Failed")

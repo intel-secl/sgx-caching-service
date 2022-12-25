@@ -5,18 +5,21 @@
 package resource
 
 import (
+	"intel/isecl/scs/v5/config"
+	"intel/isecl/scs/v5/constants"
+	"intel/isecl/scs/v5/domain"
+	"intel/isecl/scs/v5/repository"
+	"intel/isecl/scs/v5/types"
+
 	"github.com/pkg/errors"
-	"intel/isecl/scs/v4/constants"
-	"intel/isecl/scs/v4/repository"
-	"intel/isecl/scs/v4/types"
 )
 
 // perform an api call to pcs server to get PCK Certificate for a sgx platform and store in db
-func getLazyCachePckCert(db repository.SCSDatabase, platformInfo *types.Platform, cacheType constants.CacheType) (*types.PckCert, *types.PckCertChain, string, error) {
+func getLazyCachePckCert(db repository.SCSDatabase, platformInfo *types.Platform, cacheType constants.CacheType, conf *config.Configuration, client *domain.HttpClient) (*types.PckCert, *types.PckCertChain, string, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCachePckCert() Leaving")
 
-	pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platformInfo)
+	pckCertInfo, fmspcTcbInfo, pckCertChain, ca, err := fetchPckCertInfo(platformInfo, conf, client)
 	if err != nil {
 		return nil, nil, "", errors.New("fetchPckCertInfo:" + err.Error())
 	}
@@ -53,11 +56,11 @@ func getLazyCachePckCert(db repository.SCSDatabase, platformInfo *types.Platform
 }
 
 // perform an api call to pcs server to get trusted computing base info for a sgx platform and store in db
-func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string, cacheType constants.CacheType) (*types.FmspcTcbInfo, error) {
+func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string, cacheType constants.CacheType, conf *config.Configuration, client *domain.HttpClient) (*types.FmspcTcbInfo, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCacheFmspcTcbInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCacheFmspcTcbInfo() Leaving")
 
-	fmspcTcbInfo, err := fetchFmspcTcbInfo(fmspcType)
+	fmspcTcbInfo, err := fetchFmspcTcbInfo(fmspcType, conf, client)
 	if err != nil {
 		return nil, errors.New("getLazyCacheFmspcTcbInfo: failed to fetch tcbinfo")
 	}
@@ -71,11 +74,11 @@ func getLazyCacheFmspcTcbInfo(db repository.SCSDatabase, fmspcType string, cache
 	return fmspcTcb, nil
 }
 
-func getLazyCachePckCrl(db repository.SCSDatabase, caType string, cacheType constants.CacheType) (*types.PckCrl, error) {
+func getLazyCachePckCrl(db repository.SCSDatabase, caType string, cacheType constants.CacheType, conf *config.Configuration, client *domain.HttpClient) (*types.PckCrl, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCachePckCrl() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCachePckCrl() Leaving")
 
-	pckCRLInfo, err := fetchPckCrlInfo(caType)
+	pckCRLInfo, err := fetchPckCrlInfo(caType, conf, client)
 	if err != nil {
 		return nil, errors.New("getLazyCachePckCrl: Failed to fetch PCKCRLInfo")
 	}
@@ -89,11 +92,11 @@ func getLazyCachePckCrl(db repository.SCSDatabase, caType string, cacheType cons
 	return pckCrl, nil
 }
 
-func getLazyCacheQEIdentityInfo(db repository.SCSDatabase, cacheType constants.CacheType) (*types.QEIdentity, error) {
+func getLazyCacheQEIdentityInfo(db repository.SCSDatabase, cacheType constants.CacheType, config *config.Configuration, client *domain.HttpClient) (*types.QEIdentity, error) {
 	log.Trace("resource/lazy_cache_ops: getLazyCacheQEIdentityInfo() Entering")
 	defer log.Trace("resource/lazy_cache_ops: getLazyCacheQEIdentityInfo() Leaving")
 
-	qeInfo, err := fetchQeIdentityInfo()
+	qeInfo, err := fetchQeIdentityInfo(config, client)
 	if err != nil {
 		return nil, errors.New("fetchQeIdentityInfo:" + err.Error())
 	}

@@ -5,7 +5,7 @@
 package docs
 
 import (
-	"intel/isecl/scs/v4/resource"
+	"intel/isecl/scs/v5/resource"
 	"time"
 )
 

@@ -7,20 +7,30 @@ package resource
 import (
 	"net/http"
 	"strings"
+	"text/template"
+
+	"encoding/json"
+	commLogMsg "intel/isecl/lib/common/v5/log/message"
+	"intel/isecl/scs/v5/config"
+	"intel/isecl/scs/v5/constants"
+	"intel/isecl/scs/v5/domain"
+	"intel/isecl/scs/v5/repository"
+	"intel/isecl/scs/v5/types"
+	"intel/isecl/scs/v5/version"
 
 	"github.com/gorilla/mux"
-	commLogMsg "intel/isecl/lib/common/v4/log/message"
-	"intel/isecl/scs/v4/constants"
-	"intel/isecl/scs/v4/repository"
-	"intel/isecl/scs/v4/types"
-	"intel/isecl/scs/v4/version"
 )
 
-func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase) {
-	r.Handle("/pckcert", getPckCertificate(db)).Methods("GET")
-	r.Handle("/pckcrl", getPckCrl(db)).Methods("GET")
-	r.Handle("/tcb", getTcbInfo(db)).Methods("GET")
-	r.Handle("/qe/identity", getQeIdentityInfo(db)).Methods("GET")
+type PCKCertInfo struct {
+	Ppid string `json:"ppid"`
+}
+
+func QuoteProviderOps(r *mux.Router, db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) {
+	r.Handle("/pckcert", getPckCertificate(db, config, client)).Methods("GET")
+	r.Handle("/pckcert", updatePckCertificate(db, config, client)).Methods("PUT")
+	r.Handle("/pckcrl", getPckCrl(db, config, client)).Methods("GET")
+	r.Handle("/tcb", getTcbInfo(db, config, client)).Methods("GET")
+	r.Handle("/qe/identity", getQeIdentityInfo(db, config, client)).Methods("GET")
 	r.Handle("/version", getVersion()).Methods("GET")
 }
 
@@ -42,9 +52,49 @@ func getVersion() http.HandlerFunc {
 	}
 }
 
+// Invoked by vmware python client to update PCK certificate
+func updatePckCertificate(db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		if r.ContentLength == 0 {
+			slog.Error("resource/platform_ops: updatePckCertificate() The request body was not provided")
+			return &resourceError{Message: "platform data not provided",
+				StatusCode: http.StatusBadRequest}
+		}
+
+		var certData PCKCertInfo
+		dec := json.NewDecoder(r.Body)
+		dec.DisallowUnknownFields()
+		err := dec.Decode(&certData)
+		if err != nil {
+			slog.WithError(err).Errorf("resource/quote_provider_ops.go: updatePckCertificate() %s :  Failed to decode request body", commLogMsg.InvalidInputBadEncoding)
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusBadRequest}
+		}
+		ppid := strings.ToLower(certData.Ppid)
+		if !validateInputString(constants.PPID, ppid) {
+			slog.Errorf("resource/quote_provider_ops: updatePckCertificate() Input validation failed for ppid given")
+			return &resourceError{Message: "invalid input param",
+				StatusCode: http.StatusBadRequest}
+		}
+
+		pInfo := &types.Platform{Ppid: ppid}
+		existingPinfo, err := db.PlatformRepository().Retrieve(pInfo)
+		if err != nil {
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+		}
+		// getLazyCachePckCert API will get PCK Certs and will cache it as well.
+		_, _, _, err = getLazyCachePckCert(db, existingPinfo, constants.CacheRefresh, conf, client)
+		if err != nil {
+			log.WithError(err).Error("Pck Cert Retrieval failed")
+			return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
+		}
+		slog.Infof("%s: PCK certificate updated by: %s", commLogMsg.AuthorizedAccess, r.RemoteAddr)
+		return nil
+	}
+}
+
 // Invoked by DCAP Quote Provider Library to fetch PCK certificate
 // as part of ECDSA Quote Generation
-func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
+func getPckCertificate(db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if len(r.URL.Query()) < 5 {
 			return &resourceError{Message: "query data not provided",
@@ -52,15 +102,15 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 		}
 
 		if err := validateQueryParams(r.URL.Query(), pckCertificateRetrieveParams); err != nil {
-			slog.Errorf("resource/platform_ops: getTcbStatus() %s", err.Error())
+			slog.Errorf("resource/platform_ops: getPckCertificate() %s", err.Error())
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
 		encryptedppid := strings.ToLower(r.URL.Query().Get("encrypted_ppid"))
 		cpusvn := strings.ToLower(r.URL.Query().Get("cpusvn"))
 		pcesvn := strings.ToLower(r.URL.Query().Get("pcesvn"))
-		pceid := strings.ToLower(r.URL.Query().Get("pceid"))
-		qeid := strings.ToLower(r.URL.Query().Get("qeid"))
+		pceid := strings.ToLower(template.HTMLEscapeString(r.URL.Query().Get("pceid")))
+		qeid := strings.ToLower(template.HTMLEscapeString(r.URL.Query().Get("qeid")))
 
 		if !validateInputString(constants.EncPPIDKey, encryptedppid) ||
 			!validateInputString(constants.CPUSvnKey, cpusvn) ||
@@ -97,11 +147,10 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 			pInfo.Encppid = encryptedppid
 			if existingPinfo != nil {
 				pInfo.Manifest = existingPinfo.Manifest
-				pInfo.HwUUID = existingPinfo.HwUUID
 			}
 
 			// getLazyCachePckCert API will get PCK Certs and will cache it as well.
-			p, c, _, err := getLazyCachePckCert(db, pInfo, constants.CacheInsert)
+			p, c, _, err := getLazyCachePckCert(db, pInfo, constants.CacheInsert, conf, client)
 			if err != nil {
 				log.WithError(err).Error("Pck Cert Retrieval failed")
 				return &resourceError{Message: err.Error(), StatusCode: http.StatusNotFound}
@@ -126,7 +175,7 @@ func getPckCertificate(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 // api to get PCKCRL pem file form PCS server for a sgx platform
-func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
+func getPckCrl(db repository.SCSDatabase, conf *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 
 		if len(r.URL.Query()) == 0 {
@@ -139,7 +188,7 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
-		ca := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("ca")))
+		ca := strings.TrimSpace(strings.ToLower(template.HTMLEscapeString(r.URL.Query().Get("ca"))))
 
 		if !validateInputString(constants.CaKey, ca) {
 			slog.Errorf("resource/quote_provider_ops: getPckCrl() Input validation failed for query parameter")
@@ -151,7 +200,7 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 
 		existingPckCrl, err := db.PckCrlRepository().Retrieve(pckCrl)
 		if existingPckCrl == nil {
-			existingPckCrl, err = getLazyCachePckCrl(db, ca, constants.CacheInsert)
+			existingPckCrl, err = getLazyCachePckCrl(db, ca, constants.CacheInsert, conf, client)
 			if existingPckCrl == nil || err != nil {
 				return &resourceError{Message: "Error retrieving required PCK CRL", StatusCode: http.StatusNotFound}
 			}
@@ -169,11 +218,11 @@ func getPckCrl(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 // api to get quoting enclave identity information for a sgx platform
-func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
+func getQeIdentityInfo(db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		existingQeInfo, err := db.QEIdentityRepository().Retrieve()
 		if existingQeInfo == nil {
-			existingQeInfo, err = getLazyCacheQEIdentityInfo(db, constants.CacheInsert)
+			existingQeInfo, err = getLazyCacheQEIdentityInfo(db, constants.CacheInsert, config, client)
 			if err != nil || existingQeInfo == nil {
 				return &resourceError{Message: "Error retrieving QEIdentity info", StatusCode: http.StatusNotFound}
 			}
@@ -192,7 +241,7 @@ func getQeIdentityInfo(db repository.SCSDatabase) errorHandlerFunc {
 }
 
 // api to get trusted computing base information for a sgx platform using platfrom fmspc value
-func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
+func getTcbInfo(db repository.SCSDatabase, config *config.Configuration, client *domain.HttpClient) errorHandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if len(r.URL.Query()) == 0 {
 			return &resourceError{Message: "query data not provided",
@@ -204,7 +253,7 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 			return &resourceError{Message: "invalid query param", StatusCode: http.StatusBadRequest}
 		}
 
-		fmspc := r.URL.Query().Get("fmspc")
+		fmspc := template.HTMLEscapeString(r.URL.Query().Get("fmspc"))
 
 		if !validateInputString(constants.FmspcKey, fmspc) {
 			slog.Errorf("resource/quote_provider_ops: getTcbInfo() Input validation failed for query parameter")
@@ -214,7 +263,7 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		tcbInfo := &types.FmspcTcbInfo{Fmspc: fmspc}
 		existingFmspc, err := db.FmspcTcbInfoRepository().Retrieve(tcbInfo)
 		if existingFmspc == nil {
-			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, fmspc, constants.CacheInsert)
+			existingFmspc, err = getLazyCacheFmspcTcbInfo(db, fmspc, constants.CacheInsert, config, client)
 			if err != nil || existingFmspc == nil {
 				return &resourceError{Message: "Error retrieving TCB info", StatusCode: http.StatusNotFound}
 			}
@@ -223,7 +272,10 @@ func getTcbInfo(db repository.SCSDatabase) errorHandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header()["SGX-TCB-Info-Issuer-Chain"] = []string{existingFmspc.TcbInfoIssuerChain}
 		w.WriteHeader(http.StatusOK)
+
 		_, err = w.Write([]byte(existingFmspc.TcbInfo))
+		//err = tmpl.ExecuteTemplate(w, "T", []byte(existingFmspc.TcbInfo))
+
 		if err != nil {
 			log.WithError(err).Error("Could not write tcbinfo data to response")
 		}
