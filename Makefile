@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 GITTAG := $(shell git describe --tags --abbrev=0 2> /dev/null)
 GITCOMMIT := $(shell git describe --always)
 VERSION := "v3.6.1"
@@ -26,7 +27,7 @@ endif
 .PHONY: SKCPCKCertSelection docker scs installer all test clean
 
 scs:SKCPCKCertSelection
-	env GOOS=linux GOSUMDB=off GOPROXY=direct go build -ldflags "-X intel/isecl/scs/v3/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v3/version.Version=$(VERSION) -X intel/isecl/scs/v3/version.GitHash=$(GITCOMMIT)" -o out/scs
+	env GOOS=linux GOSUMDB=off go build -ldflags "-X intel/isecl/scs/v3/version.BuildDate=$(BUILDDATE) -X intel/isecl/scs/v3/version.Version=$(VERSION) -X intel/isecl/scs/v3/version.GitHash=$(GITCOMMIT)" -o out/scs
 
 SKCPCKCertSelection:
 	$(eval TMP := $(shell mktemp -d))
@@ -43,7 +44,7 @@ swagger-get:
 
 swagger-doc:
 	mkdir -p out/swagger
-	env GOOS=linux GOSUMDB=off GOPROXY=direct \
+	env GOOS=linux GOSUMDB=off \
 	/usr/local/bin/swagger generate spec -o ./out/swagger/openapi.yml --scan-models
 	java -jar /usr/local/bin/swagger-codegen-cli.jar generate -i ./out/swagger/openapi.yml -o ./out/swagger/ -l html2 -t ./swagger/templates/
 
