@@ -1,6 +1,6 @@
 # SGX Caching Service
 
-`SGX Caching Service` is a web service whose purpose is to fetch and cache all the SGX Platform collaterals from Intel PCS Server.
+`SGX Caching Service` is a web service whose purpose is to fetch and cache all the SGX Platform collaterals from Intel PCS Server. 
 
 ## Key features
 - Connect to intel PCS server on need basis
